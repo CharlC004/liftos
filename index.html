@@ -384,7 +384,7 @@ auth.onAuthStateChanged(user=>{
       if(fb&&fb.rm){D=fb;localStorage.setItem(SK,JSON.stringify(D));}
       else{D=ld();dbRef.set(D);}
       syncReady=true;go('train');toast('Synced ✓');
-      dbRef.on('value',snap=>{const r=snap.val();if(r&&r.rm&&syncReady){D=r;localStorage.setItem(SK,JSON.stringify(D));refreshView();}});
+      dbRef.on('value',snap=>{const r=snap.val();if(r&&r.rm&&syncReady&&(Date.now()-lastSvTime>2000)){D=r;localStorage.setItem(SK,JSON.stringify(D));refreshView();}});
     }).catch(()=>{D=ld();syncReady=true;go('train');toast('Offline mode');});
   }else{
     document.getElementById('authScreen').style.display='flex';
@@ -395,46 +395,56 @@ auth.onAuthStateChanged(user=>{
 });
 
 // ===== STATE =====
-const SK='liftos4';
+const SK='liftos4';const NK='liftos4_nav';
 let D=ld();
-function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0},unit:'lbs',round:5,cBlk:0,cWk:0,cDy:0,log:{},sessions:[]};}
+function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0},unit:'lbs',round:5,log:{},sessions:[]};}
 function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm)return s;}catch{}return defs();}
-function sv(){localStorage.setItem(SK,JSON.stringify(D));if(dbRef&&syncReady){clearTimeout(svTimer);svTimer=setTimeout(()=>dbRef.set(D).catch(e=>console.error(e)),400);}}
+function ldNav(){try{const s=JSON.parse(localStorage.getItem(NK));if(s)return s;}catch{}return{cBlk:0,cWk:0,cDy:0};}
+// Nav state is LOCAL ONLY — never synced to Firebase
+let NAV=ldNav();
+function svNav(){localStorage.setItem(NK,JSON.stringify(NAV));}
+// Training data syncs to Firebase
+let lastSvTime=0;
+function sv(){
+  localStorage.setItem(SK,JSON.stringify(D));
+  lastSvTime=Date.now();
+  if(dbRef&&syncReady){clearTimeout(svTimer);svTimer=setTimeout(()=>dbRef.set(D).catch(e=>console.error(e)),600);}
+}
 
 // ===== NAV =====
 function go(v){['train','prog','prs','setup'].forEach((n,i)=>{document.getElementById(n+'V').classList.toggle('a',n===v);document.getElementById('n'+i).classList.toggle('a',n===v);});if(v==='train')rTrain();if(v==='prog')rProg();if(v==='prs')rPRs();if(v==='setup')rSetup();}
 function refreshView(){const c=document.querySelector('.vw.a');if(c){const id=c.id.replace('V','');if(id==='train')rTrain();if(id==='prog')rProg();if(id==='prs')rPRs();if(id==='setup')rSetup();}}
 
 // ===== TRAIN =====
-function absWk(){return D.cBlk*4+D.cWk;}
+function absWk(){return NAV.cBlk*4+NAV.cWk;}
 function rTrain(){
-  const blk=BLOCKS[D.cBlk];const blkId=blk.id;const wkInBlk=D.cWk;const isDeload=wkInBlk===3;
-  document.getElementById('hb').textContent=`B${D.cBlk+1}W${D.cWk+1}`;
+  const blk=BLOCKS[NAV.cBlk];const blkId=blk.id;const wkInBlk=NAV.cWk;const isDeload=wkInBlk===3;
+  document.getElementById('hb').textContent=`B${NAV.cBlk+1}W${NAV.cWk+1}`;
 
   // Block tabs
-  document.getElementById('blkTabs').innerHTML=BLOCKS.map((b,i)=>`<div class="btab ${i===D.cBlk?'act':''}" onclick="D.cBlk=${i};D.cWk=0;D.cDy=0;sv();rTrain();">${b.name}</div>`).join('');
+  document.getElementById('blkTabs').innerHTML=BLOCKS.map((b,i)=>`<div class="btab ${i===NAV.cBlk?'act':''}" onclick="NAV.cBlk=${i};NAV.cWk=0;NAV.cDy=0;svNav();rTrain();">${b.name}</div>`).join('');
 
   // Week tabs
   document.getElementById('wkTabs').innerHTML=[0,1,2,3].map(w=>{
-    const lk0=`b${D.cBlk}w${w}d0`;const done=[0,1,2,3].every(d=>D.log[`b${D.cBlk}w${w}d${d}`]?.completed);
-    return`<div class="wtab ${w===D.cWk?'act':''} ${w===3?'dl':''} ${done?'dn':''}" onclick="D.cWk=${w};D.cDy=0;sv();rTrain();">${w===3?'Deload':'Wk '+(w+1)}</div>`;
+    const lk0=`b${NAV.cBlk}w${w}d0`;const done=[0,1,2,3].every(d=>D.log[`b${NAV.cBlk}w${w}d${d}`]?.completed);
+    return`<div class="wtab ${w===NAV.cWk?'act':''} ${w===3?'dl':''} ${done?'dn':''}" onclick="NAV.cWk=${w};NAV.cDy=0;svNav();rTrain();">${w===3?'Deload':'Wk '+(w+1)}</div>`;
   }).join('');
 
   // Day tabs
   document.getElementById('dyTabs').innerHTML=DAYS.map((d,i)=>{
-    const lk=`b${D.cBlk}w${D.cWk}d${i}`;const done=D.log[lk]?.completed;
-    return`<div class="dtab ${i===D.cDy?'act':''} ${done?'dn':''}" onclick="D.cDy=${i};sv();rTrain();">${d.name}<span class="dsub">${d.day}</span></div>`;
+    const lk=`b${NAV.cBlk}w${NAV.cWk}d${i}`;const done=D.log[lk]?.completed;
+    return`<div class="dtab ${i===NAV.cDy?'act':''} ${done?'dn':''}" onclick="NAV.cDy=${i};svNav();rTrain();">${d.name}<span class="dsub">${d.day}</span></div>`;
   }).join('');
 
-  const dy=DAYS[D.cDy];const lk=`b${D.cBlk}w${D.cWk}d${D.cDy}`;
+  const dy=DAYS[NAV.cDy];const lk=`b${NAV.cBlk}w${NAV.cWk}d${NAV.cDy}`;
   if(!D.log[lk])D.log[lk]={ex:{},completed:false,sleep:'',nutrition:''};
 
   const exList=getProg(blkId,dy.id);
-  const rpeBase=isDeload?6:BLK_RPE[blkId]+D.cWk*0.5;
+  const rpeBase=isDeload?6:BLK_RPE[blkId]+NAV.cWk*0.5;
 
   let html=`<div style="display:flex;justify-content:space-between;align-items:baseline;">
     <div><div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;">${dy.name}</div>
-    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${dy.day} · ${blk.name} · ${isDeload?'Deload':'Week '+(D.cWk+1)+' · RPE '+rpeBase}</div></div></div>`;
+    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${dy.day} · ${blk.name} · ${isDeload?'Deload':'Week '+(NAV.cWk+1)+' · RPE '+rpeBase}</div></div></div>`;
 
   // Pre-session: sleep + nutrition
   const sl=D.log[lk].sleep||'';const nt=D.log[lk].nutrition||'';
@@ -442,9 +452,9 @@ function rTrain(){
     <div class="pc-item"><span class="pc-label">Sleep (hrs)</span><input class="si" style="width:48px;" type="number" step="0.5" value="${sl}" placeholder="—" onchange="D.log['${lk}'].sleep=this.value;sv();"></div>
     <div class="pc-item" style="flex:1;"><span class="pc-label">Nutrition</span>
       <div style="display:flex;gap:4px;">
-        <div class="nut-btn ${nt==='under'?'sel':''}" onclick="setNut('${lk}','under',this)">Under</div>
-        <div class="nut-btn ${nt==='target'?'sel':''}" onclick="setNut('${lk}','target',this)">Target</div>
-        <div class="nut-btn ${nt==='over'?'sel':''}" onclick="setNut('${lk}','over',this)">Over</div>
+        <div class="nut-btn ${nt==='under'?'sel':''}" onclick="setNut('${lk}','under')">Under</div>
+        <div class="nut-btn ${nt==='target'?'sel':''}" onclick="setNut('${lk}','target')">Target</div>
+        <div class="nut-btn ${nt==='over'?'sel':''}" onclick="setNut('${lk}','over')">Over</div>
       </div>
     </div>
   </div>`;
@@ -497,10 +507,8 @@ function mkEx(ex,ei,blkId,wkInBlk,lk){
     </div>`;}).join('')}</div></div>`;
 }
 
-function setNut(lk,val,el){
-  D.log[lk].nutrition=D.log[lk].nutrition===val?'':val;sv();
-  el.parentElement.querySelectorAll('.nut-btn').forEach(b=>b.classList.remove('sel'));
-  if(D.log[lk].nutrition)el.classList.add('sel');
+function setNut(lk,val){
+  D.log[lk].nutrition=D.log[lk].nutrition===val?'':val;sv();rTrain();
 }
 
 function uSL(lk,ek,si,f,v){
@@ -526,7 +534,7 @@ function tglSet(lk,ek,si,restSec,btn){
 
 function complete(lk){
   D.log[lk].completed=true;D.log[lk].at=new Date().toISOString();
-  const sess={date:new Date().toISOString(),blk:D.cBlk,wk:D.cWk,day:D.cDy,dn:DAYS[D.cDy]?.name,bn:BLOCKS[D.cBlk]?.name,e1:{},sleep:D.log[lk].sleep,nutrition:D.log[lk].nutrition};
+  const sess={date:new Date().toISOString(),blk:NAV.cBlk,wk:NAV.cWk,day:NAV.cDy,dn:DAYS[NAV.cDy]?.name,bn:BLOCKS[NAV.cBlk]?.name,e1:{},sleep:D.log[lk].sleep,nutrition:D.log[lk].nutrition};
   for(const[ek,sets]of Object.entries(D.log[lk].ex)){
     const lid=ek.split('_')[0];const rmk=RM_KEYS[lid]||lid;
     sets.forEach(st=>{if(st.d&&st.w>0&&st.r>0&&st.p>0){const e=cE1(st.w,st.r,st.p);if(!sess.e1[rmk]||e>sess.e1[rmk])sess.e1[rmk]=e;}});
@@ -557,9 +565,9 @@ function rProg(){
   BLOCKS.forEach((b,bi)=>{
     html+=`<div style="grid-column:span 2;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-top:${bi?'8px':'0'};margin-bottom:4px;">${b.name}</div>`;
     [0,1,2,3].forEach(w=>{
-      const abs=bi*4+w;const isCur=bi===D.cBlk&&w===D.cWk;const isDl=w===3;
+      const abs=bi*4+w;const isCur=bi===NAV.cBlk&&w===NAV.cWk;const isDl=w===3;
       const rpe=isDl?6:BLK_RPE[b.id]+w*0.5;
-      html+=`<div class="pwk ${isCur?'cur':''} ${isDl?'dl':''}" onclick="D.cBlk=${bi};D.cWk=${w};D.cDy=0;sv();go('train');">
+      html+=`<div class="pwk ${isCur?'cur':''} ${isDl?'dl':''}" onclick="NAV.cBlk=${bi};NAV.cWk=${w};NAV.cDy=0;svNav();go('train');">
         <div class="pl">${isDl?'Deload':'Week '+(abs+1)}</div>
         <div class="pv">${isDl?'Recovery':'RPE '+rpe}</div>
         <div class="ps">Wk ${w+1} of ${b.name}</div>
@@ -568,9 +576,9 @@ function rProg(){
   });
   document.getElementById('progGrid').innerHTML=`<div class="pgrid">${html}</div>`;
 
-  const b=BLOCKS[D.cBlk];
+  const b=BLOCKS[NAV.cBlk];
   const exList=getProg(b.id,DAYS[0].id);
-  document.getElementById('progDetail').innerHTML=`<strong>${b.name} Block</strong> (Weeks ${D.cBlk*4+1}-${D.cBlk*4+4})<br>
+  document.getElementById('progDetail').innerHTML=`<strong>${b.name} Block</strong> (Weeks ${NAV.cBlk*4+1}-${NAV.cBlk*4+4})<br>
     RPE Wave: ${BLK_RPE[b.id]} → ${BLK_RPE[b.id]+0.5} → ${BLK_RPE[b.id]+1} → Deload<br>
     Days: ${DAYS.map(d=>d.name+' ('+d.day+')').join(' · ')}`;
 }
@@ -631,6 +639,4 @@ function toast(m){const t=document.getElementById('tst');t.textContent=m;t.class
 document.querySelector('.bnav').style.display='none';
 </script>
 </body>
-</html>
-
 </html>
