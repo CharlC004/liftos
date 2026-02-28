@@ -402,6 +402,10 @@ function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm)return
 function ldNav(){try{const s=JSON.parse(localStorage.getItem(NK));if(s)return s;}catch{}return{cBlk:0,cWk:0,cDy:0};}
 // Nav state is LOCAL ONLY — never synced to Firebase
 let NAV=ldNav();
+// Bounds check
+if(NAV.cBlk<0||NAV.cBlk>3)NAV.cBlk=0;
+if(NAV.cWk<0||NAV.cWk>3)NAV.cWk=0;
+if(NAV.cDy<0||NAV.cDy>3)NAV.cDy=0;
 function svNav(){localStorage.setItem(NK,JSON.stringify(NAV));}
 // Training data syncs to Firebase
 let lastSvTime=0;
@@ -417,7 +421,7 @@ function refreshView(){const c=document.querySelector('.vw.a');if(c){const id=c.
 
 // ===== TRAIN =====
 function absWk(){return NAV.cBlk*4+NAV.cWk;}
-function rTrain(){
+function rTrain(){try{
   const blk=BLOCKS[NAV.cBlk];const blkId=blk.id;const wkInBlk=NAV.cWk;const isDeload=wkInBlk===3;
   document.getElementById('hb').textContent=`B${NAV.cBlk+1}W${NAV.cWk+1}`;
 
@@ -459,7 +463,21 @@ function rTrain(){
     </div>
   </div>`;
 
-  // Exercises grouped by type
+  let needsSave=false;
+  exList.forEach((ex,ei)=>{
+    const ek=ex.id+'_'+ei;
+    const sets=getExSets(blkId,wkInBlk,ex);
+    const rpe=getExRPE(blkId,wkInBlk,ex);
+    const reps=getExReps(blkId,wkInBlk,ex);
+    const rmKey=RM_KEYS[ex.id];
+    const rm=rmKey?D.rm[rmKey]||0:0;
+    const sw=rm>0&&rpe>0?cWt(rm,reps,rpe,D.round):0;
+    if(!D.log[lk].ex[ek]){D.log[lk].ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:reps,p:rpe,d:false}));needsSave=true;}
+    while(D.log[lk].ex[ek].length<sets){D.log[lk].ex[ek].push({w:sw||'',r:reps,p:rpe,d:false});needsSave=true;}
+  });
+  if(needsSave)sv();
+
+  // Render exercises
   let lastType='';
   exList.forEach((ex,ei)=>{
     const label=ex.type==='pri'?'Primary':ex.type==='sec'?'Secondary':ex.type==='acc'?'Accessories':'';
@@ -472,6 +490,7 @@ function rTrain(){
   if(D.log[lk]?.completed)html+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Session Completed</div>`;
 
   document.getElementById('tc').innerHTML=html;
+}catch(e){document.getElementById('tc').innerHTML='<div style="color:var(--rd);padding:20px;">Error: '+e.message+'</div>';console.error(e);}
 }
 
 function mkEx(ex,ei,blkId,wkInBlk,lk){
@@ -484,8 +503,7 @@ function mkEx(ex,ei,blkId,wkInBlk,lk){
   const pc=rm>0&&rpe>0?Math.round(rPct(reps,rpe)*100):null;
   const ek=ex.id+'_'+ei;
 
-  if(!D.log[lk].ex[ek]){D.log[lk].ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:reps,p:rpe,d:false}));sv();}
-  const saved=D.log[lk].ex[ek];
+  const saved=D.log[lk].ex[ek]||[];
   while(saved.length<sets)saved.push({w:sw||'',r:reps,p:rpe,d:false});
 
   const rc=rpe>=9.5?'rmx':rpe>=8.5?'rhi':rpe>=7?'rmd':'rlo';
