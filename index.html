@@ -381,11 +381,11 @@ auth.onAuthStateChanged(user=>{
     dbRef=db.ref('users/'+user.uid+'/liftos4');
     dbRef.once('value').then(snap=>{
       const fb=snap.val();
-      if(fb&&fb.rm){D=fb;localStorage.setItem(SK,JSON.stringify(D));}
-      else{D=ld();dbRef.set(D);}
+      if(fb&&fb.rm){D=fb;ensureD();localStorage.setItem(SK,JSON.stringify(D));}
+      else{D=ld();ensureD();dbRef.set(D);}
       syncReady=true;go('train');toast('Synced ✓');
-      dbRef.on('value',snap=>{const r=snap.val();if(r&&r.rm&&syncReady&&(Date.now()-lastSvTime>2000)){D=r;localStorage.setItem(SK,JSON.stringify(D));refreshView();}});
-    }).catch(()=>{D=ld();syncReady=true;go('train');toast('Offline mode');});
+      dbRef.on('value',snap=>{const r=snap.val();if(r&&r.rm&&syncReady&&(Date.now()-lastSvTime>2000)){D=r;ensureD();localStorage.setItem(SK,JSON.stringify(D));refreshView();}});
+    }).catch(()=>{D=ld();ensureD();syncReady=true;go('train');toast('Offline mode');});
   }else{
     document.getElementById('authScreen').style.display='flex';
     document.getElementById('mainApp').style.display='none';
@@ -396,9 +396,10 @@ auth.onAuthStateChanged(user=>{
 
 // ===== STATE =====
 const SK='liftos4';const NK='liftos4_nav';
-let D=ld();
+let D=ld();ensureD();
 function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0},unit:'lbs',round:5,log:{},sessions:[]};}
-function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm)return s;}catch{}return defs();}
+function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm){if(!s.log)s.log={};if(!s.sessions)s.sessions=[];return s;}}catch{}return defs();}
+function ensureD(){if(!D.log)D.log={};if(!D.sessions)D.sessions=[];if(!D.rm)D.rm={squat:0,bench:0,deadlift:0,ohp:0};if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;}
 function ldNav(){try{const s=JSON.parse(localStorage.getItem(NK));if(s)return s;}catch{}return{cBlk:0,cWk:0,cDy:0};}
 // Nav state is LOCAL ONLY — never synced to Firebase
 let NAV=ldNav();
