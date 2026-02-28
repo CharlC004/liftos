@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LiftOS">
+<meta name="theme-color" content="#101014">
+<title>LiftOS</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#101014;--bg2:#18181e;--bg3:#1f1f28;--bg4:#28283a;--bdr:#2a2a3a;--bdr2:#35354a;--tx:#e8e6f0;--tx2:#9896a8;--tx3:#605e70;--ac:#ff6b3d;--acd:rgba(255,107,61,.15);--acg:rgba(255,107,61,.3);--gn:#3dd68c;--gnd:rgba(61,214,140,.15);--rd:#f04060;--rdd:rgba(240,64,96,.15);--yl:#f0c040;--yld:rgba(240,192,64,.15);--bl:#4d8ef0;--bld:rgba(77,142,240,.15);--r:10px;--rs:6px;--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--tx);font-family:'Archivo',sans-serif;min-height:100dvh;overflow-x:hidden;-webkit-tap-highlight-color:transparent;padding-top:var(--st);}
+input,select,textarea,button{font-family:'Archivo',sans-serif;}
+.app{max-width:480px;margin:0 auto;padding:0 16px;padding-bottom:calc(80px + var(--sb));}
+
+/* Header */
+.hdr{padding:20px 0 14px;display:flex;justify-content:space-between;align-items:center;}
+.hdr h1{font-size:1.3rem;font-weight:800;letter-spacing:1px;background:linear-gradient(135deg,var(--ac),#ff9a5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase;}
+.hdr .bdg{font-family:'IBM Plex Mono',monospace;font-size:.72rem;padding:4px 10px;border:1px solid var(--bdr);border-radius:20px;color:var(--tx2);letter-spacing:.5px;}
+
+/* Nav */
+.bnav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--bdr);display:flex;padding-bottom:var(--sb);z-index:50;}
+.nb{flex:1;padding:10px 0 8px;border:none;background:none;color:var(--tx3);font-size:.65rem;font-weight:600;letter-spacing:.8px;text-transform:uppercase;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:color .2s;}
+.nb .ni{font-size:1.2rem;}.nb.a{color:var(--ac);}
+.vw{display:none;}.vw.a{display:block;}
+
+/* Cards */
+.cd{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:18px;margin-bottom:12px;animation:fu .3s ease-out both;}
+@keyframes fu{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.cd h3{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx2);margin-bottom:14px;}
+
+/* Forms */
+.fld{margin-bottom:14px;}.fld:last-child{margin-bottom:0;}
+.fld>label{display:block;font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;}
+.inp{width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);color:var(--tx);font-size:.92rem;outline:none;transition:border-color .2s;}
+.inp:focus{border-color:var(--ac);}.inp::placeholder{color:var(--tx3);}
+select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23605e70' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;}
+.si{width:54px;padding:7px 4px;text-align:center;background:var(--bg3);border:1px solid var(--bdr);border-radius:4px;color:var(--tx);font-family:'IBM Plex Mono',monospace;font-size:.9rem;font-weight:500;outline:none;}
+.si:focus{border-color:var(--ac);}
+
+/* Buttons */
+.btn{padding:12px 20px;border:none;border-radius:var(--rs);font-weight:600;font-size:.82rem;letter-spacing:.5px;cursor:pointer;transition:all .2s;text-transform:uppercase;}
+.bp{background:var(--ac);color:#fff;box-shadow:0 2px 10px var(--acg);}.bp:active{transform:scale(.97);}
+.bf{width:100%;display:block;}
+.bo{background:transparent;border:1px solid var(--bdr);color:var(--tx2);}.bo:hover{border-color:var(--ac);color:var(--ac);}
+.bs{padding:7px 14px;font-size:.72rem;}
+.bd{background:var(--rdd);color:var(--rd);border:1px solid transparent;}
+.bic{width:34px;height:34px;border-radius:var(--rs);border:1px solid var(--bdr);background:var(--bg3);color:var(--tx2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+.bic:hover{border-color:var(--ac);color:var(--ac);}
+
+/* RPE badges */
+.rb{display:inline-block;padding:2px 8px;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;}
+.rlo{background:var(--gnd);color:var(--gn);}.rmd{background:var(--yld);color:var(--yl);}.rhi{background:var(--acd);color:var(--ac);}.rmx{background:var(--rdd);color:var(--rd);}
+
+/* Week selector */
+.wsel{display:flex;align-items:center;gap:12px;margin-bottom:16px;justify-content:center;}
+.wsel .ar{width:36px;height:36px;border-radius:50%;border:1px solid var(--bdr);background:var(--bg2);color:var(--tx2);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.wsel .ar:hover{border-color:var(--ac);color:var(--ac);}
+.wlbl{font-family:'IBM Plex Mono',monospace;font-size:.85rem;font-weight:600;min-width:140px;text-align:center;}
+.dtag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;background:var(--gnd);color:var(--gn);margin-left:6px;}
+
+/* Day tabs */
+.dtabs{display:flex;gap:4px;margin-bottom:16px;overflow-x:auto;scrollbar-width:none;padding:2px 0;}
+.dtabs::-webkit-scrollbar{display:none;}
+.dtab{padding:8px 12px;border:1px solid var(--bdr);border-radius:var(--rs);background:var(--bg2);color:var(--tx3);font-size:.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.6px;cursor:pointer;white-space:nowrap;transition:all .2s;flex-shrink:0;text-align:center;min-width:70px;}
+.dtab.act{background:var(--ac);border-color:var(--ac);color:#fff;}
+.dtab.dn{border-color:var(--gn);color:var(--gn);}
+.dtab .dsub{font-size:.6rem;font-weight:400;opacity:.7;display:block;margin-top:1px;}
+
+/* Exercise blocks */
+.exb{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
+.exh{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;}
+.exn{font-weight:700;font-size:.92rem;}
+.exm{font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--tx2);}
+.exs{padding:0 16px 14px;}
+.shdr{display:flex;gap:6px;padding:4px 0 6px;border-bottom:1px solid var(--bdr);}
+.shdr span{font-size:.6rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;}
+.sr{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(42,42,58,.3);}
+.sr:last-child{border-bottom:none;}
+.sn{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--tx3);min-width:22px;}
+.stg{font-size:.78rem;color:var(--tx2);flex:1;}
+.sok{width:30px;height:30px;border-radius:50%;border:2px solid var(--bdr);background:transparent;color:transparent;cursor:pointer;transition:all .2s;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sok.chk{background:var(--gn);border-color:var(--gn);color:#fff;}
+.e1c{width:48px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--bl);font-weight:500;flex-shrink:0;}
+.qadd{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1px dashed var(--bdr);border-radius:var(--rs);color:var(--tx3);font-size:.78rem;font-weight:500;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.qadd:hover{border-color:var(--ac);color:var(--ac);}
+
+/* Section dividers */
+.sec{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);padding:14px 0 8px;display:flex;align-items:center;gap:8px;}
+.sec::after{content:'';flex:1;height:1px;background:var(--bdr);}
+
+/* Schedule calendar */
+.sched{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:16px;}
+.sched-hdr{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);text-align:center;padding:4px 0;}
+.sched-cell{padding:8px 2px;border:1px solid var(--bdr);border-radius:var(--rs);text-align:center;font-size:.68rem;color:var(--tx3);cursor:pointer;transition:all .2s;min-height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}
+.sched-cell:hover{border-color:var(--ac);}
+.sched-cell.has{background:var(--acd);border-color:var(--ac);color:var(--ac);font-weight:600;}
+.sched-cell .sc-day{font-size:.58rem;color:var(--tx3);font-weight:400;}
+
+/* Program grid */
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.pwk{padding:14px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--bdr);text-align:center;cursor:pointer;transition:all .2s;}
+.pwk:hover{border-color:var(--ac);}.pwk.cur{border-color:var(--ac);box-shadow:0 0 12px var(--acg);}
+.pwk.dl{border-color:var(--gn);background:rgba(61,214,140,.05);}
+.pwk .pl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:4px;}
+.pwk .pv{font-family:'IBM Plex Mono',monospace;font-size:1.2rem;font-weight:700;}
+.pwk.dl .pv{color:var(--gn);}
+.pwk .ps{font-size:.7rem;color:var(--tx3);margin-top:2px;}
+
+/* PR items */
+.pri{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bdr);}
+.pri:last-child{border-bottom:none;}
+
+/* Modal */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:60;display:none;align-items:flex-end;justify-content:center;}
+.mbg.op{display:flex;}
+.mdl{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r) var(--r) 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px 16px calc(20px + var(--sb));animation:su .3s ease-out;}
+@keyframes su{from{transform:translateY(100%);}to{transform:translateY(0);}}
+.mdl h2{font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;}
+.exp{padding:10px 12px;border:1px solid var(--bdr);border-radius:var(--rs);margin-bottom:6px;cursor:pointer;transition:all .15s;display:flex;justify-content:space-between;align-items:center;}
+.exp:hover{border-color:var(--ac);background:var(--bg3);}
+
+.empty{text-align:center;padding:40px 20px;color:var(--tx3);font-size:.88rem;}
+.empty .icon{font-size:2rem;margin-bottom:8px;}
+.toast{position:fixed;top:calc(20px + var(--st));left:50%;transform:translateX(-50%) translateY(-60px);background:var(--bg3);border:1px solid var(--bdr);color:var(--tx);padding:10px 20px;border-radius:var(--r);font-size:.82rem;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,.4);opacity:0;transition:all .35s cubic-bezier(.16,1,.3,1);z-index:100;pointer-events:none;}
+.toast.sh{opacity:1;transform:translateX(-50%) translateY(0);}
+.rmrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bdr);}
+.rmrow:last-child{border-bottom:none;}
+@media(max-width:380px){.si{width:42px;font-size:.8rem;}.e1c{width:40px;font-size:.68rem;}.sched{gap:2px;}}
+.auth-screen{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:20px;}
+.auth-screen h1{font-size:2rem;font-weight:900;letter-spacing:2px;background:linear-gradient(135deg,var(--ac),#ff9a5c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase;}
+.auth-screen p{color:var(--tx3);font-size:.88rem;text-align:center;max-width:280px;line-height:1.5;}
+.auth-btn{padding:14px 28px;border:none;border-radius:var(--rs);font-weight:700;font-size:.9rem;cursor:pointer;background:var(--ac);color:#fff;box-shadow:0 4px 16px var(--acg);display:flex;align-items:center;gap:10px;transition:transform .2s;}
+.auth-btn:active{transform:scale(.96);}
+.auth-btn svg{width:20px;height:20px;}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}
+.sync-dot.on{background:var(--gn);box-shadow:0 0 6px var(--gn);}.sync-dot.off{background:var(--rd);}
+.auth-hide{display:none;}
+</style>
+</head>
+<body>
+
+<div id="authScreen" class="auth-screen">
+  <h1>LiftOS</h1>
+  <p>Sign in to sync your training across all your devices.</p>
+  <button class="auth-btn" onclick="doSignIn()">
+    <svg viewBox="0 0 24 24" fill="white"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+    Sign in with Google
+  </button>
+  <p style="font-size:.72rem;color:var(--tx3);margin-top:8px;">Free · No credit card · Your data stays yours</p>
+</div>
+
+<div class="app" id="mainApp" style="display:none;">
+  <div class="hdr"><h1>LiftOS</h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()" style="cursor:pointer;">—</div></div></div>
+
+  <!-- TRAIN -->
+  <div id="trainV" class="vw a">
+    <div class="wsel"><button class="ar" onclick="chgW(-1)">‹</button><div class="wlbl" id="wl"></div><button class="ar" onclick="chgW(1)">›</button></div>
+    <div class="dtabs" id="dt"></div>
+    <div id="tc"></div>
+  </div>
+
+  <!-- SCHEDULE -->
+  <div id="schedV" class="vw">
+    <div class="cd"><h3>Weekly Schedule</h3>
+      <p style="font-size:.8rem;color:var(--tx3);margin-bottom:14px;">Tap a day to assign or unassign a training session. Your 4 sessions can land on any days.</p>
+      <div class="sched" id="schedGrid"></div>
+    </div>
+    <div class="cd"><h3>Day Schedule Order</h3><div id="schedOrder"></div></div>
+  </div>
+
+  <!-- SETUP -->
+  <div id="setupV" class="vw">
+    <div class="cd" style="border-left:3px solid var(--ac);padding-left:15px;">
+      <h3>1RM Profile</h3>
+      <p style="font-size:.8rem;color:var(--tx3);margin-bottom:14px;">Used to auto-calculate working weights. Update anytime.</p>
+      <div id="rmInputs"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <div class="fld"><label>Unit</label><select class="inp" id="uSel" style="width:100px;" onchange="D.unit=this.value;sv();"><option value="lbs">lbs</option><option value="kg">kg</option></select></div>
+        <div class="fld"><label>Round</label><select class="inp" id="rSel" style="width:100px;" onchange="D.round=+this.value;sv();"><option value="5">5</option><option value="2.5">2.5</option></select></div>
+      </div>
+    </div>
+    <div class="cd">
+      <h3>Accessories — Squat Day</h3>
+      <div id="acc_squat"></div>
+      <button class="btn bo bs" style="margin-top:8px;" onclick="openAddAcc('squat')">+ Add</button>
+    </div>
+    <div class="cd">
+      <h3>Accessories — Bench / OHP Day</h3>
+      <div id="acc_bench_ohp"></div>
+      <button class="btn bo bs" style="margin-top:8px;" onclick="openAddAcc('bench_ohp')">+ Add</button>
+    </div>
+    <div class="cd">
+      <h3>Accessories — Deadlift Day</h3>
+      <div id="acc_deadlift"></div>
+      <button class="btn bo bs" style="margin-top:8px;" onclick="openAddAcc('deadlift')">+ Add</button>
+    </div>
+    <div class="cd">
+      <h3>Accessories — OHP / Bench Day</h3>
+      <div id="acc_ohp_bench"></div>
+      <button class="btn bo bs" style="margin-top:8px;" onclick="openAddAcc('ohp_bench')">+ Add</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      <button class="btn bo bs" onclick="expD()">↓ Export</button>
+      <button class="btn bo bs" onclick="impD()">↑ Import</button>
+      <button class="btn bd bs" onclick="rstAll()">Reset</button>
+    </div>
+    <input type="file" id="impF" accept=".json" style="display:none" onchange="doImp(event)">
+  </div>
+
+  <!-- PRs -->
+  <div id="prsV" class="vw">
+    <div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div>
+    <div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div>
+  </div>
+</div>
+
+<div class="bnav">
+  <button class="nb a" onclick="go('train')" id="n0"><span class="ni">🏋️</span>Train</button>
+  <button class="nb" onclick="go('sched')" id="n1"><span class="ni">📅</span>Schedule</button>
+  <button class="nb" onclick="go('prs')" id="n2"><span class="ni">📈</span>PRs</button>
+  <button class="nb" onclick="go('setup')" id="n3"><span class="ni">⚙️</span>Setup</button>
+</div>
+
+<div class="mbg" id="mbg" onclick="if(event.target===this)cM();"><div class="mdl" id="mc"></div></div>
+<div class="toast" id="tst"></div>
+
+<script>
+// ===== RPE TABLE =====
+const RT={1:{10:1,9.5:.978,9:.955,8.5:.939,8:.922,7.5:.907,7:.892,6.5:.878,6:.863},2:{10:.955,9.5:.939,9:.922,8.5:.907,8:.892,7.5:.878,7:.863,6.5:.85,6:.837},3:{10:.922,9.5:.907,9:.892,8.5:.878,8:.863,7.5:.85,7:.837,6.5:.824,6:.811},4:{10:.892,9.5:.878,9:.863,8.5:.85,8:.837,7.5:.824,7:.811,6.5:.799,6:.786},5:{10:.863,9.5:.85,9:.837,8.5:.824,8:.811,7.5:.799,7:.786,6.5:.774,6:.762},6:{10:.837,9.5:.824,9:.811,8.5:.799,8:.786,7.5:.774,7:.762,6.5:.751,6:.739},8:{10:.786,9.5:.774,9:.762,8.5:.751,8:.739,7.5:.723,7:.707,6.5:.694,6:.681},10:{10:.739,9.5:.723,9:.707,8.5:.694,8:.681,7.5:.668,7:.655,6.5:.642,6:.63},12:{10:.694,9.5:.681,9:.668,8.5:.655,8:.642,7.5:.63,7:.618,6.5:.606,6:.595},15:{10:.642,9.5:.63,9:.618,8.5:.606,8:.595,7.5:.584,7:.573,6.5:.563,6:.553}};
+function rPct(r,p){const ks=Object.keys(RT).map(Number).sort((a,b)=>a-b);let rk=ks[0];for(const k of ks)if(k<=r)rk=k;const row=RT[rk];const ps=Object.keys(row).map(Number).sort((a,b)=>b-a);let pk=ps[ps.length-1];for(const k of ps)if(k>=p)pk=k;return row[pk]||.75;}
+function cWt(rm,r,p,rd){return Math.round(rm*rPct(r,p)/rd)*rd;}
+function cE1(w,r,p){const pc=rPct(r,p);return pc>0?Math.round(w/pc):w;}
+
+// ===== EXERCISE LIBRARY =====
+const LIB=[
+  {id:'squat',n:'Back Squat',c:'Legs'},{id:'bench',n:'Bench Press',c:'Chest'},{id:'deadlift',n:'Deadlift',c:'Back'},
+  {id:'ohp',n:'Overhead Press',c:'Shoulders'},{id:'row',n:'Barbell Row',c:'Back'},{id:'pullup',n:'Pull-ups / Lat Pulldown',c:'Back'},
+  {id:'rdl',n:'Romanian Deadlift',c:'Legs'},{id:'incline',n:'Incline DB Press',c:'Chest'},{id:'lateral',n:'Lateral Raises',c:'Shoulders'},
+  {id:'curl',n:'Bicep Curls',c:'Arms'},{id:'tricep',n:'Tricep Pushdowns',c:'Arms'},{id:'legcurl',n:'Leg Curls',c:'Legs'},
+  {id:'legext',n:'Leg Extensions',c:'Legs'},{id:'facepull',n:'Face Pulls',c:'Shoulders'},{id:'dip',n:'Dips',c:'Chest'},
+  {id:'frontsquat',n:'Front Squat',c:'Legs'},{id:'cgbench',n:'Close-Grip Bench',c:'Arms'},{id:'hammercurl',n:'Hammer Curls',c:'Arms'},
+  {id:'legpress',n:'Leg Press',c:'Legs'},{id:'calfraise',n:'Calf Raises',c:'Legs'},{id:'hipthrust',n:'Hip Thrust',c:'Legs'},
+  {id:'pecfly',n:'Pec Fly',c:'Chest'},{id:'reardelt',n:'Rear Delt Fly',c:'Shoulders'},{id:'seatedrow',n:'Seated Cable Row',c:'Back'},
+  {id:'tbar',n:'T-Bar Row',c:'Back'},{id:'skulls',n:'Skull Crushers',c:'Arms'},{id:'preacher',n:'Preacher Curls',c:'Arms'},
+  {id:'bulgsplit',n:'Bulgarian Split Squat',c:'Legs'},{id:'shrugbar',n:'Shrugs',c:'Back'},{id:'cablecurl',n:'Cable Curls',c:'Arms'},
+];
+function gL(id){return LIB.find(l=>l.id===id)||(D.customEx||[]).find(l=>l.id===id)||{id,n:id,c:'Other'};}
+
+// ===== WEEK SCHEMES (fixed periodization) =====
+const WKS=[
+  {l:'Week 1 — Build',mR:7,mS:4,mRp:5,aR:7,aS:3,aRp:10},
+  {l:'Week 2 — Push',mR:8,mS:4,mRp:4,aR:8,aS:3,aRp:10},
+  {l:'Week 3 — Peak',mR:9,mS:5,mRp:3,aR:8.5,aS:3,aRp:8},
+  {l:'Week 4 — Deload',mR:6,mS:3,mRp:5,aR:6,aS:2,aRp:12,dl:true},
+];
+
+// ===== TRAINING DAYS (fixed compounds) =====
+const WKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const TEMPLATE=[
+  {id:'squat_day',name:'Squat',primary:{id:'squat',label:'Back Squat'},secondary:null,defaultDay:6},
+  {id:'bench_ohp',name:'Bench / OHP',primary:{id:'bench',label:'Bench Press'},secondary:{id:'ohp',label:'Overhead Press',minReps:6},defaultDay:0},
+  {id:'dead_day',name:'Deadlift',primary:{id:'deadlift',label:'Deadlift'},secondary:null,defaultDay:2},
+  {id:'ohp_bench',name:'OHP / Bench',primary:{id:'ohp',label:'Overhead Press',minReps:6},secondary:{id:'bench',label:'Bench Press'},defaultDay:4},
+];
+
+// ===== 🔥 FIREBASE CONFIG — PASTE YOUR CONFIG HERE =====
+// Import the functions you need from the SDKs you need
+
+import { initializeApp } from "firebase/app";
+
+import { getAnalytics } from "firebase/analytics";
+
+// TODO: Add SDKs for Firebase products that you want to use
+
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+
+// Your web app's Firebase configuration
+
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+const firebaseConfig = {
+
+  apiKey: "AIzaSyBL_UgrA0Y15vZOHfhQr0aKs542RNZu0rI",
+
+  authDomain: "liftos-76b82.firebaseapp.com",
+
+  databaseURL: "https://liftos-76b82-default-rtdb.firebaseio.com",
+
+  projectId: "liftos-76b82",
+
+  storageBucket: "liftos-76b82.firebasestorage.app",
+
+  messagingSenderId: "533099186089",
+
+  appId: "1:533099186089:web:62af010ca789d2c56f66b8",
+
+  measurementId: "G-CVVK8HQT19"
+
+};
+
+
+// Initialize Firebase
+
+const app = initializeApp(firebaseConfig);
+
+const analytics = getAnalytics(app);
+// ===== END CONFIG =====
+
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();
+const db=firebase.database();
+let dbRef=null;
+let syncReady=false;
+let svTimer=null;
+
+function doSignIn(){
+  const provider=new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider).catch(err=>{
+    if(err.code==='auth/popup-blocked'||err.code==='auth/cancelled-popup-request'){
+      auth.signInWithRedirect(provider);
+    }else{alert('Sign-in failed: '+err.message);}
+  });
+}
+function doSignOut(){if(!confirm('Sign out?'))return;auth.signOut();}
+
+function showUserMenu(){
+  const u=auth.currentUser;if(!u)return;
+  const html=`<h2>Account</h2>
+    <div style="padding:12px 0;border-bottom:1px solid var(--bdr);margin-bottom:12px;">
+      <div style="font-weight:600;font-size:.92rem;">${u.displayName||'User'}</div>
+      <div style="font-size:.78rem;color:var(--tx3);margin-top:2px;">${u.email||''}</div>
+      <div style="font-size:.72rem;color:var(--gn);margin-top:6px;"><span class="sync-dot on"></span> Synced to Firebase</div>
+    </div>
+    <button class="btn bo bs bf" onclick="doSignOut();cM();">Sign Out</button>`;
+  oM(html);
+}
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById('authScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    document.querySelector('.bnav').style.display='flex';
+    dbRef=db.ref('users/'+user.uid+'/liftos');
+    dbRef.once('value').then(snap=>{
+      const fbData=snap.val();
+      if(fbData&&fbData.rm){
+        D=fbData;
+        localStorage.setItem(SK,JSON.stringify(D));
+      }else{
+        D=ld();
+        dbRef.set(D);
+      }
+      syncReady=true;
+      go('train');
+      toast('Synced ✓');
+      // Listen for remote changes (other devices)
+      dbRef.on('value',snap=>{
+        const remote=snap.val();
+        if(remote&&remote.rm&&syncReady){
+          D=remote;
+          localStorage.setItem(SK,JSON.stringify(D));
+          const cur=document.querySelector('.vw.a');
+          if(cur){
+            const id=cur.id.replace('V','');
+            if(id==='train')rTrain();if(id==='sched')rSched();if(id==='setup')rSetup();if(id==='prs')rPRs();
+          }
+        }
+      });
+    }).catch(err=>{
+      console.error('Firebase load failed, using local:',err);
+      D=ld();syncReady=true;go('train');toast('Offline mode');
+    });
+  }else{
+    document.getElementById('authScreen').style.display='flex';
+    document.getElementById('mainApp').style.display='none';
+    document.querySelector('.bnav').style.display='none';
+    syncReady=false;dbRef=null;
+  }
+});
+
+// ===== STATE =====
+const SK='liftos3';
+let D=ld();
+function defs(){return{
+  rm:{squat:0,bench:0,deadlift:0,ohp:0},
+  unit:'lbs',round:5,
+  schedule:[6,0,2,4],
+  acc:{squat_day:[],bench_ohp:[],dead_day:[],ohp_bench:[]},
+  customEx:[],
+  cW:0,cD:0,
+  log:{},sessions:[]
+};}
+function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm)return s;}catch{}return defs();}
+function sv(){
+  localStorage.setItem(SK,JSON.stringify(D));
+  if(dbRef&&syncReady){
+    clearTimeout(svTimer);
+    svTimer=setTimeout(()=>{dbRef.set(D).catch(e=>console.error('Sync error:',e));},400);
+  }
+}
+
+// ===== NAV =====
+const NM=['train','sched','prs','setup'];
+function go(v){
+  NM.forEach((n,i)=>{document.getElementById(n+'V').classList.toggle('a',n===v);document.getElementById('n'+i).classList.toggle('a',n===v);});
+  if(v==='train')rTrain();if(v==='sched')rSched();if(v==='setup')rSetup();if(v==='prs')rPRs();
+}
+
+// ===== TRAIN =====
+function chgW(d){D.cW=Math.max(0,Math.min(3,D.cW+d));D.cD=0;sv();rTrain();}
+function selD(i){D.cD=i;sv();rTrain();}
+
+function rTrain(){
+  const wk=WKS[D.cW];
+  document.getElementById('hb').textContent=wk.dl?'DELOAD':`WK${D.cW+1} · RPE ${wk.mR}`;
+  document.getElementById('wl').innerHTML=wk.l+(wk.dl?'<span class="dtag">Deload</span>':'');
+
+  // Sort days by schedule (weekday order)
+  const order=TEMPLATE.map((_,i)=>i).sort((a,b)=>D.schedule[a]-D.schedule[b]);
+
+  const dt=document.getElementById('dt');
+  dt.innerHTML=order.map(di=>{
+    const t=TEMPLATE[di];const wd=WKDAYS[D.schedule[di]];
+    const lk=`w${D.cW}d${di}`;const done=D.log[lk]?.completed;
+    return`<div class="dtab ${di===D.cD?'act':''} ${done?'dn':''}" onclick="selD(${di})">
+      ${t.name}<span class="dsub">${wd}</span>
+    </div>`;
+  }).join('');
+
+  const tmpl=TEMPLATE[D.cD];
+  if(!tmpl){document.getElementById('tc').innerHTML='';return;}
+  const lk=`w${D.cW}d${D.cD}`;
+  if(!D.log[lk])D.log[lk]={ex:{},completed:false};
+
+  const wd=WKDAYS[D.schedule[D.cD]];
+  let html=`<div style="font-size:1.1rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">${tmpl.name}</div>
+    <div style="font-size:.78rem;color:var(--tx3);margin-bottom:16px;font-family:'IBM Plex Mono',monospace;">${wd} · ${wk.l}</div>`;
+
+  // Primary compound
+  html+=`<div class="sec">Primary</div>`;
+  html+=mkEx(tmpl.primary.id,tmpl.primary.label,'main',wk,lk,0,tmpl.primary.minReps);
+
+  // Secondary compound
+  if(tmpl.secondary){
+    html+=`<div class="sec">Secondary</div>`;
+    html+=mkEx(tmpl.secondary.id,tmpl.secondary.label,'sec',wk,lk,1,tmpl.secondary.minReps);
+  }
+
+  // Accessories
+  const accs=D.acc[tmpl.id]||[];
+  html+=`<div class="sec">Accessories</div>`;
+  if(accs.length){
+    accs.forEach((a,ai)=>{
+      const lib=gL(a.exId);
+      html+=mkEx(a.exId,lib.n,'acc',wk,lk,10+ai,null,a.sets,a.reps,a.rpe);
+    });
+  }
+  html+=`<div class="qadd" onclick="qAddAcc('${tmpl.id}')">+ Add Accessory</div>`;
+
+  html+=`<button class="btn bp bf" style="margin-top:18px;" onclick="complete('${lk}')">Complete Session</button>`;
+  document.getElementById('tc').innerHTML=html;
+}
+
+function mkEx(exId,name,type,wk,lk,idx,minReps,oSets,oReps,oRpe){
+  let sets,reps,rpe;
+  if(type==='main'){sets=wk.mS;reps=wk.mRp;rpe=wk.mR;}
+  else if(type==='sec'){
+    // Secondary: slightly less volume, same RPE progression but -0.5
+    sets=Math.max(2,wk.mS-1);reps=wk.mRp+1;rpe=Math.max(6,wk.mR-0.5);
+  }else{
+    sets=wk.dl?2:oSets||3;reps=wk.dl?Math.max(oReps||10,12):oReps||10;rpe=wk.dl?6:oRpe||wk.aR;
+  }
+  if(minReps&&reps<minReps)reps=minReps;
+
+  const rm=D.rm[exId]||0;
+  const sw=rm>0?cWt(rm,reps,rpe,D.round):null;
+  const pc=rm>0?Math.round(rPct(reps,rpe)*100):null;
+  const ek=exId+'_'+idx;
+
+  if(!D.log[lk].ex[ek]){D.log[lk].ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:reps,p:rpe,d:false}));sv();}
+  const saved=D.log[lk].ex[ek];
+  while(saved.length<sets)saved.push({w:sw||'',r:reps,p:rpe,d:false});
+
+  const rc=rpe>=9.5?'rmx':rpe>=8.5?'rhi':rpe>=7?'rmd':'rlo';
+
+  return`<div class="exb"><div class="exh"><div><div class="exn">${name}</div></div>
+    <div style="text-align:right;"><span class="rb ${rc}">RPE ${rpe}</span>
+    <div class="exm" style="margin-top:3px">${sets}×${reps}${sw?' · '+sw+' '+D.unit:''}</div>
+    ${pc?`<div style="font-size:.65rem;color:var(--tx3)">${pc}% 1RM</div>`:''}</div></div>
+    <div class="exs">
+    <div class="shdr"><span style="min-width:22px"></span><span style="flex:1">Target</span><span style="width:54px;text-align:center">Wt</span><span style="width:54px;text-align:center">Reps</span><span style="width:54px;text-align:center">RPE</span><span style="width:48px;text-align:center">e1RM</span><span style="width:30px"></span></div>
+    ${saved.slice(0,sets).map((s,si)=>{
+      const liveE1=s.w>0&&s.r>0&&s.p>0?cE1(s.w,s.r,s.p):'';
+      return`<div class="sr">
+      <div class="sn">${si+1}</div><div class="stg">${reps} @ ${rpe}</div>
+      <input class="si" type="number" value="${s.w}" placeholder="${sw||'—'}" oninput="uSL('${lk}','${ek}',${si},'w',this.value,this)">
+      <input class="si" type="number" value="${s.r}" placeholder="${reps}" oninput="uSL('${lk}','${ek}',${si},'r',this.value,this)">
+      <input class="si" type="number" value="${s.p}" step="0.5" placeholder="${rpe}" oninput="uSL('${lk}','${ek}',${si},'p',this.value,this)">
+      <div class="e1c" id="e1_${ek}_${si}">${liveE1}</div>
+      <button class="sok ${s.d?'chk':''}" onclick="tS('${lk}','${ek}',${si},this)">✓</button>
+    </div>`;}).join('')}</div></div>`;
+}
+
+function uS(lk,ek,si,f,v){const n=parseFloat(v);if(D.log[lk]?.ex[ek])D.log[lk].ex[ek][si][f]=isNaN(n)?'':n;sv();}
+function uSL(lk,ek,si,f,v,el){
+  const n=parseFloat(v);
+  if(D.log[lk]?.ex[ek]){
+    D.log[lk].ex[ek][si][f]=isNaN(n)?'':n;
+    const s=D.log[lk].ex[ek][si];
+    const e1El=document.getElementById('e1_'+ek+'_'+si);
+    if(e1El){
+      if(s.w>0&&s.r>0&&s.p>0){e1El.textContent=cE1(s.w,s.r,s.p);}
+      else{e1El.textContent='';}
+    }
+    sv();
+  }
+}
+function tS(lk,ek,si,b){if(D.log[lk]?.ex[ek]){D.log[lk].ex[ek][si].d=!D.log[lk].ex[ek][si].d;b.classList.toggle('chk');}sv();}
+
+function complete(lk){
+  D.log[lk].completed=true;D.log[lk].at=new Date().toISOString();
+  const s={date:new Date().toISOString(),wk:D.cW,day:D.cD,dn:TEMPLATE[D.cD]?.name,wl:WKS[D.cW]?.l,e1:{}};
+  for(const[ek,sets]of Object.entries(D.log[lk].ex)){
+    const lid=ek.split('_')[0];
+    sets.forEach(st=>{if(st.d&&st.w>0&&st.r>0&&st.p>0){const e=cE1(st.w,st.r,st.p);if(!s.e1[lid]||e>s.e1[lid])s.e1[lid]=e;}});
+  }
+  D.sessions.push(s);sv();toast('Session logged! 💪');rTrain();
+}
+
+// ===== SCHEDULE =====
+function rSched(){
+  const g=document.getElementById('schedGrid');
+  let html=WKDAYS.map(d=>`<div class="sched-hdr">${d}</div>`).join('');
+  // Show which template is on which day
+  const dayMap={};D.schedule.forEach((wd,ti)=>{dayMap[wd]=ti;});
+
+  for(let i=0;i<7;i++){
+    const ti=dayMap[i];
+    if(ti!==undefined){
+      const t=TEMPLATE[ti];
+      html+=`<div class="sched-cell has" onclick="openSchedPick(${i},${ti})">${t.name}</div>`;
+    }else{
+      html+=`<div class="sched-cell" onclick="openSchedAssign(${i})"><span style="font-size:1rem;">+</span><span class="sc-day">Rest</span></div>`;
+    }
+  }
+  g.innerHTML=html;
+
+  // Order display
+  const ord=document.getElementById('schedOrder');
+  const sorted=TEMPLATE.map((_,i)=>i).sort((a,b)=>D.schedule[a]-D.schedule[b]);
+  ord.innerHTML=sorted.map(ti=>{
+    const t=TEMPLATE[ti];const wd=WKDAYS[D.schedule[ti]];
+    return`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr);font-size:.88rem;">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:.75rem;color:var(--tx3);min-width:32px;">${wd}</span>
+      <span style="font-weight:600;flex:1;">${t.name}</span>
+      <span style="font-size:.75rem;color:var(--tx3);">${t.primary.label}${t.secondary?' + '+t.secondary.label:''}</span>
+    </div>`;
+  }).join('');
+}
+
+function openSchedPick(wd,ti){
+  // Unassign this day
+  const html=`<h2>${WKDAYS[wd]} — ${TEMPLATE[ti].name}</h2>
+    <p style="font-size:.85rem;color:var(--tx2);margin-bottom:16px;">Move this session to a different day?</p>
+    ${WKDAYS.map((d,i)=>{
+      const taken=D.schedule.includes(i)&&D.schedule.indexOf(i)!==ti;
+      return taken?'':`<div class="exp" onclick="moveDay(${ti},${i})">${d}${i===wd?' <span style=color:var(--ac)>(current)</span>':''}</div>`;
+    }).join('')}
+    <button class="btn bo bs bf" style="margin-top:12px;" onclick="cM()">Cancel</button>`;
+  oM(html);
+}
+
+function openSchedAssign(wd){
+  // Check if any unassigned templates... all 4 are always assigned so show swap options
+  const html=`<h2>${WKDAYS[wd]} — Rest Day</h2>
+    <p style="font-size:.85rem;color:var(--tx2);margin-bottom:16px;">Move a session here?</p>
+    ${TEMPLATE.map((t,ti)=>`<div class="exp" onclick="moveDay(${ti},${wd})">${t.name} <span style="font-size:.72rem;color:var(--tx3)">(from ${WKDAYS[D.schedule[ti]]})</span></div>`).join('')}
+    <button class="btn bo bs bf" style="margin-top:12px;" onclick="cM()">Cancel</button>`;
+  oM(html);
+}
+
+function moveDay(ti,wd){
+  // Check if target day already has something
+  const existing=D.schedule.indexOf(wd);
+  if(existing>=0&&existing!==ti){
+    // Swap
+    D.schedule[existing]=D.schedule[ti];
+  }
+  D.schedule[ti]=wd;
+  sv();cM();rSched();toast('Schedule updated');
+}
+
+// ===== SETUP =====
+function rSetup(){
+  document.getElementById('uSel').value=D.unit;
+  document.getElementById('rSel').value=D.round;
+
+  // 1RM inputs
+  const mains=[{id:'squat',n:'Back Squat'},{id:'bench',n:'Bench Press'},{id:'deadlift',n:'Deadlift'},{id:'ohp',n:'Overhead Press'}];
+  document.getElementById('rmInputs').innerHTML=mains.map(m=>`
+    <div class="rmrow"><span style="flex:1;font-weight:600;font-size:.9rem;">${m.n}</span>
+    <input class="si" style="width:80px" type="number" value="${D.rm[m.id]||''}" placeholder="0" onchange="D.rm['${m.id}']=+this.value;sv();">
+    <span style="font-size:.72rem;color:var(--tx3);">${D.unit}</span></div>
+  `).join('');
+
+  // Accessories for each day
+  TEMPLATE.forEach(t=>rAccList(t.id));
+}
+
+function rAccList(dayId){
+  const c=document.getElementById('acc_'+dayId);
+  const accs=D.acc[dayId]||[];
+  if(!accs.length){c.innerHTML='<div style="font-size:.8rem;color:var(--tx3);padding:4px 0;">No accessories yet</div>';return;}
+  c.innerHTML=accs.map((a,i)=>{
+    const lib=gL(a.exId);
+    return`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(42,42,58,.3);font-size:.84rem;">
+      <span style="flex:1;font-weight:500;">${lib.n}</span>
+      <input class="si" style="width:36px" type="number" value="${a.sets}" min="1" onchange="D.acc['${dayId}'][${i}].sets=+this.value;sv();" title="Sets">
+      <span style="color:var(--tx3);font-size:.68rem;">×</span>
+      <input class="si" style="width:36px" type="number" value="${a.reps}" min="1" onchange="D.acc['${dayId}'][${i}].reps=+this.value;sv();" title="Reps">
+      <span style="color:var(--tx3);font-size:.68rem;">@</span>
+      <input class="si" style="width:40px" type="number" value="${a.rpe}" step="0.5" min="5" max="10" onchange="D.acc['${dayId}'][${i}].rpe=+this.value;sv();" title="RPE">
+      ${i>0?`<button class="bic" style="width:26px;height:26px;font-size:.65rem;" onclick="mvAcc('${dayId}',${i},-1)">↑</button>`:'<div style="width:26px"></div>'}
+      ${i<accs.length-1?`<button class="bic" style="width:26px;height:26px;font-size:.65rem;" onclick="mvAcc('${dayId}',${i},1)">↓</button>`:'<div style="width:26px"></div>'}
+      <button class="bic" style="width:26px;height:26px;font-size:.65rem;color:var(--rd);" onclick="rmAcc('${dayId}',${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function mvAcc(did,i,dir){const a=D.acc[did];const ni=i+dir;if(ni<0||ni>=a.length)return;[a[i],a[ni]]=[a[ni],a[i]];sv();rAccList(did);}
+function rmAcc(did,i){D.acc[did].splice(i,1);sv();rAccList(did);}
+
+function openAddAcc(dayId){
+  const cats={};
+  [...LIB,...(D.customEx||[])].forEach(e=>{if(!cats[e.c])cats[e.c]=[];cats[e.c].push(e);});
+  const html=`<h2>Add Accessory</h2>
+    <div class="fld"><input class="inp" id="aSearch" placeholder="Search..." oninput="fltAcc(this.value)"></div>
+    <div id="accPL">${Object.entries(cats).map(([cat,exs])=>`
+      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin:10px 0 4px;">${cat}</div>
+      ${exs.map(e=>`<div class="exp" data-n="${e.n.toLowerCase()}" onclick="addAcc('${dayId}','${e.id}')">
+        <span style="font-weight:600;font-size:.88rem;">${e.n}</span>
+        ${D.rm[e.id]?`<span style="font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--ac);">${D.rm[e.id]} ${D.unit}</span>`:''}
+      </div>`).join('')}
+    `).join('')}</div>
+    <div style="border-top:1px solid var(--bdr);margin-top:12px;padding-top:12px;">
+      <p style="font-size:.78rem;color:var(--tx3);margin-bottom:8px;">Don't see your exercise?</p>
+      <div style="display:flex;gap:6px;">
+        <input class="inp" id="custExN" placeholder="Custom exercise name" style="flex:1;padding:8px 10px;font-size:.84rem;">
+        <button class="btn bp bs" onclick="addCustomAcc('${dayId}')">Add</button>
+      </div>
+    </div>`;
+  oM(html);
+}
+
+function fltAcc(q){const lo=q.toLowerCase();document.querySelectorAll('#accPL .exp').forEach(el=>{el.style.display=el.dataset.n.includes(lo)?'flex':'none';});}
+
+function addAcc(dayId,exId,fromTrain){
+  if(!D.acc[dayId])D.acc[dayId]=[];
+  D.acc[dayId].push({exId,sets:3,reps:10,rpe:8});
+  sv();cM();
+  if(fromTrain){rTrain();toast('Added');}
+  else{rAccList(dayId);toast('Added');}
+}
+
+function addCustomAcc(dayId,fromTrain){
+  const name=document.getElementById('custExN').value.trim();
+  if(!name){toast('Enter a name');return;}
+  const id='cust_'+name.toLowerCase().replace(/[^a-z0-9]/g,'')+'_'+Date.now();
+  if(!D.customEx)D.customEx=[];
+  D.customEx.push({id,n:name,c:'Other'});
+  if(!D.acc[dayId])D.acc[dayId]=[];
+  D.acc[dayId].push({exId:id,sets:3,reps:10,rpe:8});
+  sv();cM();
+  if(fromTrain){rTrain();toast('Added');}
+  else{rAccList(dayId);toast('Custom exercise added');}
+}
+
+function qAddAcc(dayId){
+  const cats={};
+  [...LIB,...(D.customEx||[])].forEach(e=>{if(!cats[e.c])cats[e.c]=[];cats[e.c].push(e);});
+  const html=`<h2>Add Accessory</h2>
+    <div class="fld"><input class="inp" id="aSearch" placeholder="Search..." oninput="fltAcc(this.value)"></div>
+    <div id="accPL">${Object.entries(cats).map(([cat,exs])=>`
+      <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin:10px 0 4px;">${cat}</div>
+      ${exs.map(e=>`<div class="exp" data-n="${e.n.toLowerCase()}" onclick="addAcc('${dayId}','${e.id}',true)">
+        <span style="font-weight:600;font-size:.88rem;">${e.n}</span>
+        ${D.rm[e.id]?`<span style="font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--ac);">${D.rm[e.id]} ${D.unit}</span>`:''}
+      </div>`).join('')}
+    `).join('')}</div>
+    <div style="border-top:1px solid var(--bdr);margin-top:12px;padding-top:12px;">
+      <p style="font-size:.78rem;color:var(--tx3);margin-bottom:8px;">Don't see your exercise?</p>
+      <div style="display:flex;gap:6px;">
+        <input class="inp" id="custExN" placeholder="Custom exercise name" style="flex:1;padding:8px 10px;font-size:.84rem;">
+        <button class="btn bp bs" onclick="addCustomAcc('${dayId}',true)">Add</button>
+      </div>
+    </div>`;
+  oM(html);
+}
+
+// ===== PRs =====
+function rPRs(){
+  const best={};
+  D.sessions.forEach(s=>{for(const[lid,v]of Object.entries(s.e1||{})){if(!best[lid]||v>best[lid].v)best[lid]={v,date:s.date};}});
+  const c=document.getElementById('e1l');
+  const ent=Object.entries(best);
+  if(ent.length){
+    c.innerHTML=ent.map(([id,d])=>{
+      const lib=gL(id);const dt=new Date(d.date).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const ir=D.rm[id]||0;const diff=ir?d.v-ir:0;
+      const ds=diff>0?`<span style="color:var(--gn)">+${diff}</span>`:diff<0?`<span style="color:var(--rd)">${diff}</span>`:'';
+      return`<div class="pri"><div><span style="font-weight:600;font-size:.9rem;">${lib.n}</span><div style="font-size:.7rem;color:var(--tx3)">${dt} ${ds}</div></div><span style="font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--ac);">${d.v} ${D.unit}</span></div>`;
+    }).join('');
+  }else c.innerHTML='<div class="empty"><div class="icon">📊</div><p>Complete sessions to see e1RMs</p></div>';
+
+  const h=document.getElementById('sH');
+  const recent=[...D.sessions].reverse().slice(0,20);
+  if(recent.length){
+    h.innerHTML=recent.map(s=>{
+      const dt=new Date(s.date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      const e1s=Object.entries(s.e1||{}).map(([id,v])=>`${gL(id).n}: ${v}`).join(' · ');
+      return`<div style="padding:10px 0;border-bottom:1px solid var(--bdr);font-size:.84rem;">
+        <div style="display:flex;justify-content:space-between;"><span style="font-weight:600;">${s.dn||''}</span><span style="color:var(--tx3);font-size:.78rem;">${dt}</span></div>
+        <div style="color:var(--tx3);font-size:.72rem;margin-top:2px;">${s.wl||''}</div>
+        ${e1s?`<div style="color:var(--ac);font-family:'IBM Plex Mono',monospace;font-size:.72rem;margin-top:4px;">e1RM: ${e1s} ${D.unit}</div>`:''}
+      </div>`;
+    }).join('');
+  }else h.innerHTML='<div class="empty"><div class="icon">🏋️</div><p>No sessions yet</p></div>';
+}
+
+// ===== MODAL =====
+function oM(h){document.getElementById('mc').innerHTML=h;document.getElementById('mbg').classList.add('op');}
+function cM(){document.getElementById('mbg').classList.remove('op');}
+
+// ===== EXPORT/IMPORT =====
+function expD(){const b=new Blob([JSON.stringify(D,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='liftos_backup.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);toast('Exported');}
+function impD(){document.getElementById('impF').click();}
+function doImp(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{try{D=JSON.parse(ev.target.result);sv();rSetup();toast('Imported!');}catch{toast('Invalid file');}};r.readAsText(f);}
+function rstAll(){if(!confirm('Delete ALL data?'))return;if(!confirm('Really sure?'))return;localStorage.removeItem(SK);D=defs();if(dbRef)dbRef.set(D);go('setup');toast('Reset');}
+
+// ===== TOAST =====
+function toast(m){const t=document.getElementById('tst');t.textContent=m;t.classList.add('sh');setTimeout(()=>t.classList.remove('sh'),2200);}
+
+// INIT — Firebase auth handler calls go('train') after sync
+// Hide nav until signed in
+document.querySelector('.bnav').style.display='none';
+</script>
+</body>
+</html>
