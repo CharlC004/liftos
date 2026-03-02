@@ -77,7 +77,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .nut-btn{padding:4px 10px;border:1px solid var(--bdr);border-radius:12px;background:var(--bg3);color:var(--tx3);font-size:.68rem;font-weight:500;cursor:pointer;transition:all .15s;}
 .nut-btn.sel{border-color:var(--ac);color:var(--ac);background:var(--acd);}
 /* Timer bar */
-.timer-bar{position:fixed;bottom:52px;left:0;right:0;background:var(--bg3);border-top:1px solid var(--bdr);padding:8px 16px;display:none;align-items:center;gap:12px;z-index:45;padding-bottom:var(--sb);}
+.timer-bar{position:fixed;bottom:calc(56px + var(--sb));left:0;right:0;background:var(--bg3);border-top:1px solid var(--bdr);padding:8px 16px;display:none;align-items:center;gap:12px;z-index:55;}
 .timer-bar.on{display:flex;}
 .timer-bar .tb-time{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:600;min-width:50px;}
 .timer-bar .tb-prog{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}
@@ -268,7 +268,7 @@ function getProg(blk,dayId){
       dead:[
         {id:'deadlift',name:'Deadlift',s:4,r:4,rpe:0,type:'pri',rest:300},
         {id:'frontsquat',name:'Front Squat',s:3,r:6,rpe:0,type:'sec',rest:150},
-        {id:'blockpull',name:'Block Pull',s:3,r:5,rpe:0,type:'sec',rest:180},
+        {id:'rackpull',name:'Rack Pull',s:3,r:5,rpe:0,type:'sec',rest:180},
         {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75},
         {id:'tbar',name:'T-Bar Row',s:3,r:10,rpe:0,type:'acc',rest:75},
         {id:'calfraise',name:'Calf Raises',s:3,r:12,rpe:0,type:'iso',rest:45}
