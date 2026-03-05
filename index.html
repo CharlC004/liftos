@@ -100,6 +100,20 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .auth-btn{padding:14px 28px;border:none;border-radius:var(--rs);font-weight:700;font-size:.9rem;cursor:pointer;background:var(--ac);color:#fff;box-shadow:0 4px 16px var(--acg);display:flex;align-items:center;gap:10px;transition:transform .2s;}.auth-btn:active{transform:scale(.96);}
 .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px;}.sync-dot.on{background:var(--gn);box-shadow:0 0 6px var(--gn);}
 /* Modal */
+.sess-timer-toggle{position:fixed;top:calc(12px + var(--st));right:16px;z-index:55;display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg2);color:var(--tx2);font-family:'IBM Plex Mono',monospace;font-size:.74rem;font-weight:500;cursor:pointer;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,.3);}
+.sess-timer-toggle:active{transform:scale(.95);}
+.sess-timer-toggle.running{border-color:var(--gn);color:var(--gn);background:var(--gnd);}
+.sess-timer-toggle .st-dot{width:6px;height:6px;border-radius:50%;background:var(--tx3);transition:background .2s;}
+.sess-timer-toggle.running .st-dot{background:var(--gn);box-shadow:0 0 6px var(--gn);animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.sess-timer-expanded{position:fixed;top:calc(46px + var(--st));right:16px;z-index:55;padding:10px 16px;border-radius:var(--r);border:1px solid var(--bdr);background:var(--bg2);box-shadow:0 4px 16px rgba(0,0,0,.4);display:none;flex-direction:column;gap:6px;min-width:160px;animation:fu .2s ease-out;}
+.sess-timer-expanded.show{display:flex;}
+.sess-timer-expanded .st-label{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);}
+.sess-timer-expanded .st-time{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--tx);}
+.sess-timer-expanded .st-actions{display:flex;gap:6px;margin-top:2px;}
+.sess-timer-expanded .st-btn{padding:4px 12px;border:1px solid var(--bdr);border-radius:var(--rs);background:var(--bg3);color:var(--tx2);font-size:.66rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;transition:all .15s;}
+.sess-timer-expanded .st-btn:active{transform:scale(.95);}
+.sess-timer-expanded .st-btn.stop{border-color:var(--rd);color:var(--rd);background:var(--rdd);}
 .mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:60;display:none;align-items:flex-end;justify-content:center;}
 .mbg.op{display:flex;}
 .mdl{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r) var(--r) 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:20px 16px calc(20px + var(--sb));animation:su .3s ease-out;}
@@ -165,6 +179,19 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   </div>
 </div>
 
+<div class="sess-timer-toggle" id="sessTimerToggle" onclick="toggleSessPanel()" style="display:none;">
+  <span class="st-dot"></span>
+  <span id="sessTimerMini">0:00</span>
+</div>
+<div class="sess-timer-expanded" id="sessTimerPanel">
+  <div class="st-label">Session Duration</div>
+  <div class="st-time" id="sessTimerFull">0:00:00</div>
+  <div class="st-actions">
+    <div class="st-btn stop" onclick="stopSessTimer();event.stopPropagation();">Stop</div>
+    <div class="st-btn" onclick="hideSessPanel();event.stopPropagation();">Hide</div>
+  </div>
+</div>
+
 <div class="timer-bar" id="timerBar">
   <div class="tb-time" id="tbTime">0:00</div>
   <div class="tb-prog"><div class="tb-fill" id="tbFill" style="width:100%"></div></div>
@@ -219,8 +246,7 @@ function getProg(blk,dayId){
         {id:'pause_squat',name:'Paused Back Squat',s:3,r:6,rpe:0,type:'sec',rest:150},
         {id:'rdl',name:'Romanian Deadlift',s:3,r:10,rpe:0,type:'acc',rest:120},
         {id:'legpress',name:'Leg Press',s:3,r:12,rpe:0,type:'acc',rest:75},
-        {id:'legcurl',name:'Leg Curls',s:3,r:12,rpe:0,type:'acc',rest:75},
-        {id:'abs',name:'Ab Wheel / Leg Raise',s:3,r:12,rpe:0,type:'iso',rest:60}
+        {id:'legcurl',name:'Leg Curls',s:3,r:12,rpe:0,type:'acc',rest:75}
       ],
       bench:[
         {id:'bench',name:'Bench Press',s:4,r:8,rpe:0,type:'pri',rest:240},
@@ -228,21 +254,22 @@ function getProg(blk,dayId){
         {id:'row',name:'Barbell Row',s:4,r:10,rpe:0,type:'acc',rest:90},
         {id:'skulls',name:'Skull Crushers',s:3,r:12,rpe:0,type:'acc',rest:75},
         {id:'facepull',name:'Face Pulls',s:3,r:15,rpe:0,type:'iso',rest:45},
+        {id:'dbohp',name:'DB Overhead Press',s:3,r:12,rpe:0,type:'acc',rest:90},
         {id:'curl',name:'Bicep Curls',s:3,r:12,rpe:0,type:'iso',rest:60}
       ],
       dead:[
         {id:'deadlift',name:'Deadlift',s:4,r:6,rpe:0,type:'pri',rest:270},
-        {id:'frontsquat',name:'Front Squat',s:3,r:8,rpe:0,type:'sec',rest:150},
+        {id:'beltsquat',name:'Belt Squat',s:3,r:8,rpe:0,type:'sec',rest:150},
         {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:10,rpe:0,type:'acc',rest:120},
         {id:'legcurl',name:'Leg Curls',s:3,r:12,rpe:0,type:'acc',rest:75},
-        {id:'seatedrow',name:'Seated Cable Row',s:3,r:12,rpe:0,type:'acc',rest:75},
-        {id:'calfraise',name:'Calf Raises',s:3,r:15,rpe:0,type:'iso',rest:45}
+        {id:'seatedrow',name:'Seated Cable Row',s:3,r:12,rpe:0,type:'acc',rest:75}
       ],
       ohp_bench:[
         {id:'ohp',name:'Overhead Press',s:4,r:8,rpe:0,type:'pri',rest:240},
         {id:'bench_vol',name:'Bench Press (volume)',s:3,r:8,rpe:-0.5,type:'sec',rest:150},
         {id:'pullup',name:'Pull-ups / Lat Pulldown',s:4,r:10,rpe:0,type:'acc',rest:90},
         {id:'oh_ext',name:'OH Tricep Extension',s:3,r:12,rpe:0,type:'acc',rest:75},
+        {id:'dbflat',name:'Flat DB Press',s:3,r:12,rpe:0,type:'acc',rest:90},
         {id:'tricep',name:'Tricep Pushdowns',s:3,r:12,rpe:0,type:'acc',rest:75},
         {id:'facepull',name:'Face Pulls',s:3,r:15,rpe:0,type:'iso',rest:45}
       ]
@@ -254,8 +281,7 @@ function getProg(blk,dayId){
         {id:'pause_squat',name:'Paused Back Squat',s:3,r:4,rpe:0,type:'sec',rest:180},
         {id:'rdl',name:'Romanian Deadlift',s:3,r:8,rpe:0,type:'acc',rest:120},
         {id:'bulgsplit',name:'Bulgarian Split Squat',s:3,r:10,rpe:-1,type:'acc',rest:90},
-        {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75},
-        {id:'abs',name:'Ab Wheel',s:3,r:10,rpe:0,type:'iso',rest:60}
+        {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75}
       ],
       bench:[
         {id:'bench',name:'Bench Press',s:4,r:5,rpe:0,type:'pri',rest:270},
@@ -263,21 +289,22 @@ function getProg(blk,dayId){
         {id:'row',name:'Barbell Row',s:4,r:8,rpe:0,type:'acc',rest:90},
         {id:'skulls',name:'Skull Crushers',s:3,r:10,rpe:0,type:'acc',rest:75},
         {id:'facepull',name:'Face Pulls',s:3,r:15,rpe:0,type:'iso',rest:45},
+        {id:'dbohp',name:'DB Overhead Press',s:3,r:10,rpe:0,type:'acc',rest:90},
         {id:'hammercurl',name:'Hammer Curls',s:3,r:10,rpe:0,type:'iso',rest:60}
       ],
       dead:[
         {id:'deadlift',name:'Deadlift',s:4,r:4,rpe:0,type:'pri',rest:300},
-        {id:'frontsquat',name:'Front Squat',s:3,r:6,rpe:0,type:'sec',rest:150},
-        {id:'rackpull',name:'Rack Pull',s:3,r:5,rpe:0,type:'sec',rest:180},
+        {id:'beltsquat',name:'Belt Squat',s:3,r:6,rpe:0,type:'sec',rest:150},
+        {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:5,rpe:0,type:'sec',rest:180},
         {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75},
-        {id:'tbar',name:'T-Bar Row',s:3,r:10,rpe:0,type:'acc',rest:75},
-        {id:'calfraise',name:'Calf Raises',s:3,r:12,rpe:0,type:'iso',rest:45}
+        {id:'tbar',name:'T-Bar Row',s:3,r:10,rpe:0,type:'acc',rest:75}
       ],
       ohp_bench:[
         {id:'ohp',name:'Overhead Press',s:4,r:6,rpe:0,type:'pri',rest:240},
         {id:'bench_vol',name:'Bench Press (volume)',s:3,r:6,rpe:-1,type:'sec',rest:150},
         {id:'pullup',name:'Pull-ups / Lat Pulldown',s:4,r:8,rpe:0,type:'acc',rest:90},
         {id:'oh_ext',name:'OH Tricep Extension',s:3,r:10,rpe:0,type:'acc',rest:75},
+        {id:'dbflat',name:'Flat DB Press',s:3,r:10,rpe:0,type:'acc',rest:90},
         {id:'skulls',name:'Skull Crushers',s:3,r:10,rpe:0,type:'acc',rest:75},
         {id:'facepull',name:'Face Pulls',s:3,r:15,rpe:0,type:'iso',rest:45}
       ]
@@ -296,11 +323,12 @@ function getProg(blk,dayId){
         {id:'pause_bench',name:'2ct Paused Bench',s:2,r:3,rpe:-0.5,type:'sec',rest:180},
         {id:'row',name:'Barbell Row',s:3,r:8,rpe:-1,type:'acc',rest:90},
         {id:'skulls',name:'Skull Crushers',s:3,r:8,rpe:0,type:'acc',rest:75},
+        {id:'dbohp',name:'DB Overhead Press',s:3,r:10,rpe:0,type:'acc',rest:90},
         {id:'facepull',name:'Face Pulls',s:3,r:12,rpe:0,type:'iso',rest:45}
       ],
       dead:[
         {id:'deadlift',name:'Deadlift',s:5,r:2,rpe:0,type:'pri',rest:300},
-        {id:'frontsquat',name:'Front Squat',s:3,r:4,rpe:0,type:'sec',rest:150},
+        {id:'beltsquat',name:'Belt Squat',s:3,r:4,rpe:0,type:'sec',rest:150},
         {id:'def_sldl',name:'Deficit Stiff-Leg DL',s:3,r:6,rpe:0,type:'acc',rest:120},
         {id:'seatedrow',name:'Seated Cable Row',s:3,r:10,rpe:-1,type:'acc',rest:75},
         {id:'legcurl',name:'Leg Curls',s:3,r:8,rpe:-1,type:'acc',rest:75}
@@ -310,6 +338,7 @@ function getProg(blk,dayId){
         {id:'bench_spd',name:'Bench Press (speed)',s:4,r:3,rpe:-1.5,type:'sec',rest:120},
         {id:'pullup',name:'Pull-ups / Lat Pulldown',s:3,r:8,rpe:-1,type:'acc',rest:90},
         {id:'tricep',name:'Tricep Pushdowns',s:3,r:10,rpe:-1,type:'acc',rest:75},
+        {id:'dbflat',name:'Flat DB Press',s:3,r:8,rpe:0,type:'acc',rest:90},
         {id:'oh_ext',name:'OH Tricep Extension',s:3,r:10,rpe:-1,type:'acc',rest:75}
       ]
     },
@@ -325,18 +354,20 @@ function getProg(blk,dayId){
         {id:'bench',name:'Bench Press',s:1,r:1,rpe:0,type:'pri',rest:300,note:'Single, then 3×2 backoff @-1'},
         {id:'bench_bo',name:'Bench Press (backoff)',s:3,r:2,rpe:-1,type:'sec',rest:240},
         {id:'row',name:'Barbell Row',s:3,r:6,rpe:-2,type:'acc',rest:90},
+        {id:'dbohp',name:'DB Overhead Press',s:2,r:10,rpe:-1,type:'acc',rest:90},
         {id:'facepull',name:'Face Pulls',s:2,r:15,rpe:0,type:'iso',rest:45}
       ],
       dead:[
         {id:'deadlift',name:'Deadlift',s:1,r:1,rpe:0,type:'pri',rest:300,note:'Single, then 2×2 backoff @-1'},
         {id:'dead_bo',name:'Deadlift (backoff)',s:2,r:2,rpe:-1,type:'sec',rest:240},
-        {id:'frontsquat',name:'Front Squat',s:2,r:3,rpe:-2,type:'acc',rest:120},
+        {id:'beltsquat',name:'Belt Squat',s:2,r:3,rpe:-2,type:'acc',rest:120},
         {id:'seatedrow',name:'Seated Cable Row',s:2,r:8,rpe:-2,type:'acc',rest:75}
       ],
       ohp_bench:[
         {id:'ohp',name:'Overhead Press',s:3,r:3,rpe:-1,type:'pri',rest:180},
         {id:'bench_comp',name:'Bench Press (comp paused)',s:3,r:2,rpe:-1.5,type:'sec',rest:180},
         {id:'pullup',name:'Pull-ups',s:2,r:6,rpe:-2,type:'acc',rest:90},
+        {id:'dbflat',name:'Flat DB Press',s:2,r:8,rpe:-1,type:'acc',rest:90},
         {id:'tricep',name:'Tricep Pushdowns',s:2,r:10,rpe:0,type:'iso',rest:60}
       ]
     }
@@ -361,7 +392,7 @@ function getExReps(blk,wkInBlk,ex){
 }
 
 // RM keys for exercises
-const RM_KEYS={squat:'squat',bench:'bench',deadlift:'deadlift',ohp:'ohp',cgbench:'bench',pause_squat:'squat',pause_bench:'bench',frontsquat:'squat',rdl:'deadlift',sldl:'deadlift',def_sldl:'deadlift',blockpull:'deadlift',bench_vol:'bench',bench_spd:'bench',bench_comp:'bench',bench_bo:'bench',squat_bo:'squat',dead_bo:'deadlift'};
+const RM_KEYS={squat:'squat',bench:'bench',deadlift:'deadlift',ohp:'ohp',cgbench:'bench',pause_squat:'squat',pause_bench:'bench',frontsquat:'squat',beltsquat:'squat',rdl:'deadlift',sldl:'deadlift',def_sldl:'deadlift',blockpull:'deadlift',bench_vol:'bench',bench_spd:'bench',bench_comp:'bench',bench_bo:'bench',squat_bo:'squat',dead_bo:'deadlift'};
 
 // ===== 🔥 FIREBASE =====
 const firebaseConfig={apiKey:"AIzaSyBL_UgrA0Y15vZOHfhQr0aKs542RNZu0rI",authDomain:"liftos-76b82.firebaseapp.com",databaseURL:"https://liftos-76b82-default-rtdb.firebaseio.com",projectId:"liftos-76b82",storageBucket:"liftos-76b82.firebasestorage.app",messagingSenderId:"533099186089",appId:"1:533099186089:web:62af010ca789d2c56f66b8",measurementId:"G-CVVK8HQT19"};
@@ -547,7 +578,7 @@ function tglSet(lk,ek,si,restSec,btn){
     D.log[lk].ex[ek][si].d=!wasChecked;
     btn.classList.toggle('chk');
     sv();
-    if(!wasChecked)startTimer(restSec);
+    if(!wasChecked){startTimer(restSec);startSessTimer();}
   }
 }
 
@@ -559,7 +590,40 @@ function complete(lk){
     sets.forEach(st=>{if(st.d&&st.w>0&&st.r>0&&st.p>0){const e=cE1(st.w,st.r,st.p);if(!sess.e1[rmk]||e>sess.e1[rmk])sess.e1[rmk]=e;}});
   }
   if(!D.sessions)D.sessions=[];
-  D.sessions.push(sess);sv();toast('Session logged! 💪');stopTimer();rTrain();
+  D.sessions.push(sess);sv();toast('Session logged! 💪');stopTimer();stopSessTimer();rTrain();
+}
+
+// ===== SESSION TIMER =====
+let sessStart=null,sessIntv=null,sessPanelOpen=false;
+function startSessTimer(){
+  if(sessIntv)return;
+  sessStart=Date.now();
+  document.getElementById('sessTimerToggle').style.display='flex';
+  document.getElementById('sessTimerToggle').classList.add('running');
+  sessIntv=setInterval(tickSess,1000);tickSess();
+}
+function tickSess(){
+  if(!sessStart)return;
+  const el=Math.floor((Date.now()-sessStart)/1000);
+  const h=Math.floor(el/3600);const m=Math.floor((el%3600)/60);const s=el%60;
+  const mini=h>0?(h+':'+(m<10?'0':'')+m):(m+':'+(s<10?'0':'')+s);
+  const full=(h>0?h+':':'')+(h>0&&m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  document.getElementById('sessTimerMini').textContent=mini;
+  document.getElementById('sessTimerFull').textContent=full;
+}
+function toggleSessPanel(){
+  sessPanelOpen=!sessPanelOpen;
+  document.getElementById('sessTimerPanel').classList.toggle('show',sessPanelOpen);
+}
+function hideSessPanel(){
+  sessPanelOpen=false;
+  document.getElementById('sessTimerPanel').classList.remove('show');
+}
+function stopSessTimer(){
+  clearInterval(sessIntv);sessIntv=null;sessStart=null;
+  document.getElementById('sessTimerToggle').classList.remove('running');
+  document.getElementById('sessTimerToggle').style.display='none';
+  hideSessPanel();
 }
 
 // ===== TIMER =====
@@ -659,3 +723,4 @@ document.querySelector('.bnav').style.display='none';
 </script>
 </body>
 </html>
+
