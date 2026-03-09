@@ -155,7 +155,13 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
   <!-- PRs -->
   <div id="prsV" class="vw">
-    <div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div>
+    <div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div>
+      <button class="btn bo bs" style="margin-top:12px;" onclick="toggleE1Graph()">📈 Show Progression</button>
+      <div id="e1GraphWrap" style="display:none;margin-top:14px;">
+        <canvas id="e1Canvas" width="440" height="260" style="width:100%;height:auto;border-radius:var(--rs);background:var(--bg3);"></canvas>
+        <div id="e1Legend" style="display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:.7rem;font-weight:600;"></div>
+      </div>
+    </div>
     <div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div>
   </div>
 
@@ -294,8 +300,8 @@ function getProg(blk,dayId,_isDeload){
         {id:'hammercurl',name:'Hammer Curls',s:3,r:10,rpe:0,type:'iso',rest:60}
       ],
       dead:[
-        {id:'deadlift',name:'Deadlift',s:1,r:5,rpe:0,type:'pri',rest:300,note:'Top set'},
-        {id:'dead_bo',name:'Deadlift (backoff)',s:2,r:5,rpe:-1.5,type:'sec',rest:240},
+        {id:'deadlift',name:'Deadlift',s:1,r:4,rpe:0,type:'pri',rest:300,note:'Top set'},
+        {id:'dead_bo',name:'Deadlift (backoff)',s:2,r:3,rpe:-1.5,type:'sec',rest:240},
         {id:'beltsquat',name:'Belt Squat',s:3,r:6,rpe:0,type:'sec',rest:150},
         {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:8,rpe:-1,type:'acc',rest:120},
         {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75},
@@ -337,7 +343,7 @@ function getProg(blk,dayId,_isDeload){
         {id:'legcurl',name:'Leg Curls',s:3,r:8,rpe:-1,type:'acc',rest:75}
       ],
       ohp_bench:[
-        {id:'ohp',name:'Overhead Press',s:3,r:4,rpe:0,type:'pri',rest:240},
+        {id:'ohp',name:'Overhead Press',s:4,r:8,rpe:0,type:'pri',rest:240},
         {id:'bench_spd',name:'Bench Press (speed)',s:4,r:3,rpe:-1.5,type:'sec',rest:120},
         {id:'pullup',name:'Pull-ups / Lat Pulldown',s:3,r:8,rpe:-1,type:'acc',rest:90},
         {id:'dbflat',name:'Flat DB Press',s:3,r:8,rpe:0,type:'acc',rest:90},
@@ -537,6 +543,13 @@ function rTrain(){try{
     </div>
   </div>`;
 
+  // Session notes
+  const notes=D.log[lk].notes||'';
+  html+=`<div style="margin-bottom:14px;">
+    <div style="font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);margin-bottom:4px;">Session Notes</div>
+    <textarea class="inp" rows="2" placeholder="Notes for this session…" style="resize:vertical;font-size:.82rem;line-height:1.4;" oninput="D.log['${lk}'].notes=this.value;sv();">${notes.replace(/</g,'&lt;')}</textarea>
+  </div>`;
+
   let needsSave=false;
   exList.forEach((ex,ei)=>{
     const ek=ex.id+'_'+ei;
@@ -547,6 +560,15 @@ function rTrain(){try{
     const rmKey=RM_KEYS[ex.id];
     const rm=rmKey?D.rm[rmKey]||0:0;
     const sw=rm>0&&rpe>0&&!isTest?cWt(rm,reps,rpe,D.round):0;
+    const existing=D.log[lk].ex[ek];
+    // If session not completed, reset stale sets when rep scheme changed
+    if(existing&&!D.log[lk].completed){
+      const anyDone=existing.some(s=>s.d);
+      if(!anyDone){
+        const stale=existing.length!==actualSets||(!isTest&&existing.length>0&&existing[0].r!==reps);
+        if(stale){D.log[lk].ex[ek]=null;needsSave=true;}
+      }
+    }
     if(!D.log[lk].ex[ek]){D.log[lk].ex[ek]=Array.from({length:actualSets},()=>({w:sw||'',r:isTest?1:reps,p:isTest?'':rpe,d:false}));needsSave=true;}
     while(D.log[lk].ex[ek].length<actualSets){D.log[lk].ex[ek].push({w:sw||'',r:isTest?1:reps,p:isTest?'':rpe,d:false});needsSave=true;}
   });
@@ -776,6 +798,118 @@ function rPRs(){
       </div>`;
     }).join('');
   }else h.innerHTML='<div class="empty">No sessions yet</div>';
+
+  // Reset graph visibility when re-rendering
+  document.getElementById('e1GraphWrap').style.display='none';
+  document.querySelector('#prsV .btn.bo').textContent='📈 Show Progression';
+}
+
+// ===== e1RM PROGRESSION GRAPH =====
+let e1GraphOpen=false;
+function toggleE1Graph(){
+  e1GraphOpen=!e1GraphOpen;
+  const wrap=document.getElementById('e1GraphWrap');
+  const btn=document.querySelector('#prsV .btn.bo');
+  if(e1GraphOpen){wrap.style.display='block';btn.textContent='📈 Hide Progression';drawE1Graph();}
+  else{wrap.style.display='none';btn.textContent='📈 Show Progression';}
+}
+
+function drawE1Graph(){
+  const canvas=document.getElementById('e1Canvas');
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  canvas.width=440*dpr;canvas.height=260*dpr;
+  ctx.scale(dpr,dpr);
+  const W=440,H=260;
+  const pad={t:20,r:16,b:36,l:46};
+
+  // Collect e1RM data points per lift from sessions
+  const lifts=['squat','bench','deadlift'];
+  const colors={squat:'#4d8ef0',bench:'#ff6b3d',deadlift:'#3dd68c'};
+  const labels={squat:'Squat',bench:'Bench',deadlift:'Deadlift'};
+  const series={};
+  lifts.forEach(l=>series[l]=[]);
+
+  const sessions=[...(D.sessions||[])].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  sessions.forEach((s,i)=>{
+    lifts.forEach(l=>{
+      if(s.e1&&s.e1[l]){series[l].push({x:i,v:s.e1[l],date:s.date});}
+    });
+  });
+
+  // Check if there's any data
+  const hasData=lifts.some(l=>series[l].length>0);
+  if(!hasData){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#605e70';ctx.font='500 13px Archivo';ctx.textAlign='center';
+    ctx.fillText('No e1RM data yet — complete sessions to see progression',W/2,H/2);
+    document.getElementById('e1Legend').innerHTML='';
+    return;
+  }
+
+  // Find global min/max
+  let allVals=[];
+  lifts.forEach(l=>series[l].forEach(p=>allVals.push(p.v)));
+  const minV=Math.min(...allVals);const maxV=Math.max(...allVals);
+  const range=maxV-minV||1;
+  const yMin=minV-range*0.1;const yMax=maxV+range*0.1;
+  const xMax=sessions.length-1||1;
+
+  const gW=W-pad.l-pad.r;const gH=H-pad.t-pad.b;
+  function toX(i){return pad.l+(i/xMax)*gW;}
+  function toY(v){return pad.t+gH-(((v-yMin)/(yMax-yMin))*gH);}
+
+  // Clear
+  ctx.clearRect(0,0,W,H);
+
+  // Grid lines
+  const ySteps=5;
+  ctx.strokeStyle='#2a2a3a';ctx.lineWidth=1;
+  ctx.fillStyle='#605e70';ctx.font='500 10px IBM Plex Mono';ctx.textAlign='right';
+  for(let i=0;i<=ySteps;i++){
+    const v=yMin+(yMax-yMin)*(i/ySteps);
+    const y=toY(v);
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();
+    ctx.fillText(Math.round(v),pad.l-6,y+3);
+  }
+
+  // X axis labels (dates)
+  ctx.textAlign='center';ctx.fillStyle='#605e70';ctx.font='500 9px IBM Plex Mono';
+  const xLabelCount=Math.min(sessions.length,6);
+  for(let i=0;i<xLabelCount;i++){
+    const si=Math.round(i*(sessions.length-1)/(xLabelCount-1||1));
+    const s=sessions[si];
+    if(s){
+      const dt=new Date(s.date);
+      const label=(dt.getMonth()+1)+'/'+dt.getDate();
+      ctx.fillText(label,toX(si),H-pad.b+16);
+    }
+  }
+
+  // Draw lines
+  lifts.forEach(l=>{
+    const pts=series[l];
+    if(pts.length<1)return;
+    ctx.strokeStyle=colors[l];ctx.lineWidth=2.5;ctx.lineJoin='round';ctx.lineCap='round';
+    ctx.beginPath();
+    pts.forEach((p,i)=>{
+      const x=toX(p.x);const y=toY(p.v);
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // Dots
+    pts.forEach(p=>{
+      const x=toX(p.x);const y=toY(p.v);
+      ctx.fillStyle=colors[l];
+      ctx.beginPath();ctx.arc(x,y,3.5,0,Math.PI*2);ctx.fill();
+    });
+  });
+
+  // Legend
+  document.getElementById('e1Legend').innerHTML=lifts.filter(l=>series[l].length>0).map(l=>
+    `<span style="color:${colors[l]};">● ${labels[l]}</span>`
+  ).join('');
 }
 
 // ===== SETUP =====
