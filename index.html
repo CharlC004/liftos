@@ -237,7 +237,7 @@ const DAYS=[
 // Exercise definitions per block per day
 // type: 'pri'=primary, 'sec'=secondary compound, 'acc'=accessory, 'iso'=isolation
 // rest: seconds for timer
-function getProg(blk,dayId){
+function getProg(blk,dayId,_isDeload){
   const P={
     // ===== ACCUMULATION =====
     acc:{
@@ -278,14 +278,14 @@ function getProg(blk,dayId){
     // ===== TRANSMUTATION =====
     trans:{
       squat:[
-        {id:'squat',name:'Back Squat',s:4,r:5,rpe:0,type:'pri',rest:270},
+        {id:'squat',name:'Back Squat',s:4,r:6,rpe:0,type:'pri',rest:270},
         {id:'pause_squat',name:'Paused Back Squat',s:3,r:4,rpe:0,type:'sec',rest:180},
         {id:'rdl',name:'Romanian Deadlift',s:3,r:8,rpe:0,type:'acc',rest:120},
         {id:'bulgsplit',name:'Bulgarian Split Squat',s:3,r:10,rpe:-1,type:'acc',rest:90},
         {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75}
       ],
       bench:[
-        {id:'bench',name:'Bench Press',s:4,r:5,rpe:0,type:'pri',rest:270},
+        {id:'bench',name:'Bench Press',s:4,r:6,rpe:0,type:'pri',rest:270},
         {id:'pause_bench',name:'2ct Paused Bench',s:3,r:4,rpe:0,type:'sec',rest:180},
         {id:'row',name:'Barbell Row',s:4,r:8,rpe:0,type:'acc',rest:90},
         {id:'dbohp',name:'DB Overhead Press',s:3,r:10,rpe:0,type:'acc',rest:90},
@@ -294,15 +294,15 @@ function getProg(blk,dayId){
         {id:'hammercurl',name:'Hammer Curls',s:3,r:10,rpe:0,type:'iso',rest:60}
       ],
       dead:[
-        {id:'deadlift',name:'Deadlift',s:1,r:3,rpe:0,type:'pri',rest:300,note:'Top set'},
-        {id:'dead_bo',name:'Deadlift (backoff)',s:2,r:3,rpe:-1.5,type:'sec',rest:240},
+        {id:'deadlift',name:'Deadlift',s:1,r:5,rpe:0,type:'pri',rest:300,note:'Top set'},
+        {id:'dead_bo',name:'Deadlift (backoff)',s:2,r:5,rpe:-1.5,type:'sec',rest:240},
         {id:'beltsquat',name:'Belt Squat',s:3,r:6,rpe:0,type:'sec',rest:150},
         {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:8,rpe:-1,type:'acc',rest:120},
         {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75},
         {id:'tbar',name:'T-Bar Row',s:3,r:10,rpe:0,type:'acc',rest:75}
       ],
       ohp_bench:[
-        {id:'ohp',name:'Overhead Press',s:4,r:6,rpe:0,type:'pri',rest:240},
+        {id:'ohp',name:'Overhead Press',s:4,r:8,rpe:0,type:'pri',rest:240},
         {id:'bench_vol',name:'Bench Press (volume)',s:3,r:6,rpe:-1,type:'sec',rest:150},
         {id:'pullup',name:'Pull-ups / Lat Pulldown',s:4,r:8,rpe:0,type:'acc',rest:90},
         {id:'dbflat',name:'Flat DB Press',s:3,r:10,rpe:0,type:'acc',rest:90},
@@ -314,14 +314,14 @@ function getProg(blk,dayId){
     // ===== STRENGTH =====
     str:{
       squat:[
-        {id:'squat',name:'Back Squat',s:5,r:3,rpe:0,type:'pri',rest:300},
+        {id:'squat',name:'Back Squat',s:5,r:4,rpe:0,type:'pri',rest:300},
         {id:'pause_squat',name:'Paused Back Squat',s:2,r:3,rpe:-0.5,type:'sec',rest:180},
         {id:'rdl',name:'Romanian Deadlift',s:3,r:6,rpe:0,type:'acc',rest:120},
         {id:'legext',name:'Leg Extensions',s:3,r:12,rpe:-1,type:'acc',rest:75},
         {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:-1,type:'acc',rest:75}
       ],
       bench:[
-        {id:'bench',name:'Bench Press',s:5,r:3,rpe:0,type:'pri',rest:300},
+        {id:'bench',name:'Bench Press',s:5,r:4,rpe:0,type:'pri',rest:300},
         {id:'pause_bench',name:'2ct Paused Bench',s:2,r:3,rpe:-0.5,type:'sec',rest:180},
         {id:'row',name:'Barbell Row',s:3,r:8,rpe:-1,type:'acc',rest:90},
         {id:'dbohp',name:'DB Overhead Press',s:3,r:10,rpe:0,type:'acc',rest:90},
@@ -329,7 +329,7 @@ function getProg(blk,dayId){
         {id:'facepull',name:'Face Pulls',s:3,r:12,rpe:0,type:'iso',rest:45}
       ],
       dead:[
-        {id:'deadlift',name:'Deadlift',s:1,r:2,rpe:0,type:'pri',rest:300,note:'Top set'},
+        {id:'deadlift',name:'Deadlift',s:1,r:3,rpe:0,type:'pri',rest:300,note:'Top set'},
         {id:'dead_bo',name:'Deadlift (backoff)',s:2,r:3,rpe:-1.5,type:'sec',rest:240},
         {id:'beltsquat',name:'Belt Squat',s:3,r:4,rpe:0,type:'sec',rest:150},
         {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:8,rpe:-1.5,type:'acc',rest:120},
@@ -375,21 +375,59 @@ function getProg(blk,dayId){
       ]
     }
   };
+
+  // Peaking deload = TEST WEEK: separate programming
+  const PEAK_DL={
+    squat:[
+      {id:'squat',name:'Back Squat — 1RM Test',s:1,r:1,rpe:0,type:'pri',rest:300,note:'Ramp to 1RM: ~70% × 1, ~80% × 1, ~87% × 1, ~93% × 1, max attempt',test:true},
+      {id:'bench',name:'Bench Press — 1RM Test',s:1,r:1,rpe:0,type:'pri',rest:300,note:'Ramp to 1RM: ~70% × 1, ~80% × 1, ~87% × 1, ~93% × 1, max attempt',test:true},
+      {id:'legcurl',name:'Leg Curls',s:2,r:10,rpe:-3,type:'acc',rest:60}
+    ],
+    bench:[
+      {id:'bench_vol',name:'Bench Press (light)',s:3,r:5,rpe:-3,type:'sec',rest:120,note:'Recovery — 60% 1RM'},
+      {id:'row',name:'Barbell Row',s:3,r:8,rpe:-2,type:'acc',rest:90},
+      {id:'facepull',name:'Face Pulls',s:3,r:15,rpe:0,type:'iso',rest:45}
+    ],
+    dead:[
+      {id:'deadlift',name:'Deadlift — 1RM Test',s:1,r:1,rpe:0,type:'pri',rest:300,note:'Ramp to 1RM: ~70% × 1, ~80% × 1, ~87% × 1, ~93% × 1, max attempt',test:true},
+      {id:'legcurl',name:'Leg Curls',s:2,r:10,rpe:-3,type:'acc',rest:60},
+      {id:'seatedrow',name:'Seated Cable Row',s:2,r:10,rpe:-2,type:'acc',rest:75}
+    ],
+    ohp_bench:[
+      {id:'ohp',name:'Overhead Press (light)',s:3,r:5,rpe:-2,type:'pri',rest:120,note:'Recovery — keep it easy'},
+      {id:'pullup',name:'Pull-ups / Lat Pulldown',s:2,r:8,rpe:-2,type:'acc',rest:90},
+      {id:'facepull',name:'Face Pulls',s:2,r:15,rpe:0,type:'iso',rest:45}
+    ]
+  };
+
+  // If peaking deload, return test-week programming
+  if(blk==='peak'&&_isDeload){
+    return PEAK_DL[dayId]||[];
+  }
+
   return P[blk]?.[dayId]||[];
 }
 
 function getExRPE(blk,wkInBlk,ex){
   const isDeload=wkInBlk===3;
+  // Peaking deload test exercises get their own RPE
+  if(isDeload&&blk==='peak'){
+    if(ex.test)return 10; // 1RM attempt
+    const base=ex.type==='iso'?0:(ex.type==='acc'?BLK_ACC_RPE[blk]:BLK_RPE[blk]);
+    return Math.max(5,base+(ex.rpe||0));
+  }
   if(isDeload)return 6;
   const base=ex.type==='iso'?0:(ex.type==='acc'?BLK_ACC_RPE[blk]:BLK_RPE[blk]);
   const wave=wkInBlk*0.5;
   return Math.min(10,Math.max(5,base+wave+(ex.rpe||0)));
 }
 function getExSets(blk,wkInBlk,ex){
+  if(wkInBlk===3&&blk==='peak')return ex.s; // test week: use exact sets
   if(wkInBlk===3)return Math.max(2,ex.s-1);// deload
   return ex.s;
 }
 function getExReps(blk,wkInBlk,ex){
+  if(wkInBlk===3&&blk==='peak')return ex.r; // test week: use exact reps
   if(wkInBlk===3)return Math.max(ex.r,5);// deload: at least 5
   return ex.r;
 }
@@ -466,7 +504,7 @@ function rTrain(){try{
   // Week tabs
   document.getElementById('wkTabs').innerHTML=[0,1,2,3].map(w=>{
     const lk0=`b${NAV.cBlk}w${w}d0`;const done=[0,1,2,3].every(d=>D.log[`b${NAV.cBlk}w${w}d${d}`]?.completed);
-    return`<div class="wtab ${w===NAV.cWk?'act':''} ${w===3?'dl':''} ${done?'dn':''}" onclick="NAV.cWk=${w};NAV.cDy=0;svNav();rTrain();">${w===3?'Deload':'Wk '+(w+1)}</div>`;
+    return`<div class="wtab ${w===NAV.cWk?'act':''} ${w===3?'dl':''} ${done?'dn':''}" onclick="NAV.cWk=${w};NAV.cDy=0;svNav();rTrain();">${w===3?(NAV.cBlk===3?'Test':'Deload'):'Wk '+(w+1)}</div>`;
   }).join('');
 
   // Day tabs
@@ -478,12 +516,13 @@ function rTrain(){try{
   const dy=DAYS[NAV.cDy];const lk=`b${NAV.cBlk}w${NAV.cWk}d${NAV.cDy}`;
   if(!D.log[lk])D.log[lk]={ex:{},completed:false,sleep:'',nutrition:''};
 
-  const exList=getProg(blkId,dy.id);
-  const rpeBase=isDeload?6:BLK_RPE[blkId]+NAV.cWk*0.5;
+  const exList=getProg(blkId,dy.id,isDeload);
+  const isPeakTest=blkId==='peak'&&isDeload;
+  const rpeBase=isDeload?(isPeakTest?'TEST':6):BLK_RPE[blkId]+NAV.cWk*0.5;
 
   let html=`<div style="display:flex;justify-content:space-between;align-items:baseline;">
     <div><div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;">${dy.name}</div>
-    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${dy.day} · ${blk.name} · ${isDeload?'Deload':'Week '+(NAV.cWk+1)+' · RPE '+rpeBase}</div></div></div>`;
+    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${dy.day} · ${blk.name} · ${isPeakTest?'🔴 TEST WEEK':isDeload?'Deload':'Week '+(NAV.cWk+1)+' · RPE '+rpeBase}</div></div></div>`;
 
   // Pre-session: sleep + nutrition
   const sl=D.log[lk].sleep||'';const nt=D.log[lk].nutrition||'';
@@ -501,14 +540,15 @@ function rTrain(){try{
   let needsSave=false;
   exList.forEach((ex,ei)=>{
     const ek=ex.id+'_'+ei;
-    const sets=getExSets(blkId,wkInBlk,ex);
+    const isTest=ex.test&&wkInBlk===3;
+    const actualSets=isTest?5:getExSets(blkId,wkInBlk,ex);
     const rpe=getExRPE(blkId,wkInBlk,ex);
     const reps=getExReps(blkId,wkInBlk,ex);
     const rmKey=RM_KEYS[ex.id];
     const rm=rmKey?D.rm[rmKey]||0:0;
-    const sw=rm>0&&rpe>0?cWt(rm,reps,rpe,D.round):0;
-    if(!D.log[lk].ex[ek]){D.log[lk].ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:reps,p:rpe,d:false}));needsSave=true;}
-    while(D.log[lk].ex[ek].length<sets){D.log[lk].ex[ek].push({w:sw||'',r:reps,p:rpe,d:false});needsSave=true;}
+    const sw=rm>0&&rpe>0&&!isTest?cWt(rm,reps,rpe,D.round):0;
+    if(!D.log[lk].ex[ek]){D.log[lk].ex[ek]=Array.from({length:actualSets},()=>({w:sw||'',r:isTest?1:reps,p:isTest?'':rpe,d:false}));needsSave=true;}
+    while(D.log[lk].ex[ek].length<actualSets){D.log[lk].ex[ek].push({w:sw||'',r:isTest?1:reps,p:isTest?'':rpe,d:false});needsSave=true;}
   });
   if(needsSave)sv();
 
@@ -534,15 +574,50 @@ function mkEx(ex,ei,blkId,wkInBlk,lk){
   const reps=getExReps(blkId,wkInBlk,ex);
   const rmKey=RM_KEYS[ex.id];
   const rm=rmKey?D.rm[rmKey]||0:0;
+  const isTest=ex.test&&wkInBlk===3;
+  const ek=ex.id+'_'+ei;
+  const restSec=ex.rest||120;
+
+  // For test exercises: generate ramp-up singles + max attempt
+  if(isTest&&rm>0){
+    const ramp=[
+      {pct:.70,label:'Opener ~70%'},
+      {pct:.80,label:'Build ~80%'},
+      {pct:.87,label:'Build ~87%'},
+      {pct:.93,label:'Build ~93%'},
+      {pct:1.0,label:'🔴 MAX ATTEMPT'}
+    ];
+    const rampSets=ramp.length;
+    const saved=D.log[lk].ex[ek]||[];
+    while(saved.length<rampSets)saved.push({w:'',r:1,p:'',d:false});
+
+    const rc='rmx';
+    return`<div class="exb" style="border-left:3px solid var(--rd);"><div class="exh"><div><div class="exn">${ex.name}</div>${ex.note?`<div style="font-size:.66rem;color:var(--tx3);">${ex.note}</div>`:''}</div>
+      <div style="text-align:right;"><span class="rb ${rc}">1RM TEST</span><div class="exm" style="margin-top:3px">Ramp to max</div></div></div>
+      <div class="exs">
+      <div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
+      ${ramp.map((r,si)=>{
+        const sugWt=Math.round(rm*r.pct/D.round)*D.round;
+        const s=saved[si];
+        const le=s.w>0&&s.r>0&&s.p>0?cE1(s.w,s.r,s.p):'';
+        return`<div class="sr" ${si===rampSets-1?'style="background:var(--rdd);"':''}>
+        <div class="sn">${si+1}</div><div class="stg" style="font-size:.66rem;">${r.label}</div>
+        <input class="si" type="number" inputmode="decimal" value="${s.w}" placeholder="${sugWt}" oninput="uSL('${lk}','${ek}',${si},'w',this.value)">
+        <input class="si" type="number" inputmode="numeric" value="${s.r}" placeholder="1" oninput="uSL('${lk}','${ek}',${si},'r',this.value)">
+        <input class="si" type="number" inputmode="decimal" step="0.5" value="${s.p}" placeholder="${si===rampSets-1?'10':''}" oninput="uSL('${lk}','${ek}',${si},'p',this.value)">
+        <div class="e1c" id="e1_${ek}_${si}">${le}</div>
+        <button class="sok ${s.d?'chk':''}" onclick="tglSet('${lk}','${ek}',${si},${restSec},this)">✓</button>
+      </div>`;}).join('')}</div></div>`;
+  }
+
+  // Normal exercise rendering
   const sw=rm>0&&rpe>0?cWt(rm,reps,rpe,D.round):null;
   const pc=rm>0&&rpe>0?Math.round(rPct(reps,rpe)*100):null;
-  const ek=ex.id+'_'+ei;
 
   const saved=D.log[lk].ex[ek]||[];
   while(saved.length<sets)saved.push({w:sw||'',r:reps,p:rpe,d:false});
 
   const rc=rpe>=9.5?'rmx':rpe>=8.5?'rhi':rpe>=7?'rmd':'rlo';
-  const restSec=ex.rest||120;
 
   return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}</div>${ex.note?`<div style="font-size:.66rem;color:var(--tx3);">${ex.note}</div>`:''}</div>
     <div style="text-align:right;">${ex.type!=='iso'?`<span class="rb ${rc}">RPE ${rpe}</span>`:''}<div class="exm" style="margin-top:3px">${sets}×${reps}${sw?' · '+sw+' '+D.unit:''}</div>${pc?`<div style="font-size:.6rem;color:var(--tx3)">${pc}% 1RM</div>`:''}</div></div>
@@ -652,10 +727,11 @@ function rProg(){
     html+=`<div style="grid-column:span 2;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-top:${bi?'8px':'0'};margin-bottom:4px;">${b.name}</div>`;
     [0,1,2,3].forEach(w=>{
       const abs=bi*4+w;const isCur=bi===NAV.cBlk&&w===NAV.cWk;const isDl=w===3;
+      const isPeakDl=isDl&&bi===3;
       const rpe=isDl?6:BLK_RPE[b.id]+w*0.5;
-      html+=`<div class="pwk ${isCur?'cur':''} ${isDl?'dl':''}" onclick="NAV.cBlk=${bi};NAV.cWk=${w};NAV.cDy=0;svNav();go('train');">
-        <div class="pl">${isDl?'Deload':'Week '+(abs+1)}</div>
-        <div class="pv">${isDl?'Recovery':'RPE '+rpe}</div>
+      html+=`<div class="pwk ${isCur?'cur':''} ${isDl?'dl':''}" style="${isPeakDl?'border-color:var(--rd);background:var(--rdd);':''}" onclick="NAV.cBlk=${bi};NAV.cWk=${w};NAV.cDy=0;svNav();go('train');">
+        <div class="pl">${isPeakDl?'Test Week':isDl?'Deload':'Week '+(abs+1)}</div>
+        <div class="pv" ${isPeakDl?'style="color:var(--rd)"':''}>${isPeakDl?'1RM Tests':isDl?'Recovery':'RPE '+rpe}</div>
         <div class="ps">Wk ${w+1} of ${b.name}</div>
       </div>`;
     });
@@ -663,9 +739,9 @@ function rProg(){
   document.getElementById('progGrid').innerHTML=`<div class="pgrid">${html}</div>`;
 
   const b=BLOCKS[NAV.cBlk];
-  const exList=getProg(b.id,DAYS[0].id);
+  const exList=getProg(b.id,DAYS[0].id,false);
   document.getElementById('progDetail').innerHTML=`<strong>${b.name} Block</strong> (Weeks ${NAV.cBlk*4+1}-${NAV.cBlk*4+4})<br>
-    RPE Wave: ${BLK_RPE[b.id]} → ${BLK_RPE[b.id]+0.5} → ${BLK_RPE[b.id]+1} → Deload<br>
+    RPE Wave: ${BLK_RPE[b.id]} → ${BLK_RPE[b.id]+0.5} → ${BLK_RPE[b.id]+1} → ${b.id==='peak'?'1RM Test Week':'Deload'}<br>
     Days: ${DAYS.map(d=>d.name+' ('+d.day+')').join(' · ')}`;
 }
 
