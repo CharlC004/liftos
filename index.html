@@ -285,7 +285,6 @@ function getProg(blk,dayId,_isDeload){
         {id:'pause_squat',name:'Paused Back Squat',s:3,r:4,rpe:0,type:'sec',rest:180},
         {id:'rdl',name:'Romanian Deadlift',s:3,r:8,rpe:0,type:'acc',rest:120},
         {id:'legpress',name:'Leg Press',s:3,r:10,rpe:0,type:'acc',rest:75},
-        {id:'bulgsplit',name:'Bulgarian Split Squat',s:3,r:10,rpe:-1,type:'acc',rest:90},
         {id:'legcurl',name:'Leg Curls',s:3,r:10,rpe:0,type:'acc',rest:75}
       ],
       bench:[
@@ -484,7 +483,7 @@ function rTrain(){try{
   }).join('');
 
   const dy=DAYS[NAV.cDy];const lk=`b${NAV.cBlk}w${NAV.cWk}d${NAV.cDy}`;
-  if(!D.log[lk])D.log[lk]={ex:{},completed:false,sleep:'',nutrition:''};
+  if(!D.log[lk])D.log[lk]={ex:{},completed:false,sleep:'',nutrition:'',removed:[],added:[],setAdj:{},exOrder:[]};
 
   const exList=getProg(blkId,dy.id,isDeload);
   const isPeakTest=blkId==='str'&&isDeload;
@@ -514,19 +513,62 @@ function rTrain(){try{
     <textarea class="inp" rows="2" placeholder="Notes for this session…" style="resize:vertical;font-size:.82rem;line-height:1.4;" oninput="D.log['${lk}'].notes=this.value;sv();">${notes.replace(/</g,'&lt;')}</textarea>
   </div>`;
 
+  // Session-level customization: removed exercises, added exercises, set adjustments, order
+  if(!D.log[lk].removed)D.log[lk].removed=[];
+  if(!D.log[lk].added)D.log[lk].added=[];
+  if(!D.log[lk].setAdj)D.log[lk].setAdj={};
+
+  // Build effective exercise list with stable keys (independent of render position)
+  // Template exercises use key: exId + '_t' + originalIndex
+  // Added exercises use key: 'add_' + _addIdx
+  const allEntries=[];
+  exList.forEach((ex,oi)=>{
+    if(D.log[lk].removed.includes(oi))return;
+    const ek=ex.id+'_t'+oi;
+    allEntries.push({ex,ek,oi});
+  });
+  D.log[lk].added.forEach(a=>{
+    const ex={id:a.id,name:a.name,s:a.s||3,r:a.r||12,rpe:a.rpe||0,type:'acc',rest:a.rest||75,_added:true,_addIdx:a._addIdx};
+    const ek='add_'+a._addIdx;
+    allEntries.push({ex,ek,oi:-1});
+  });
+
+  // Apply saved order if it exists
+  if(D.log[lk].exOrder&&D.log[lk].exOrder.length){
+    const orderMap={};
+    D.log[lk].exOrder.forEach((k,i)=>{orderMap[k]=i;});
+    // Exercises in the order array get sorted; new ones not in the array go to the end
+    allEntries.sort((a,b)=>{
+      const ai=orderMap[a.ek]!==undefined?orderMap[a.ek]:9999;
+      const bi=orderMap[b.ek]!==undefined?orderMap[b.ek]:9999;
+      return ai-bi;
+    });
+  }
+
+  // Migrate old exercise keys to new stable keys
+  // (one-time: if old-style keys exist like 'squat_0', migrate to 'squat_t0')
+  allEntries.forEach(({ex,ek})=>{
+    const oldStyle=ek.replace('_t','_');
+    if(!D.log[lk].ex[ek]&&D.log[lk].ex[oldStyle]){
+      D.log[lk].ex[ek]=D.log[lk].ex[oldStyle];
+      delete D.log[lk].ex[oldStyle];
+    }
+  });
+
   let needsSave=false;
-  exList.forEach((ex,ei)=>{
-    const ek=ex.id+'_'+ei;
+  allEntries.forEach(({ex,ek})=>{
     const isTest=ex.test&&wkInBlk===3;
-    const actualSets=isTest?5:getExSets(blkId,wkInBlk,ex);
-    const rpe=getExRPE(blkId,wkInBlk,ex);
-    const reps=getExReps(blkId,wkInBlk,ex);
+    const baseS=isTest?5:(ex._added?ex.s:getExSets(blkId,wkInBlk,ex));
+    const adj=D.log[lk].setAdj[ek]||0;
+    const actualSets=Math.max(1,baseS+adj);
+    const rpe=ex._added?(ex.rpe||0):getExRPE(blkId,wkInBlk,ex);
+    const reps=ex._added?ex.r:getExReps(blkId,wkInBlk,ex);
     const rmKey=RM_KEYS[ex.id];
     const rm=rmKey?D.rm[rmKey]||0:0;
     const sw=rm>0&&rpe>0&&!isTest?cWt(rm,reps,rpe,D.round):0;
     const existing=D.log[lk].ex[ek];
     // If session not completed, reset stale sets when rep scheme changed
-    if(existing&&!D.log[lk].completed){
+    if(existing&&!D.log[lk].completed&&!ex._added){
       const anyDone=existing.some(s=>s.d);
       if(!anyDone){
         const stale=existing.length!==actualSets||(!isTest&&existing.length>0&&existing[0].r!==reps);
@@ -534,35 +576,78 @@ function rTrain(){try{
       }
     }
     if(!D.log[lk].ex[ek]){D.log[lk].ex[ek]=Array.from({length:actualSets},()=>({w:sw||'',r:isTest?1:reps,p:isTest?'':rpe,d:false}));needsSave=true;}
-    while(D.log[lk].ex[ek].length<actualSets){D.log[lk].ex[ek].push({w:sw||'',r:isTest?1:reps,p:isTest?'':rpe,d:false});needsSave=true;}
+    while(D.log[lk].ex[ek].length<actualSets){D.log[lk].ex[ek].push({w:sw||'',r:reps,p:rpe,d:false});needsSave=true;}
+    if(D.log[lk].ex[ek].length>actualSets)D.log[lk].ex[ek]=D.log[lk].ex[ek].slice(0,actualSets);
   });
   if(needsSave)sv();
 
   // Render exercises
   let lastType='';
-  exList.forEach((ex,ei)=>{
+  allEntries.forEach(({ex,ek},ei)=>{
     const label=ex.type==='pri'?'Primary':ex.type==='sec'?'Secondary':ex.type==='acc'?'Accessories':'';
     if(label&&ex.type!==lastType&&ex.type!=='iso'){html+=`<div class="sec">${label}</div>`;lastType=ex.type;}
     else if(ex.type==='iso'&&lastType!=='iso'){lastType='iso';}
-    html+=mkEx(ex,ei,blkId,wkInBlk,lk);
+    html+=mkEx(ex,ek,ei,allEntries.length,blkId,wkInBlk,lk);
   });
 
-  if(exList.length&&!D.log[lk]?.completed)html+=`<button class="btn bp bf" style="margin-top:16px;" onclick="complete('${lk}')">Complete Session</button>`;
+  if(allEntries.length&&!D.log[lk]?.completed){
+    html+=`<div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn bo bs" style="flex:1;" onclick="showAddExModal('${lk}')">+ Add Exercise</button>
+    </div>`;
+    html+=`<button class="btn bp bf" style="margin-top:10px;" onclick="complete('${lk}')">Complete Session</button>`;
+  }
   if(D.log[lk]?.completed)html+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Session Completed</div>`;
 
   document.getElementById('tc').innerHTML=html;
 }catch(e){document.getElementById('tc').innerHTML='<div style="color:var(--rd);padding:20px;">Error: '+e.message+'</div>';console.error(e);}
 }
 
-function mkEx(ex,ei,blkId,wkInBlk,lk){
-  const rpe=getExRPE(blkId,wkInBlk,ex);
-  const sets=getExSets(blkId,wkInBlk,ex);
-  const reps=getExReps(blkId,wkInBlk,ex);
+function getExHistory(exId,currentLk){
+  let best=null,last=null,lastAt='';
+  for(const[lk,logEntry]of Object.entries(D.log)){
+    if(!logEntry.completed||!logEntry.ex||lk===currentLk)continue;
+    const at=logEntry.at||'';
+    const addedMap={};
+    if(logEntry.added)(logEntry.added).forEach(a=>{addedMap['add_'+a._addIdx]=a.id;});
+    for(const[ek,sets]of Object.entries(logEntry.ex)){
+      const lid=addedMap[ek]||ek.split('_')[0];
+      if(lid!==exId)continue;
+      let sessionLastDone=null;
+      (sets||[]).forEach(st=>{
+        if(!st.d||!st.w||st.w<=0||!st.r||st.r<=0||!st.p||st.p<=0)return;
+        const e1=cE1(st.w,st.r,st.p);
+        if(!best||e1>best.e1)best={w:st.w,r:st.r,p:st.p,e1};
+        sessionLastDone={w:st.w,r:st.r,p:st.p,e1};
+      });
+      if(sessionLastDone&&at>=lastAt){lastAt=at;last=sessionLastDone;}
+    }
+  }
+  return{best,last};
+}
+
+function mkEx(ex,ek,ei,totalEx,blkId,wkInBlk,lk){
+  const isAdded=ex._added;
+  const rpe=isAdded?(ex.rpe||0):getExRPE(blkId,wkInBlk,ex);
+  const baseS=isAdded?ex.s:getExSets(blkId,wkInBlk,ex);
+  const reps=isAdded?ex.r:getExReps(blkId,wkInBlk,ex);
   const rmKey=RM_KEYS[ex.id];
   const rm=rmKey?D.rm[rmKey]||0:0;
   const isTest=ex.test&&wkInBlk===3;
-  const ek=ex.id+'_'+ei;
   const restSec=ex.rest||120;
+  const adj=D.log[lk].setAdj[ek]||0;
+  const sets=isTest?5:Math.max(1,baseS+adj);
+  const completed=D.log[lk]?.completed;
+
+  // Shared: ± set buttons, reorder, and remove button (only if not completed)
+  const upBtn=ei>0?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;cursor:pointer;" onclick="moveEx('${lk}',${ei},-1)">▲</button>`:'';
+  const dnBtn=ei<totalEx-1?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;cursor:pointer;" onclick="moveEx('${lk}',${ei},1)">▼</button>`:'';
+  const ctrlHtml=completed?'':`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${lk}','${ek}',-1)">− set</button>
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${lk}','${ek}',1)">+ set</button>
+    ${upBtn}${dnBtn}
+    <div style="flex:1;"></div>
+    <button style="padding:2px 8px;border:1px solid var(--rd);border-radius:4px;background:var(--rdd);color:var(--rd);font-size:.66rem;font-weight:600;cursor:pointer;" onclick="removeEx('${lk}','${ek}')">Remove</button>
+  </div>`;
 
   // For test exercises: generate ramp-up singles + max attempt
   if(isTest&&rm>0){
@@ -578,8 +663,16 @@ function mkEx(ex,ei,blkId,wkInBlk,lk){
     while(saved.length<rampSets)saved.push({w:'',r:1,p:'',d:false});
 
     const rc='rmx';
+    const thist=getExHistory(ex.id,lk);
+    let thistHtml='';
+    if(thist.best||thist.last){
+      const tp=[];
+      if(thist.best)tp.push(`<span style="color:var(--gn);">PR ${thist.best.w}×${thist.best.r}@${thist.best.p}</span>`);
+      if(thist.last)tp.push(`<span style="color:var(--bl);">Last ${thist.last.w}×${thist.last.r}@${thist.last.p}</span>`);
+      thistHtml=`<div style="padding:4px 14px 0;font-family:'IBM Plex Mono',monospace;font-size:.64rem;display:flex;gap:12px;">${tp.join('')}</div>`;
+    }
     return`<div class="exb" style="border-left:3px solid var(--rd);"><div class="exh"><div><div class="exn">${ex.name}</div>${ex.note?`<div style="font-size:.66rem;color:var(--tx3);">${ex.note}</div>`:''}</div>
-      <div style="text-align:right;"><span class="rb ${rc}">1RM TEST</span><div class="exm" style="margin-top:3px">Ramp to max</div></div></div>
+      <div style="text-align:right;"><span class="rb ${rc}">1RM TEST</span><div class="exm" style="margin-top:3px">Ramp to max</div></div></div>${thistHtml}
       <div class="exs">
       <div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
       ${ramp.map((r,si)=>{
@@ -593,7 +686,7 @@ function mkEx(ex,ei,blkId,wkInBlk,lk){
         <input class="si" type="number" inputmode="decimal" step="0.5" value="${s.p}" placeholder="${si===rampSets-1?'10':''}" oninput="uSL('${lk}','${ek}',${si},'p',this.value)">
         <div class="e1c" id="e1_${ek}_${si}">${le}</div>
         <button class="sok ${s.d?'chk':''}" onclick="tglSet('${lk}','${ek}',${si},${restSec},this)">✓</button>
-      </div>`;}).join('')}</div></div>`;
+      </div>`;}).join('')}</div>${ctrlHtml}</div>`;
   }
 
   // Normal exercise rendering
@@ -605,8 +698,17 @@ function mkEx(ex,ei,blkId,wkInBlk,lk){
 
   const rc=rpe>=9.5?'rmx':rpe>=8.5?'rhi':rpe>=7?'rmd':'rlo';
 
+  const hist=getExHistory(ex.id,lk);
+  let histHtml='';
+  if(hist.best||hist.last){
+    const parts=[];
+    if(hist.best)parts.push(`<span style="color:var(--gn);">PR ${hist.best.w}×${hist.best.r}@${hist.best.p}</span>`);
+    if(hist.last)parts.push(`<span style="color:var(--bl);">Last ${hist.last.w}×${hist.last.r}@${hist.last.p}</span>`);
+    histHtml=`<div style="padding:4px 14px 0;font-family:'IBM Plex Mono',monospace;font-size:.64rem;display:flex;gap:12px;">${parts.join('')}</div>`;
+  }
+
   return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}</div>${ex.note?`<div style="font-size:.66rem;color:var(--tx3);">${ex.note}</div>`:''}</div>
-    <div style="text-align:right;">${ex.type!=='iso'?`<span class="rb ${rc}">RPE ${rpe}</span>`:''}<div class="exm" style="margin-top:3px">${sets}×${reps}${sw?' · '+sw+' '+D.unit:''}</div>${pc?`<div style="font-size:.6rem;color:var(--tx3)">${pc}% 1RM</div>`:''}</div></div>
+    <div style="text-align:right;">${ex.type!=='iso'?`<span class="rb ${rc}">RPE ${rpe}</span>`:''}<div class="exm" style="margin-top:3px">${sets}×${reps}${sw?' · '+sw+' '+D.unit:''}</div>${pc?`<div style="font-size:.6rem;color:var(--tx3)">${pc}% 1RM</div>`:''}</div></div>${histHtml}
     <div class="exs">
     <div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
     ${saved.slice(0,sets).map((s,si)=>{
@@ -618,7 +720,7 @@ function mkEx(ex,ei,blkId,wkInBlk,lk){
       <input class="si" type="number" inputmode="decimal" step="0.5" value="${s.p}" placeholder="${rpe}" oninput="uSL('${lk}','${ek}',${si},'p',this.value)">
       <div class="e1c" id="e1_${ek}_${si}">${le}</div>
       <button class="sok ${s.d?'chk':''}" onclick="tglSet('${lk}','${ek}',${si},${restSec},this)">✓</button>
-    </div>`;}).join('')}</div></div>`;
+    </div>`;}).join('')}</div>${ctrlHtml}</div>`;
 }
 
 function setNut(lk,val){
@@ -649,8 +751,11 @@ function tglSet(lk,ek,si,restSec,btn){
 function complete(lk){
   D.log[lk].completed=true;D.log[lk].at=new Date().toISOString();
   const sess={date:new Date().toISOString(),blk:NAV.cBlk,wk:NAV.cWk,day:NAV.cDy,dn:DAYS[NAV.cDy]?.name,bn:BLOCKS[NAV.cBlk]?.name,e1:{},sleep:D.log[lk].sleep,nutrition:D.log[lk].nutrition};
+  // Build added exercise map for resolving add_ keys
+  const addedMap={};
+  if(D.log[lk].added)D.log[lk].added.forEach(a=>{addedMap['add_'+a._addIdx]=a.id;});
   for(const[ek,sets]of Object.entries(D.log[lk].ex)){
-    const lid=ek.split('_')[0];const rmk=RM_KEYS[lid]||lid;
+    const lid=addedMap[ek]||ek.split('_')[0];const rmk=RM_KEYS[lid]||lid;
     sets.forEach(st=>{if(st.d&&st.w>0&&st.r>0&&st.p>0){const e=cE1(st.w,st.r,st.p);if(!sess.e1[rmk]||e>sess.e1[rmk])sess.e1[rmk]=e;}});
   }
   if(!D.sessions)D.sessions=[];
@@ -658,6 +763,126 @@ function complete(lk){
 }
 
 // ===== SESSION TIMER =====
+
+// ===== SESSION CUSTOMIZATION =====
+function adjSet(lk,ek,delta){
+  if(!D.log[lk].setAdj)D.log[lk].setAdj={};
+  D.log[lk].setAdj[ek]=(D.log[lk].setAdj[ek]||0)+delta;
+  sv();rTrain();
+}
+
+function removeEx(lk,ek){
+  // If it's an added exercise (ek starts with 'add_'), remove from added array
+  if(ek.startsWith('add_')){
+    const addIdx=parseInt(ek.split('_')[1]);
+    D.log[lk].added=D.log[lk].added.filter(a=>a._addIdx!==addIdx);
+  }else{
+    // Template exercise: ek is like 'squat_t0' — extract original index
+    const oi=parseInt(ek.split('_t')[1]);
+    if(!isNaN(oi)&&!D.log[lk].removed.includes(oi))D.log[lk].removed.push(oi);
+  }
+  // Clean up log data and order
+  delete D.log[lk].ex[ek];
+  delete D.log[lk].setAdj[ek];
+  if(D.log[lk].exOrder)D.log[lk].exOrder=D.log[lk].exOrder.filter(k=>k!==ek);
+  sv();rTrain();
+}
+
+function moveEx(lk,ei,dir){
+  // Build current order from allEntries
+  const blkId=BLOCKS[NAV.cBlk].id;
+  const wkInBlk=NAV.cWk;
+  const isDeload=wkInBlk===3;
+  const dayId=DAYS[NAV.cDy].id;
+  const exList=getProg(blkId,dayId,isDeload);
+
+  // Reconstruct allEntries keys in current order
+  const keys=[];
+  exList.forEach((ex,oi)=>{
+    if(D.log[lk].removed&&D.log[lk].removed.includes(oi))return;
+    keys.push(ex.id+'_t'+oi);
+  });
+  if(D.log[lk].added)D.log[lk].added.forEach(a=>{keys.push('add_'+a._addIdx);});
+
+  // Apply existing order if present
+  if(D.log[lk].exOrder&&D.log[lk].exOrder.length){
+    const orderMap={};
+    D.log[lk].exOrder.forEach((k,i)=>{orderMap[k]=i;});
+    keys.sort((a,b)=>{
+      const ai=orderMap[a]!==undefined?orderMap[a]:9999;
+      const bi=orderMap[b]!==undefined?orderMap[b]:9999;
+      return ai-bi;
+    });
+  }
+
+  // Swap
+  const ni=ei+dir;
+  if(ni<0||ni>=keys.length)return;
+  const tmp=keys[ei];keys[ei]=keys[ni];keys[ni]=tmp;
+
+  D.log[lk].exOrder=keys;
+  sv();rTrain();
+}
+
+const ADD_EX_LIST=[
+  {id:'calfraise',name:'Calf Raises',r:15,rest:60},
+  {id:'bbcurl',name:'Barbell Curls',r:12,rest:60},
+  {id:'dbcurl',name:'Dumbbell Curls',r:12,rest:60},
+  {id:'hamcurl',name:'Hammer Curls',r:12,rest:60},
+  {id:'latpull',name:'Lat Pulldown',r:12,rest:75},
+  {id:'seatedrow',name:'Seated Cable Row',r:12,rest:75},
+  {id:'csrow',name:'Chest-Supported Row',r:10,rest:90},
+  {id:'facepull',name:'Face Pulls',r:15,rest:45},
+  {id:'laterals',name:'Lateral Raises',r:15,rest:45},
+  {id:'reardelt',name:'Rear Delt Flyes',r:15,rest:45},
+  {id:'legcurl',name:'Leg Curls',r:12,rest:75},
+  {id:'legext',name:'Leg Extensions',r:12,rest:75},
+  {id:'legpress',name:'Leg Press',r:12,rest:90},
+  {id:'rdl',name:'Romanian Deadlift',r:10,rest:120},
+  {id:'sldl',name:'Stiff-Leg Deadlift',r:10,rest:120},
+  {id:'skulls',name:'Skull Crushers',r:12,rest:75},
+  {id:'oh_ext',name:'OH Tricep Extension',r:12,rest:75},
+  {id:'tricep',name:'Tricep Pushdowns',r:12,rest:75},
+  {id:'dbflat',name:'Flat DB Press',r:12,rest:90},
+  {id:'dbohp',name:'DB Overhead Press',r:12,rest:90},
+  {id:'pullup',name:'Pull-ups / Lat Pulldown',r:10,rest:90},
+  {id:'hipthrust',name:'Hip Thrust',r:10,rest:90},
+  {id:'shrug',name:'Barbell Shrugs',r:12,rest:75},
+];
+
+function showAddExModal(lk){
+  let h=`<h2>Add Exercise</h2>`;
+  h+=`<div style="margin-bottom:12px;"><input class="inp" id="customExName" placeholder="Custom exercise name…" style="font-size:.88rem;"></div>`;
+  h+=`<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
+    <div class="fld" style="flex:1;min-width:60px;"><label>Sets</label><input class="inp" id="customExSets" type="number" value="3" style="text-align:center;"></div>
+    <div class="fld" style="flex:1;min-width:60px;"><label>Reps</label><input class="inp" id="customExReps" type="number" value="12" style="text-align:center;"></div>
+  </div>`;
+  h+=`<button class="btn bp bf" style="margin-bottom:16px;" onclick="addCustomEx('${lk}')">Add Custom</button>`;
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-bottom:8px;">Quick Add</div>`;
+  h+=ADD_EX_LIST.map(e=>`<div class="rmrow" style="cursor:pointer;" onclick="addQuickEx('${lk}','${e.id}','${e.name}',${e.r},${e.rest})"><span style="flex:1;font-weight:500;font-size:.88rem;">${e.name}</span><span style="font-size:.72rem;color:var(--tx3);">3×${e.r}</span></div>`).join('');
+  oM(h);
+}
+
+function addQuickEx(lk,id,name,r,rest){
+  if(!D.log[lk].added)D.log[lk].added=[];
+  const idx=Date.now();
+  D.log[lk].added.push({id,name,s:3,r,rpe:0,rest,_addIdx:idx});
+  sv();cM();rTrain();
+}
+
+function addCustomEx(lk){
+  const name=document.getElementById('customExName').value.trim();
+  if(!name){toast('Enter a name');return;}
+  const s=parseInt(document.getElementById('customExSets').value)||3;
+  const r=parseInt(document.getElementById('customExReps').value)||12;
+  if(!D.log[lk].added)D.log[lk].added=[];
+  const idx=Date.now();
+  const id=name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,20);
+  D.log[lk].added.push({id,name,s,r,rpe:0,rest:75,_addIdx:idx});
+  sv();cM();rTrain();
+}
+
+// ===== SESSION TIMER (cont) =====
 let sessStart=null,sessIntv=null,sessPanelOpen=false;
 function startSessTimer(){
   if(sessIntv)return;
