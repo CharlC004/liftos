@@ -149,7 +149,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 
   <!-- PROGRAM -->
   <div id="progV" class="vw">
-    <div class="cd"><h3>12-Week Block Overview</h3><div id="progGrid"></div></div>
+    <div class="cd"><h3>Block Overview</h3><div id="progGrid"></div></div>
     <div class="cd"><h3>Current Block Details</h3><div id="progDetail" style="font-size:.82rem;color:var(--tx2);line-height:1.7;"></div></div>
   </div>
 
@@ -223,7 +223,7 @@ function cE1(w,r,p){const pc=rPct(r,p);return pc>0?Math.round(w/pc):w;}
 
 // ===== 12-WEEK PROGRAM =====
 const BLOCKS=[
-  {id:'acc',name:'Accumulation',weeks:4,color:'var(--bl)'},
+  {id:'acc',name:'Accumulation',weeks:5,color:'var(--bl)'},  // One-time: 5 weeks (recovery week inserted at W3). Revert to weeks:4 next cycle.
   {id:'trans',name:'Transmutation',weeks:4,color:'var(--yl)'},
   {id:'str',name:'Strength',weeks:4,color:'var(--ac)'}
 ];
@@ -242,7 +242,17 @@ const DAYS=[
 // Exercise definitions per block per day
 // type: 'pri'=primary, 'sec'=secondary compound, 'acc'=accessory, 'iso'=isolation
 // rest: seconds for timer
-function getProg(blk,dayId,_isDeload){
+function getProg(blk,dayId,_isDeload,_isRecovery){
+  // Accumulation recovery week: single blended session on all day slots
+  if(_isRecovery){
+    return[
+      {id:'squat',name:'Back Squat',s:3,r:8,rpe:0,type:'pri',rest:240},
+      {id:'bench',name:'Bench Press',s:3,r:8,rpe:0,type:'pri',rest:240},
+      {id:'cgbench',name:'Close-Grip Bench',s:3,r:8,rpe:0,type:'sec',rest:150},
+      {id:'skulls',name:'Skull Crushers',s:3,r:12,rpe:0,type:'acc',rest:75},
+      {id:'facepull',name:'Face Pulls',s:3,r:15,rpe:0,type:'iso',rest:45}
+    ];
+  }
   const P={
     // ===== ACCUMULATION =====
     acc:{
@@ -378,7 +388,11 @@ function getProg(blk,dayId,_isDeload){
 }
 
 function getExRPE(blk,wkInBlk,ex){
-  const isDeload=wkInBlk===3;
+  const blkWeeks=BLOCKS.find(b=>b.id===blk)?.weeks||4;
+  const isDeload=wkInBlk===blkWeeks-1;
+  const isRecovery=blk==='acc'&&wkInBlk===2&&blkWeeks===5;
+  // Map effective week for RPE wave (skip recovery week)
+  const effectiveWk=isRecovery?0:(blk==='acc'&&blkWeeks===5&&wkInBlk>2?wkInBlk-1:wkInBlk);
   // Strength deload test exercises get their own RPE
   if(isDeload&&blk==='str'){
     if(ex.test)return 10; // 1RM attempt
@@ -386,18 +400,23 @@ function getExRPE(blk,wkInBlk,ex){
     return Math.max(5,base+(ex.rpe||0));
   }
   if(isDeload)return 6;
+  if(isRecovery)return ex.type==='iso'?0:7;
   const base=ex.type==='iso'?0:(ex.type==='acc'?BLK_ACC_RPE[blk]:BLK_RPE[blk]);
-  const wave=wkInBlk*0.5;
+  const wave=effectiveWk*0.5;
   return Math.min(10,Math.max(5,base+wave+(ex.rpe||0)));
 }
 function getExSets(blk,wkInBlk,ex){
-  if(wkInBlk===3&&blk==='str')return ex.s; // test week: use exact sets
-  if(wkInBlk===3)return Math.max(2,ex.s-1);// deload
+  const blkWeeks=BLOCKS.find(b=>b.id===blk)?.weeks||4;
+  const isDeload=wkInBlk===blkWeeks-1;
+  if(isDeload&&blk==='str')return ex.s; // test week: use exact sets
+  if(isDeload)return Math.max(2,ex.s-1);// deload
   return ex.s;
 }
 function getExReps(blk,wkInBlk,ex){
-  if(wkInBlk===3&&blk==='str')return ex.r; // test week: use exact reps
-  if(wkInBlk===3)return Math.max(ex.r,5);// deload: at least 5
+  const blkWeeks=BLOCKS.find(b=>b.id===blk)?.weeks||4;
+  const isDeload=wkInBlk===blkWeeks-1;
+  if(isDeload&&blk==='str')return ex.r; // test week: use exact reps
+  if(isDeload)return Math.max(ex.r,5);// deload: at least 5
   return ex.r;
 }
 
@@ -446,7 +465,7 @@ function ldNav(){try{const s=JSON.parse(localStorage.getItem(NK));if(s)return s;
 let NAV=ldNav();
 // Bounds check
 if(NAV.cBlk<0||NAV.cBlk>2)NAV.cBlk=0;
-if(NAV.cWk<0||NAV.cWk>3)NAV.cWk=0;
+if(NAV.cWk<0||NAV.cWk>=(BLOCKS[NAV.cBlk]?.weeks||4))NAV.cWk=0;
 if(NAV.cDy<0||NAV.cDy>3)NAV.cDy=0;
 function svNav(){localStorage.setItem(NK,JSON.stringify(NAV));}
 // Training data syncs to Firebase
@@ -462,36 +481,50 @@ function go(v){['train','prog','prs','setup'].forEach((n,i)=>{document.getElemen
 function refreshView(){const c=document.querySelector('.vw.a');if(c){const id=c.id.replace('V','');if(id==='train')rTrain();if(id==='prog')rProg();if(id==='prs')rPRs();if(id==='setup')rSetup();}}
 
 // ===== TRAIN =====
-function absWk(){return NAV.cBlk*4+NAV.cWk;}
+function absWk(){let t=0;for(let i=0;i<NAV.cBlk;i++)t+=BLOCKS[i].weeks;return t+NAV.cWk;}
 function rTrain(){try{
-  const blk=BLOCKS[NAV.cBlk];const blkId=blk.id;const wkInBlk=NAV.cWk;const isDeload=wkInBlk===3;
+  const blk=BLOCKS[NAV.cBlk];const blkId=blk.id;const wkInBlk=NAV.cWk;
+  const isDeload=wkInBlk===blk.weeks-1;
+  const isRecovery=blkId==='acc'&&wkInBlk===2&&blk.weeks===5;
   document.getElementById('hb').textContent=`B${NAV.cBlk+1}W${NAV.cWk+1}`;
 
   // Block tabs
   document.getElementById('blkTabs').innerHTML=BLOCKS.map((b,i)=>`<div class="btab ${i===NAV.cBlk?'act':''}" onclick="NAV.cBlk=${i};NAV.cWk=0;NAV.cDy=0;svNav();rTrain();">${b.name}</div>`).join('');
 
-  // Week tabs
-  document.getElementById('wkTabs').innerHTML=[0,1,2,3].map(w=>{
-    const lk0=`b${NAV.cBlk}w${w}d0`;const done=[0,1,2,3].every(d=>D.log[`b${NAV.cBlk}w${w}d${d}`]?.completed);
-    return`<div class="wtab ${w===NAV.cWk?'act':''} ${w===3?'dl':''} ${done?'dn':''}" onclick="NAV.cWk=${w};NAV.cDy=0;svNav();rTrain();">${w===3?(NAV.cBlk===2?'Test':'Deload'):'Wk '+(w+1)}</div>`;
+  // Week tabs — dynamic per block
+  const wkCount=blk.weeks;
+  document.getElementById('wkTabs').innerHTML=Array.from({length:wkCount},(_,w)=>{
+    const isRec=blkId==='acc'&&w===2&&wkCount===5;
+    const done=isRec?!!D.log[`b${NAV.cBlk}w${w}d0`]?.completed:DAYS.every((_,d)=>D.log[`b${NAV.cBlk}w${w}d${d}`]?.completed);
+    const isDl=w===wkCount-1;
+    const label=isDl?(NAV.cBlk===2?'Test':'Deload'):isRec?'Recovery':'Wk '+(w+1);
+    return`<div class="wtab ${w===NAV.cWk?'act':''} ${isDl?'dl':''} ${isRec?'dl':''} ${done?'dn':''}" onclick="NAV.cWk=${w};NAV.cDy=0;svNav();rTrain();">${label}</div>`;
   }).join('');
 
-  // Day tabs
-  document.getElementById('dyTabs').innerHTML=DAYS.map((d,i)=>{
-    const lk=`b${NAV.cBlk}w${NAV.cWk}d${i}`;const done=D.log[lk]?.completed;
-    return`<div class="dtab ${i===NAV.cDy?'act':''} ${done?'dn':''}" onclick="NAV.cDy=${i};svNav();rTrain();">${d.name}<span class="dsub">${d.day}</span></div>`;
-  }).join('');
+  // Day tabs — single tab for recovery week
+  if(isRecovery){
+    if(NAV.cDy!==0){NAV.cDy=0;svNav();}
+    const lk0=`b${NAV.cBlk}w${NAV.cWk}d0`;const done0=D.log[lk0]?.completed;
+    document.getElementById('dyTabs').innerHTML=`<div class="dtab act ${done0?'dn':''}">Recovery Session</div>`;
+  }else{
+    document.getElementById('dyTabs').innerHTML=DAYS.map((d,i)=>{
+      const lk=`b${NAV.cBlk}w${NAV.cWk}d${i}`;const done=D.log[lk]?.completed;
+      return`<div class="dtab ${i===NAV.cDy?'act':''} ${done?'dn':''}" onclick="NAV.cDy=${i};svNav();rTrain();">${d.name}<span class="dsub">${d.day}</span></div>`;
+    }).join('');
+  }
 
   const dy=DAYS[NAV.cDy];const lk=`b${NAV.cBlk}w${NAV.cWk}d${NAV.cDy}`;
   if(!D.log[lk])D.log[lk]={ex:{},completed:false,sleep:'',nutrition:'',removed:[],added:[],setAdj:{},exOrder:[]};
 
-  const exList=getProg(blkId,dy.id,isDeload);
+  const exList=getProg(blkId,dy.id,isDeload,isRecovery);
   const isPeakTest=blkId==='str'&&isDeload;
-  const rpeBase=isDeload?(isPeakTest?'TEST':6):BLK_RPE[blkId]+NAV.cWk*0.5;
+  // For accumulation 5-week: weeks 0,1 normal wave, week 2 recovery (RPE 7), weeks 3,4 map to old weeks 2,3
+  const effectiveWk=isRecovery?0:(blkId==='acc'&&blk.weeks===5&&wkInBlk>2?wkInBlk-1:wkInBlk);
+  const rpeBase=isDeload?(isPeakTest?'TEST':6):isRecovery?7:BLK_RPE[blkId]+effectiveWk*0.5;
 
   let html=`<div style="display:flex;justify-content:space-between;align-items:baseline;">
-    <div><div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;">${dy.name}</div>
-    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${dy.day} · ${blk.name} · ${isPeakTest?'🔴 TEST WEEK':isDeload?'Deload':'Week '+(NAV.cWk+1)+' · RPE '+rpeBase}</div></div></div>`;
+    <div><div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;">${isRecovery?'Recovery':dy.name}</div>
+    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${dy.day} · ${blk.name} · ${isPeakTest?'🔴 TEST WEEK':isDeload?'Deload':isRecovery?'Recovery · RPE 7':'Week '+(NAV.cWk+1)+' · RPE '+rpeBase}</div></div></div>`;
 
   // Pre-session: sleep + nutrition
   const sl=D.log[lk].sleep||'';const nt=D.log[lk].nutrition||'';
@@ -933,26 +966,31 @@ function stopTimer(){clearInterval(tmrId);tmrId=null;document.getElementById('ti
 
 // ===== PROGRAM VIEW =====
 function rProg(){
-  let html='';
+  let html='';let absWkNum=0;
   BLOCKS.forEach((b,bi)=>{
     html+=`<div style="grid-column:span 2;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-top:${bi?'8px':'0'};margin-bottom:4px;">${b.name}</div>`;
-    [0,1,2,3].forEach(w=>{
-      const abs=bi*4+w;const isCur=bi===NAV.cBlk&&w===NAV.cWk;const isDl=w===3;
+    for(let w=0;w<b.weeks;w++){
+      absWkNum++;
+      const isCur=bi===NAV.cBlk&&w===NAV.cWk;
+      const isDl=w===b.weeks-1;
       const isPeakDl=isDl&&bi===2;
-      const rpe=isDl?6:BLK_RPE[b.id]+w*0.5;
-      html+=`<div class="pwk ${isCur?'cur':''} ${isDl?'dl':''}" style="${isPeakDl?'border-color:var(--rd);background:var(--rdd);':''}" onclick="NAV.cBlk=${bi};NAV.cWk=${w};NAV.cDy=0;svNav();go('train');">
-        <div class="pl">${isPeakDl?'Test Week':isDl?'Deload':'Week '+(abs+1)}</div>
-        <div class="pv" ${isPeakDl?'style="color:var(--rd)"':''}>${isPeakDl?'1RM Tests':isDl?'Recovery':'RPE '+rpe}</div>
+      const isRec=b.id==='acc'&&w===2&&b.weeks===5;
+      const effectiveW=b.id==='acc'&&b.weeks===5&&w>2?w-1:w;
+      const rpe=isDl?6:isRec?7:BLK_RPE[b.id]+effectiveW*0.5;
+      html+=`<div class="pwk ${isCur?'cur':''} ${isDl||isRec?'dl':''}" style="${isPeakDl?'border-color:var(--rd);background:var(--rdd);':''}" onclick="NAV.cBlk=${bi};NAV.cWk=${w};NAV.cDy=0;svNav();go('train');">
+        <div class="pl">${isPeakDl?'Test Week':isDl?'Deload':isRec?'Recovery':'Week '+absWkNum}</div>
+        <div class="pv" ${isPeakDl?'style="color:var(--rd)"':''}>${isPeakDl?'1RM Tests':isDl?'Recovery':isRec?'RPE 7':'RPE '+rpe}</div>
         <div class="ps">Wk ${w+1} of ${b.name}</div>
       </div>`;
-    });
+    }
   });
   document.getElementById('progGrid').innerHTML=`<div class="pgrid">${html}</div>`;
 
   const b=BLOCKS[NAV.cBlk];
-  const exList=getProg(b.id,DAYS[0].id,false);
-  document.getElementById('progDetail').innerHTML=`<strong>${b.name} Block</strong> (Weeks ${NAV.cBlk*4+1}-${NAV.cBlk*4+4})<br>
-    RPE Wave: ${BLK_RPE[b.id]} → ${BLK_RPE[b.id]+0.5} → ${BLK_RPE[b.id]+1} → ${b.id==='str'?'1RM Test Week':'Deload'}<br>
+  const totalWeeks=BLOCKS.reduce((s,bl)=>s+bl.weeks,0);
+  let startWk=1;for(let i=0;i<NAV.cBlk;i++)startWk+=BLOCKS[i].weeks;
+  document.getElementById('progDetail').innerHTML=`<strong>${b.name} Block</strong> (Weeks ${startWk}-${startWk+b.weeks-1} of ${totalWeeks})<br>
+    RPE Wave: ${BLK_RPE[b.id]} → ${BLK_RPE[b.id]+0.5} → ${b.id==='acc'&&b.weeks===5?'Recovery → '+BLK_RPE[b.id]+1:BLK_RPE[b.id]+1} → ${b.id==='str'?'1RM Test Week':'Deload'}<br>
     Days: ${DAYS.map(d=>d.name+' ('+d.day+')').join(' · ')}`;
 }
 
