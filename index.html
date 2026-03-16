@@ -317,18 +317,24 @@ function getExDef(blkId,dayId){
 function resolveEx(ex,blkDef,wk,dayId){
   const isDeload=wk===blkDef.weeks-1;
   const isAmrap=wk===blkDef.amrapWeek;
-  const rpe=isDeload?6:blkDef.rpeWave[wk];
+  const priRpe=isDeload?6:blkDef.rpeWave[wk];
 
   if(ex.type==='pri'){
     const isDL=ex.id==='deadlift';
     const sets=isDL?blkDef.dlSets[wk]:blkDef.priSets[wk];
     const reps=isDL?blkDef.dlReps[wk]:ex.r;
-    return{sets,reps,rpe,isAmrap:isAmrap&&!isDeload,isDeload};
+    return{sets,reps,rpe:priRpe,isAmrap:isAmrap&&!isDeload,isDeload};
   }
   if(isDeload){
     return{sets:Math.max(2,ex.s-1),reps:Math.max(ex.r,5),rpe:6,isAmrap:false,isDeload:true};
   }
-  return{sets:ex.s,reps:ex.r,rpe,isAmrap:false,isDeload:false};
+  // Secondary/accessory RPE: base 8, follows wave mildly, capped at 9
+  // iso (face pulls etc) get 0 (no RPE tracking)
+  if(ex.type==='iso'){
+    return{sets:ex.s,reps:ex.r,rpe:0,isAmrap:false,isDeload:false};
+  }
+  const accRpe=Math.min(9,Math.max(7,priRpe-0.5));
+  return{sets:ex.s,reps:ex.r,rpe:accRpe,isAmrap:false,isDeload:false};
 }
 
 // RM keys for exercises
@@ -377,8 +383,10 @@ function ensureD(){
   if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;
   if(!D.blocks)D.blocks=[{id:'acc_1',type:'acc',status:'active'}];
 }
-function ldNav(){try{const s=JSON.parse(localStorage.getItem(NK));if(s)return s;}catch{}return{cBlk:0,cWk:0,cDy:0};}
+function ldNav(){try{const s=JSON.parse(localStorage.getItem(NK));if(s&&typeof s.cBlk==='number')return s;}catch{}return{cBlk:0,cWk:0,cDy:0};}
 let NAV=ldNav();
+// Ensure NAV is valid on load
+if(NAV.cBlk<0)NAV.cBlk=0;if(NAV.cWk<0)NAV.cWk=0;if(NAV.cDy<0)NAV.cDy=0;
 function svNav(){localStorage.setItem(NK,JSON.stringify(NAV));}
 let lastSvTime=0;
 function sv(){
@@ -398,6 +406,11 @@ function go(v){['train','prog','prs','setup'].forEach((n,i)=>{document.getElemen
 function refreshView(){const c=document.querySelector('.vw.a');if(c){const id=c.id.replace('V','');go(id);}}
 
 // ===== BLOCK MANAGEMENT =====
+function navBlk(dir){
+  const ni=NAV.cBlk+dir;
+  if(ni<0||ni>=D.blocks.length)return;
+  NAV.cBlk=ni;NAV.cWk=0;NAV.cDy=0;svNav();rTrain();
+}
 function nextBlockType(curType){return curType==='acc'?'trans':'acc';}
 function startNextBlock(){
   const prev=D.blocks[D.blocks.length-1];
@@ -426,11 +439,12 @@ function rTrain(){try{
 
   // Block nav (arrows + label)
   const canPrev=NAV.cBlk>0;
-  const isLast=NAV.cBlk===D.blocks.length-1;
+  const canNext=NAV.cBlk<D.blocks.length-1;
+  const blkNum=D.blocks.filter((b,i)=>b.type===block.type&&i<=NAV.cBlk).length;
   document.getElementById('blkNav').innerHTML=`
-    <div class="bn-arrow ${canPrev?'':'dis'}" onclick="if(${canPrev}){NAV.cBlk--;NAV.cWk=0;NAV.cDy=0;svNav();rTrain();}">◀</div>
-    <div class="bn-label">${blkDef.name} ${D.blocks.filter((b,i)=>b.type===block.type&&i<=NAV.cBlk).length}</div>
-    <div class="bn-arrow ${isLast?'dis':''}" onclick="if(!${isLast}){NAV.cBlk++;NAV.cWk=0;NAV.cDy=0;svNav();rTrain();}">▶</div>`;
+    <div class="bn-arrow ${canPrev?'':'dis'}" onclick="navBlk(-1)">◀</div>
+    <div class="bn-label">${blkDef.name} ${blkNum}</div>
+    <div class="bn-arrow ${canNext?'':'dis'}" onclick="navBlk(1)">▶</div>`;
 
   // Week tabs
   document.getElementById('wkTabs').innerHTML=Array.from({length:blkDef.weeks},(_,w)=>{
@@ -620,7 +634,7 @@ function mkEx(ex,ek,ei,totalEx,blkType,wkInBlk,k){
       return`<div class="sr">
       <div class="sn">${si+1}</div><div class="stg">${res.isAmrap?reps+'+@9.5':reps+'@'+rpe}</div>
       <input class="si" type="number" inputmode="decimal" value="${s.w}" placeholder="${sw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
-      <input class="si" type="number" inputmode="numeric" value="${s.r}" placeholder="${res.isAmrap?'8+':reps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
+      <input class="si" type="number" inputmode="numeric" value="${s.r}" placeholder="${res.isAmrap?reps+'+':reps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
       <input class="si" type="number" inputmode="decimal" step="0.5" value="${s.p}" placeholder="${res.isAmrap?'9.5':rpe}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
       <div class="e1c" id="e1_${ek}_${si}">${le}</div>
       <button class="sok ${s.d?'chk':''}" onclick="tglSet('${k}','${ek}',${si},${restSec},this)">✓</button>
