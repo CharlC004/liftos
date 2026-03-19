@@ -160,6 +160,17 @@ function weekRpe(wk){
   return wk.rpe||7;
 }
 
+// Inversely correlated RPE: when primary is hard, accessories back off
+function exRpeFor(wkRpe,type,isDeload){
+  if(isDeload)return 5;
+  if(type==='pri')return wkRpe;
+  if(type==='iso')return 0;// no RPE for isolation
+  // sec/acc RPE table: inversely correlated to primary
+  const table={7:{sec:8,acc:8.5},8:{sec:8,acc:8},9:{sec:7.5,acc:7.5},5:{sec:5,acc:5}};
+  const row=table[wkRpe]||table[8];
+  return row[type]||row.acc;
+}
+
 const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',cgbench:'bench',pause_bench:'bench',rdl:'deadlift',sldl:'deadlift',hbsquat:'squat',dbflat:'bench',wtd_pullup:'pullup'};
 
 // ===== FIREBASE =====
@@ -208,7 +219,16 @@ function sv(){localStorage.setItem(SK,JSON.stringify(D));lastSvTime=Date.now();i
 // Ensure current week exists
 function ensureWeek(wi){while(D.weeks.length<=wi){const prev=D.weeks[D.weeks.length-1];const pi=RPE_WAVE.indexOf(prev.rpe);let nextRpe=7;if(!prev.isDeload&&pi>=0&&pi<2)nextRpe=RPE_WAVE[pi+1];D.weeks.push({rpe:nextRpe,isDeload:false});}}
 
-function weeksSinceDeload(){let c=0;for(let i=D.weeks.length-1;i>=0;i--){if(D.weeks[i].isDeload)break;c++;}return c;}
+function weeksSinceDeload(){
+  let c=0;
+  for(let i=D.weeks.length-1;i>=0;i--){
+    if(D.weeks[i].isDeload)break;
+    // Only count if at least one session was completed in this week
+    const hasCompleted=DAYS.some((_,d)=>D.log[lk(i,d)]?.completed);
+    if(hasCompleted)c++;
+  }
+  return c;
+}
 
 function lk(w,d){return`w${w}d${d}`;}
 
@@ -272,7 +292,7 @@ function rTrain(){try{
   let wkCtrl='';
   if(!allDaysComplete(NAV.cWk)){
     wkCtrl=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
-      ${!wk.isDeload?`<button class="btn bo bs" onclick="makeDeload(${NAV.cWk})">Make Deload Week</button>`:`<button class="btn bo bs" style="border-color:var(--gn);color:var(--gn);">✓ Deload Week</button>`}
+      ${!wk.isDeload?`<button class="btn bo bs" onclick="confirmDeload(${NAV.cWk})">Make Deload Week</button>`:`<button class="btn bo bs" style="border-color:var(--gn);color:var(--gn);" onclick="undoDeload(${NAV.cWk})">✓ Deload (tap to undo)</button>`}
       <button class="btn bo bs" onclick="showRpeModal(${NAV.cWk})">Change RPE</button>
       <button class="btn bo bs" onclick="showCustomSessModal()">+ Custom Session</button>
     </div>`;
@@ -321,7 +341,7 @@ function rTrain(){try{
     const adj=D.log[k].setAdj[ek]||0;
     const sets=Math.max(1,(ex.s||3)+adj);
     if(!D.log[k].ex[ek]){
-      const exRpe=wk.isDeload?5:Math.min(9.5,Math.max(5,rpe+(ex.rpeOff||0)));
+      const exRpe=ex._added?Math.max(5,rpe-1):exRpeFor(rpe,ex.type,wk.isDeload);
       const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
       const sw=rm>0&&exRpe>0&&ex.r>0?cWt(rm,ex.r,exRpe,D.round):0;
       D.log[k].ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:ex.r||'',p:'',d:false}));needsSave=true;
@@ -345,7 +365,8 @@ function rTrain(){try{
     html+=`<button class="btn bp bf" style="margin-top:10px;" onclick="completeSess('${k}')">Complete Session</button>`;
   }
   if(D.log[k]?.completed){
-    html+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Completed${D.log[k].date?' · '+D.log[k].date:''}</div>`;
+    html+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Completed${D.log[k].date?' · '+D.log[k].date:''}</div>
+    <div style="text-align:center;"><button class="btn bo bs" style="font-size:.64rem;color:var(--tx3);" onclick="uncompleteSess('${k}')">Reopen Session</button></div>`;
   }
 
   document.getElementById('tc').innerHTML=html;
@@ -356,7 +377,7 @@ function allDaysComplete(wi){return DAYS.every((_,d)=>D.log[lk(wi,d)]?.completed
 // ===== RENDER EXERCISE =====
 function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const isAdded=ex._added;
-  const exRpe=isDl?5:Math.min(9.5,Math.max(5,wkRpe+(ex.rpeOff||0)));
+  const exRpe=isAdded?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type,isDl);
   const adj=D.log[k].setAdj[ek]||0;
   const sets=Math.max(1,(ex.s||3)+adj);
   const reps=ex.r;const isOpenReps=reps===0;
@@ -457,12 +478,39 @@ function completeSess(k){
   D.sessions.push(sess);sv();toast('Session logged! 💪');stopTimer();stopSessTimer();rTrain();
 }
 
+function uncompleteSess(k){
+  if(!D.log[k])return;
+  D.log[k].completed=false;
+  // Remove the most recent matching session record from D.sessions
+  const at=D.log[k].at;
+  if(at){
+    const idx=D.sessions.findIndex(s=>s.date===D.log[k].date&&Math.abs(new Date(s.date)-new Date(D.log[k].date))<86400000);
+    // Find by timestamp match — last session with same at
+    for(let i=D.sessions.length-1;i>=0;i--){
+      if(D.sessions[i].date===D.log[k].date){D.sessions.splice(i,1);break;}
+    }
+  }
+  delete D.log[k].at;
+  sv();toast('Session reopened');
+  if(NAV.customKey)rTrainCustom();else rTrain();
+}
+
 // ===== WEEK CONTROLS =====
+function confirmDeload(wi){
+  if(confirm('Convert Week '+(wi+1)+' to a deload week? Next week will reset to RPE 7.')){makeDeload(wi);}
+}
 function makeDeload(wi){
+  D.weeks[wi].prevRpe=D.weeks[wi].rpe;// store for undo
   D.weeks[wi].isDeload=true;D.weeks[wi].rpe=5;
   // Next week resets to RPE 7
   if(D.weeks.length>wi+1){D.weeks[wi+1].rpe=7;D.weeks[wi+1].isDeload=false;}
   sv();rTrain();
+}
+function undoDeload(wi){
+  const prev=D.weeks[wi].prevRpe||7;
+  D.weeks[wi].isDeload=false;D.weeks[wi].rpe=prev;
+  delete D.weeks[wi].prevRpe;
+  sv();rTrain();toast('Deload undone');
 }
 function showRpeModal(wi){
   const wk=D.weeks[wi];
@@ -529,7 +577,8 @@ function rTrainCustom(){
   if(!log.completed){
     html+=`<div style="display:flex;gap:8px;margin-top:12px;"><button class="btn bo bs" style="flex:1;" onclick="showAddExModal('${k}')">+ Add Exercise</button></div>`;
     html+=`<button class="btn bp bf" style="margin-top:10px;" onclick="completeCS('${k}')">Complete Session</button>`;
-  }else html+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Completed · ${log.date||''}</div>`;
+  }else html+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Completed · ${log.date||''}</div>
+    <div style="text-align:center;"><button class="btn bo bs" style="font-size:.64rem;color:var(--tx3);" onclick="uncompleteSess('${k}')">Reopen Session</button></div>`;
   document.getElementById('tc').innerHTML=html;
 }
 function completeCS(k){
