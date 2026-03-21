@@ -35,7 +35,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .bp{background:var(--ac);color:#fff;box-shadow:0 2px 10px var(--acg);}.bp:active{transform:scale(.97);}
 .bf{width:100%;display:block;}.bo{background:transparent;border:1px solid var(--bdr);color:var(--tx2);}.bs{padding:7px 14px;font-size:.72rem;}.bd{background:var(--rdd);color:var(--rd);border:1px solid transparent;}
 .rb{display:inline-block;padding:2px 8px;border-radius:10px;font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;}
-.rlo{background:var(--gnd);color:var(--gn);}.rmd{background:var(--yld);color:var(--yl);}.rhi{background:var(--acd);color:var(--ac);}.rmx{background:var(--rdd);color:var(--rd);}
+.rlo{background:var(--gnd);color:var(--gn);}.rbl{background:var(--bld);color:var(--bl);}.rmd{background:var(--yld);color:var(--yl);}.rhi{background:var(--acd);color:var(--ac);}.rmx{background:var(--rdd);color:var(--rd);}
 .dtabs{display:flex;gap:4px;margin-bottom:14px;}.dtab{flex:1;padding:8px 4px;border:1px solid var(--bdr);border-radius:var(--rs);background:var(--bg2);color:var(--tx3);font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.3px;cursor:pointer;text-align:center;transition:all .2s;}.dtab.act{background:var(--ac);border-color:var(--ac);color:#fff;}.dtab.dn{border-color:var(--gn);color:var(--gn);}
 .exb{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:8px;overflow:hidden;}
 .exh{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;}.exn{font-weight:700;font-size:.88rem;}.exm{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--tx2);}
@@ -50,7 +50,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .pre-card .pc-item{display:flex;flex-direction:column;gap:4px;align-items:center;}.pre-card .pc-label{font-size:.58rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--tx3);}
 .nut-btn{padding:4px 10px;border:1px solid var(--bdr);border-radius:12px;background:var(--bg3);color:var(--tx3);font-size:.68rem;font-weight:500;cursor:pointer;transition:all .15s;}.nut-btn.sel{border-color:var(--ac);color:var(--ac);background:var(--acd);}
 .timer-bar{position:fixed;bottom:calc(56px + var(--sb));left:0;right:0;background:var(--bg3);border-top:1px solid var(--bdr);padding:8px 16px;display:none;align-items:center;gap:12px;z-index:55;}.timer-bar.on{display:flex;}
-.timer-bar .tb-time{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:600;min-width:50px;}.timer-bar .tb-prog{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}.timer-bar .tb-fill{height:100%;background:var(--ac);transition:width 1s linear;border-radius:2px;}.timer-bar .tb-x{background:none;border:none;color:var(--tx3);font-size:1rem;cursor:pointer;padding:4px;}
+.timer-bar .tb-time{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:600;min-width:50px;}.timer-bar .tb-add{padding:4px 10px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg2);color:var(--ac);font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0;}.timer-bar .tb-add:active{transform:scale(.92);background:var(--acd);}.timer-bar .tb-prog{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}.timer-bar .tb-fill{height:100%;background:var(--ac);transition:width 1s linear;border-radius:2px;}.timer-bar .tb-x{background:none;border:none;color:var(--tx3);font-size:1rem;cursor:pointer;padding:4px;}
 .sess-timer-toggle{position:fixed;top:calc(12px + var(--st));right:16px;z-index:55;display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(--bdr);background:var(--bg2);color:var(--tx2);font-family:'IBM Plex Mono',monospace;font-size:.74rem;font-weight:500;cursor:pointer;transition:all .25s;box-shadow:0 2px 8px rgba(0,0,0,.3);}.sess-timer-toggle:active{transform:scale(.95);}.sess-timer-toggle.running{border-color:var(--gn);color:var(--gn);background:var(--gnd);}
 .sess-timer-toggle .st-dot{width:6px;height:6px;border-radius:50%;background:var(--tx3);transition:background .2s;}.sess-timer-toggle.running .st-dot{background:var(--gn);box-shadow:0 0 6px var(--gn);animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
@@ -100,16 +100,16 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 </div>
 <div class="sess-timer-toggle" id="sessTimerToggle" onclick="toggleSessPanel()" style="display:none;"><span class="st-dot"></span><span id="sessTimerMini">0:00</span></div>
 <div class="sess-timer-expanded" id="sessTimerPanel"><div class="st-label">Session Duration</div><div class="st-time" id="sessTimerFull">0:00:00</div><div class="st-actions"><div class="st-btn stop" onclick="stopSessTimer();event.stopPropagation();">Stop</div><div class="st-btn" onclick="hideSessPanel();event.stopPropagation();">Hide</div></div></div>
-<div class="timer-bar" id="timerBar"><div class="tb-time" id="tbTime">0:00</div><div class="tb-prog"><div class="tb-fill" id="tbFill" style="width:100%"></div></div><button class="tb-x" onclick="stopTimer()">✕</button></div>
+<div class="timer-bar" id="timerBar"><div class="tb-time" id="tbTime">0:00</div><button class="tb-add" onclick="addRestTime(15)">+15s</button><div class="tb-prog"><div class="tb-fill" id="tbFill" style="width:100%"></div></div><button class="tb-x" onclick="stopTimer()">✕</button></div>
 <div class="bnav" style="display:none;"><button class="nb a" onclick="go('train')" id="n0"><span class="ni">🏋️</span>Train</button><button class="nb" onclick="go('prog')" id="n1"><span class="ni">📋</span>History</button><button class="nb" onclick="go('prs')" id="n2"><span class="ni">📈</span>PRs</button><button class="nb" onclick="go('setup')" id="n3"><span class="ni">⚙️</span>Setup</button></div>
 <div class="mbg" id="mbg" onclick="if(event.target===this)cM();"><div class="mdl" id="mc"></div></div>
 <div class="toast" id="tst"></div>
 <script>
 // ===== RPE TABLE =====
-const RT={1:{10:1,9.5:.978,9:.955,8.5:.939,8:.922,7.5:.907,7:.892},2:{10:.955,9.5:.939,9:.922,8.5:.907,8:.892,7.5:.878,7:.863},3:{10:.922,9.5:.907,9:.892,8.5:.878,8:.863,7.5:.85,7:.837},4:{10:.892,9.5:.878,9:.863,8.5:.85,8:.837,7.5:.824,7:.811},5:{10:.863,9.5:.85,9:.837,8.5:.824,8:.811,7.5:.799,7:.786},6:{10:.837,9.5:.824,9:.811,8.5:.799,8:.786,7.5:.774,7:.762},8:{10:.786,9.5:.774,9:.762,8.5:.751,8:.739,7.5:.723,7:.707},10:{10:.739,9.5:.723,9:.707,8.5:.694,8:.681,7.5:.668,7:.655},12:{10:.707,9.5:.694,9:.681,8.5:.668,8:.655,7.5:.642,7:.63},15:{10:.668,9.5:.655,9:.642,8.5:.63,8:.618,7.5:.606,7:.594}};
+const RT={1:{10:1,9.5:.978,9:.955,8.5:.939,8:.922,7.5:.907,7:.892,6.5:.878,6:.863},2:{10:.955,9.5:.939,9:.922,8.5:.907,8:.892,7.5:.878,7:.863,6.5:.85,6:.837},3:{10:.922,9.5:.907,9:.892,8.5:.878,8:.863,7.5:.85,7:.837,6.5:.824,6:.811},4:{10:.892,9.5:.878,9:.863,8.5:.85,8:.837,7.5:.824,7:.811,6.5:.799,6:.786},5:{10:.863,9.5:.85,9:.837,8.5:.824,8:.811,7.5:.799,7:.786,6.5:.774,6:.762},6:{10:.837,9.5:.824,9:.811,8.5:.799,8:.786,7.5:.774,7:.762,6.5:.751,6:.739},8:{10:.786,9.5:.774,9:.762,8.5:.751,8:.739,7.5:.723,7:.707,6.5:.694,6:.681},10:{10:.739,9.5:.723,9:.707,8.5:.694,8:.681,7.5:.668,7:.655,6.5:.642,6:.63},12:{10:.707,9.5:.694,9:.681,8.5:.668,8:.655,7.5:.642,7:.63,6.5:.618,6:.606},15:{10:.668,9.5:.655,9:.642,8.5:.63,8:.618,7.5:.606,7:.594,6.5:.583,6:.571}};
 function rPct(r,p){const ks=Object.keys(RT).map(Number).sort((a,b)=>a-b);let rk=ks[0];for(const k of ks)if(k<=r)rk=k;const row=RT[rk];const ps=Object.keys(row).map(Number).sort((a,b)=>b-a);let pk=ps[ps.length-1];for(const k of ps)if(k>=p)pk=k;return row[pk]||.75;}
 function cWt(rm,r,p,rd){return Math.round(rm*rPct(r,p)/rd)*rd;}
-function cE1(w,r,p){const pc=rPct(r,p);return pc>0?Math.round(w/pc):w;}
+function cE1(w,r,p){w=+w;r=+r;p=+p;if(!w||!r||!p||w<=0||r<=0||p<=0)return 0;const pc=rPct(r,p);return pc>0?Math.round(w/pc):0;}
 
 // ===== PROGRAM =====
 const RPE_WAVE=[7,8,9];// cycles: 7->8->9->choose deload(5) or restart(7)
@@ -166,7 +166,7 @@ function exRpeFor(wkRpe,type,isDeload){
   if(type==='pri')return wkRpe;
   if(type==='iso')return 0;// no RPE for isolation
   // sec/acc RPE table: inversely correlated to primary
-  const table={7:{sec:8,acc:8.5},8:{sec:8,acc:8},9:{sec:7.5,acc:7.5},5:{sec:5,acc:5}};
+  const table={6:{sec:7,acc:7},7:{sec:8,acc:8.5},8:{sec:8,acc:8},9:{sec:7.5,acc:7.5},5:{sec:5,acc:5}};
   const row=table[wkRpe]||table[8];
   return row[type]||row.acc;
 }
@@ -273,8 +273,8 @@ function rTrain(){try{
     <div class="wn-arrow ${canPrev?'':'dis'}" onclick="if(${canPrev?'true':'false'}){NAV.cWk--;NAV.cDy=0;svNav();rTrain();}">◀</div>
     <div class="wn-label">
       <div style="font-size:.82rem;font-weight:700;">Week ${NAV.cWk+1}</div>
-      <div style="font-size:.68rem;color:${wk.isDeload?'var(--gn)':'var(--tx2)'};font-family:'IBM Plex Mono',monospace;">
-        ${wk.isDeload?'DELOAD · RPE 5':'RPE '+rpe}
+      <div style="font-size:.68rem;color:${wk.isDeload?'var(--gn)':wk.isReintro?'var(--bl)':'var(--tx2)'};font-family:'IBM Plex Mono',monospace;">
+        ${wk.isDeload?'DELOAD · RPE 5':wk.isReintro?'REINTRO · RPE 6':'RPE '+rpe}
       </div>
     </div>
     <div class="wn-arrow" onclick="NAV.cWk++;NAV.cDy=0;svNav();rTrain();">▶</div>`;
@@ -291,8 +291,11 @@ function rTrain(){try{
   // Week controls (deload toggle, RPE adjust)
   let wkCtrl='';
   if(!allDaysComplete(NAV.cWk)){
+    const isReintro=wk.rpe===6&&!wk.isDeload;
     wkCtrl=`<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
       ${!wk.isDeload?`<button class="btn bo bs" onclick="confirmDeload(${NAV.cWk})">Make Deload Week</button>`:`<button class="btn bo bs" style="border-color:var(--gn);color:var(--gn);" onclick="undoDeload(${NAV.cWk})">✓ Deload (tap to undo)</button>`}
+      ${!isReintro&&!wk.isDeload?`<button class="btn bo bs" style="border-color:var(--bl);color:var(--bl);" onclick="setReintro(${NAV.cWk})">Reintro (RPE 6)</button>`:''}
+      ${isReintro?`<button class="btn bo bs" style="border-color:var(--bl);color:var(--bl);background:var(--bld);" onclick="undoReintro(${NAV.cWk})">✓ Reintro (tap to undo)</button>`:''}
       <button class="btn bo bs" onclick="showRpeModal(${NAV.cWk})">Change RPE</button>
       <button class="btn bo bs" onclick="showCustomSessModal()">+ Custom Session</button>
     </div>`;
@@ -310,7 +313,7 @@ function rTrain(){try{
 
   let html=`<div style="margin-bottom:10px;">
     <div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;">${dy.name}</div>
-    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">Week ${NAV.cWk+1} · ${wk.isDeload?'Deload · RPE 5':'RPE '+rpe}</div>
+    <div style="font-size:.72rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">Week ${NAV.cWk+1} · ${wk.isDeload?'Deload · RPE 5':wk.isReintro?'Reintro · RPE 6':'RPE '+rpe}</div>
   </div>`;
   html+=wkCtrl;
 
@@ -432,13 +435,13 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
     <div class="exs">
     <div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
     ${saved.slice(0,sets).map((s,si)=>{
-      const le=s.w>0&&s.r>0&&s.p>0?cE1(s.w,s.r,s.p):'';
+      const le=cE1(s.w,s.r,s.p);
       return`<div class="sr">
       <div class="sn">${si+1}</div><div class="stg">${targDisplay}</div>
       <input class="si" type="number" inputmode="decimal" value="${s.w}" placeholder="${sw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
       <input class="si" type="number" inputmode="numeric" value="${s.r}" placeholder="${isOpenReps?'':reps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
       <input class="si" type="number" inputmode="decimal" step="0.5" value="${s.p}" placeholder="${exRpe||''}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
-      <div class="e1c" id="e1_${ek}_${si}">${le}</div>
+      <div class="e1c" id="e1_${ek}_${si}">${le||''}</div>
       <button class="sok ${s.d?'chk':''}" onclick="tglSet('${k}','${ek}',${si},${restSec},this)">✓</button>
     </div>`;}).join('')}</div>${ctrlHtml}</div>`;
 }
@@ -447,7 +450,7 @@ function togglePanel(btn,id){const el=document.getElementById(id);if(el)el.style
 
 // ===== SET OPERATIONS =====
 function setNut(k,val){D.log[k].nutrition=D.log[k].nutrition===val?'':val;sv();rTrain();}
-function uSL(k,ek,si,f,v){const n=parseFloat(v);if(D.log[k]?.ex[ek]){D.log[k].ex[ek][si][f]=isNaN(n)?'':n;const s=D.log[k].ex[ek][si];const el=document.getElementById('e1_'+ek+'_'+si);if(el)el.textContent=(s.w>0&&s.r>0&&s.p>0)?cE1(s.w,s.r,s.p):'';sv();}}
+function uSL(k,ek,si,f,v){const n=parseFloat(v);if(D.log[k]?.ex[ek]){D.log[k].ex[ek][si][f]=isNaN(n)?'':n;const s=D.log[k].ex[ek][si];const el=document.getElementById('e1_'+ek+'_'+si);if(el){const e=cE1(s.w,s.r,s.p);el.textContent=e>0?e:'';}sv();}}
 function tglSet(k,ek,si,restSec,btn){if(D.log[k]?.ex[ek]){const was=D.log[k].ex[ek][si].d;D.log[k].ex[ek][si].d=!was;btn.classList.toggle('chk');sv();if(!was){startTimer(restSec);startSessTimer();}}}
 function adjSet(k,ek,d){if(!D.log[k].setAdj)D.log[k].setAdj={};D.log[k].setAdj[ek]=(D.log[k].setAdj[ek]||0)+d;sv();rTrain();}
 function removeEx(k,ek){
@@ -511,6 +514,16 @@ function undoDeload(wi){
   D.weeks[wi].isDeload=false;D.weeks[wi].rpe=prev;
   delete D.weeks[wi].prevRpe;
   sv();rTrain();toast('Deload undone');
+}
+function setReintro(wi){
+  D.weeks[wi].prevRpe=D.weeks[wi].rpe;
+  D.weeks[wi].rpe=6;D.weeks[wi].isDeload=false;D.weeks[wi].isReintro=true;
+  sv();rTrain();toast('Reintroduction week set · RPE 6');
+}
+function undoReintro(wi){
+  const prev=D.weeks[wi].prevRpe||7;
+  D.weeks[wi].rpe=prev;delete D.weeks[wi].isReintro;delete D.weeks[wi].prevRpe;
+  sv();rTrain();toast('Reintro undone');
 }
 function showRpeModal(wi){
   const wk=D.weeks[wi];
@@ -601,6 +614,7 @@ let timerIntv=null,timerEnd=0,timerDur=0;
 function startTimer(sec){stopTimer();timerDur=sec;timerEnd=Date.now()+sec*1000;document.getElementById('timerBar').classList.add('on');timerIntv=setInterval(tickTimer,200);tickTimer();}
 function tickTimer(){const left=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));const m=Math.floor(left/60);const s=left%60;document.getElementById('tbTime').textContent=m+':'+(s<10?'0':'')+s;document.getElementById('tbFill').style.width=Math.max(0,(left/timerDur)*100)+'%';if(left<=0)stopTimer();}
 function stopTimer(){clearInterval(timerIntv);timerIntv=null;document.getElementById('timerBar').classList.remove('on');}
+function addRestTime(sec){if(!timerIntv)return;timerEnd+=sec*1000;timerDur+=sec;tickTimer();}
 
 // ===== HISTORY VIEW =====
 function rHistory(){
@@ -613,7 +627,7 @@ function rHistory(){
     html+=`<div class="cd" style="cursor:pointer;" onclick="NAV.cWk=${wi};NAV.cDy=0;svNav();go('train');">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
         <span style="font-weight:700;">Week ${wi+1}</span>
-        <span class="rb ${wk.isDeload?'rlo':wk.rpe>=9?'rmx':wk.rpe>=8?'rhi':'rmd'}">${wk.isDeload?'Deload':'RPE '+wk.rpe}</span>
+        <span class="rb ${wk.isDeload?'rlo':wk.isReintro?'rbl':wk.rpe>=9?'rmx':wk.rpe>=8?'rhi':'rmd'}">${wk.isDeload?'Deload':wk.isReintro?'Reintro':'RPE '+wk.rpe}</span>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;">${days.map(d=>`<span style="font-size:.7rem;padding:3px 8px;border-radius:4px;background:${d.done?'var(--gnd)':'var(--bg3)'};color:${d.done?'var(--gn)':'var(--tx3)'};">${d.done?'✓':''} ${d.name.split('+')[0].trim()}${d.date?' · '+d.date:''}</span>`).join('')}</div>
     </div>`;
