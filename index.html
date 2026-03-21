@@ -116,7 +116,7 @@ const RPE_WAVE=[7,8,9];// cycles: 7->8->9->choose deload(5) or restart(7)
 const DAYS=[
   {id:'squat',name:'Squat + Legs'},
   {id:'bench1',name:'Bench + Chest'},
-  {id:'pull_fsq',name:'Pull-ups + Front Squat'},
+  {id:'pull_fsq',name:'Front Squat + Back'},
   {id:'bench2',name:'Paused Bench + Shoulders'}
 ];
 
@@ -137,11 +137,10 @@ function getExDef(dayId){
       {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45,rpeOff:0}
     ],
     pull_fsq:[
-      {id:'wtd_pullup',name:'Weighted Pull-ups',s:4,r:0,type:'pri',rest:180,rpeOff:0,repRange:'5-8'},
       {id:'frontsquat',name:'Front Squat',s:5,r:5,type:'pri',rest:240,rpeOff:0},
       {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:10,type:'acc',rest:120,rpeOff:-1},
-      {id:'csrow',name:'Chest-Supported Row',s:3,r:10,type:'sec',rest:180,rpeOff:-0.5},
-      {id:'latpull',name:'Lat Pulldown',s:3,r:12,type:'acc',rest:90,rpeOff:-1},
+      {id:'csrow',name:'Chest-Supported Row',s:4,r:10,type:'sec',rest:180,rpeOff:-0.5},
+      {id:'latpull',name:'Lat Pulldown',s:4,r:12,type:'acc',rest:90,rpeOff:-1},
       {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45,rpeOff:0}
     ],
     bench2:[
@@ -347,10 +346,20 @@ function rTrain(){try{
       const exRpe=ex._added?Math.max(5,rpe-1):exRpeFor(rpe,ex.type,wk.isDeload);
       const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
       const sw=rm>0&&exRpe>0&&ex.r>0?cWt(rm,ex.r,exRpe,D.round):0;
-      D.log[k].ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:ex.r||'',p:'',d:false}));needsSave=true;
+      const fillRpe=ex.type==='iso'?'':exRpe;
+      D.log[k].ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:ex.r||'',p:fillRpe,d:false}));needsSave=true;
     }
-    while(D.log[k].ex[ek].length<sets){D.log[k].ex[ek].push({w:'',r:ex.r||'',p:'',d:false});needsSave=true;}
+    while(D.log[k].ex[ek].length<sets){
+      const exRpe=ex._added?Math.max(5,rpe-1):exRpeFor(rpe,ex.type,wk.isDeload);
+      const fillRpe=ex.type==='iso'?'':exRpe;
+      D.log[k].ex[ek].push({w:'',r:ex.r||'',p:fillRpe,d:false});needsSave=true;
+    }
     if(D.log[k].ex[ek].length>sets)D.log[k].ex[ek]=D.log[k].ex[ek].slice(0,sets);
+    // Backfill empty RPE for existing sets
+    if(ex.type!=='iso'){
+      const exRpe=ex._added?Math.max(5,rpe-1):exRpeFor(rpe,ex.type,wk.isDeload);
+      D.log[k].ex[ek].forEach(s=>{if(s.p===''||s.p===undefined||s.p===null){s.p=exRpe;needsSave=true;}});
+    }
   });
   if(needsSave)sv();
 
