@@ -114,10 +114,10 @@ function cE1(w,r,p){const pc=rPct(r,p);return pc>0?Math.round(w/pc):w;}
 // ===== PROGRAM =====
 const RPE_WAVE=[7,8,9];// cycles: 7->8->9->choose deload(5) or restart(7)
 const DAYS=[
-  {id:'squat',name:'Squat + Legs'},
-  {id:'bench1',name:'Bench + Chest'},
-  {id:'pull_fsq',name:'Pull-ups + Front Squat'},
-  {id:'bench2',name:'Paused Bench + Shoulders'}
+  {id:'squat',name:'Squat'},
+  {id:'bench1',name:'Bench'},
+  {id:'pull_fsq',name:'Front Squat'},
+  {id:'bench2',name:'Paused Bench'}
 ];
 
 function getExDef(dayId){
@@ -137,10 +137,9 @@ function getExDef(dayId){
       {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45,rpeOff:0}
     ],
     pull_fsq:[
-      {id:'wtd_pullup',name:'Weighted Pull-ups',s:4,r:0,type:'pri',rest:180,rpeOff:0,repRange:'5-8'},
       {id:'frontsquat',name:'Front Squat',s:5,r:5,type:'pri',rest:240,rpeOff:0},
-      {id:'csrow',name:'Chest-Supported Row',s:3,r:10,type:'sec',rest:180,rpeOff:-0.5},
-      {id:'latpull',name:'Lat Pulldown',s:3,r:12,type:'acc',rest:90,rpeOff:-1},
+      {id:'csrow',name:'Chest-Supported Row',s:4,r:10,type:'sec',rest:180,rpeOff:-0.5},
+      {id:'latpull',name:'Lat Pulldown',s:4,r:12,type:'acc',rest:90,rpeOff:-1},
       {id:'backext',name:'Back Extensions',s:3,r:12,type:'acc',rest:75,rpeOff:-1},
       {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45,rpeOff:0}
     ],
