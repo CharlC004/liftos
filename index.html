@@ -162,7 +162,8 @@ const OFF_SEASON=[
     {id:'dbflat',name:'Flat DB Press',s:3,r:12,type:'acc',rest:120},
     {id:'dbohp',name:'DB Overhead Press',s:3,r:12,type:'acc',rest:90},
     {id:'tricep',name:'Tricep Pushdowns',s:3,r:12,type:'acc',rest:75},
-    {id:'laterals',name:'Lateral Raises',s:3,r:12,type:'iso',rest:45}
+    {id:'laterals',name:'Lateral Raises',s:3,r:12,type:'iso',rest:45},
+    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]}
 ];
 
@@ -286,9 +287,15 @@ function rTrain(){
     const isToday=ds===today;const isSel=ds===selDate;
     // Check sessions on this date
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
-    const doneSess=daySess.filter(k=>D.sessions[k].completed);
     let dots='';
-    if(daySess.length){dots=`<div class="cal-dots">${daySess.map(k=>`<div class="cal-dot ${D.sessions[k].completed?'done':'partial'}"></div>`).join('')}</div>`;}
+    if(daySess.length){
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_fsq:'var(--yl)',is_pbench:'var(--rd)',is_sqbench:'var(--bl)'};
+      dots=`<div class="cal-dots">${daySess.map(k=>{
+        const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
+        const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
+        return`<div class="cal-dot" style="background:${col};${done?'':'opacity:.5;'}"></div>`;
+      }).join('')}</div>`;
+    }
     ch+=`<div class="cal-day ${isToday?'today':''} ${isSel?'sel':''}" onclick="selDate='${ds}';rTrain();">${d}${dots}</div>`;
   }
   ch+=`</div>`;
@@ -331,6 +338,7 @@ function rTrain(){
     sh+=`<div class="tmpl-btn" onclick="startSess('${selDate}','${t.id}',${sug})">${t.name}<div style="font-size:.64rem;color:var(--tx3);margin-top:2px;">RPE ${sug}</div></div>`;
   });
   sh+=`<div class="tmpl-btn" onclick="startCustom('${selDate}')">+ Custom<div style="font-size:.64rem;color:var(--tx3);margin-top:2px;">Freeform</div></div>`;
+  sh+=`<div class="tmpl-btn" style="border-color:var(--gn);color:var(--gn);" onclick="startDeload('${selDate}')">Deload<div style="font-size:.64rem;color:var(--gn);margin-top:2px;opacity:.7;">RPE 5</div></div>`;
   sh+=`</div>`;
   if(existingSess.length)sh+=`</div>`;
 
@@ -359,6 +367,12 @@ function doStartCustom(date){
   const k=sessKey(date,'cust_'+Date.now());
   D.sessions[k]={templateId:null,name,date,rpe,completed:false,ex:{},added:[],removed:[],setAdj:{},exOrder:[],isCustom:true};
   sv();cM();openSess(k);
+}
+
+function startDeload(date){
+  const k=sessKey(date,'deload_'+Date.now());
+  D.sessions[k]={templateId:null,name:'Deload',date,rpe:5,completed:false,ex:{},added:[],removed:[],setAdj:{},exOrder:[],isCustom:true,isDeload:true};
+  sv();openSess(k);
 }
 
 function openSess(k){
@@ -427,9 +441,11 @@ function rSess(){
 }
 
 function changeRpe(k){
+  const cur=D.sessions[k]?.rpe||7;
   oM(`<h2>Set RPE</h2><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-  ${[5,7,7.5,8,8.5,9,9.5].map(r=>`<button class="btn ${r===D.sessions[k].rpe?'bp':'bo'} bs" onclick="D.sessions[k].rpe=${r};sv();cM();rSess();">${r}</button>`).join('')}</div>`);
+  ${[5,7,7.5,8,8.5,9,9.5].map(r=>`<button class="btn ${r===cur?'bp':'bo'} bs" onclick="setRpe('${k}',${r})">${r}</button>`).join('')}</div>`);
 }
+function setRpe(k,r){D.sessions[k].rpe=r;sv();cM();rSess();}
 
 // ===== RENDER EXERCISE =====
 function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
@@ -603,15 +619,43 @@ function stopTimer(){clearInterval(timerIntv);timerIntv=null;document.getElement
 function rHist(){
   const all=Object.entries(D.sessions).filter(([k,s])=>s.completed).sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
   if(!all.length){document.getElementById('histList').innerHTML='<div class="empty">No completed sessions yet</div>';return;}
-  document.getElementById('histList').innerHTML=all.slice(0,30).map(([k,s])=>{
-    const e1s=[];const am={};(s.added||[]).forEach(a=>{am['add_'+a._addIdx]=a.id;});
-    for(const[ek,sets]of Object.entries(s.ex||{})){const lid=am[ek]||ek.split('_')[0];sets.forEach(st=>{if(st.d&&st.w>0&&st.r>0&&st.p>0){const e=cE1(st.w,st.r,st.p);e1s.push(lid.split('_')[0]+':'+e);}});}
-    return`<div class="cd" style="cursor:pointer;" onclick="selDate='${s.date}';activeSessKey='${k}';go('train');rSess();">
-      <div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">${s.name}</span><span class="rb ${s.rpe>=9?'rmx':s.rpe>=8?'rhi':'rmd'}">RPE ${s.rpe}</span></div>
-      <div style="font-size:.7rem;color:var(--tx3);margin-top:4px;">${s.date}</div>
-      ${e1s.length?`<div style="font-size:.66rem;color:var(--ac);font-family:'IBM Plex Mono',monospace;margin-top:4px;">${[...new Set(e1s)].slice(0,4).join(' · ')}</div>`:''}
-    </div>`;
-  }).join('');
+
+  // Group by week (ISO week: Monday-Sunday)
+  const weeks={};
+  all.forEach(([k,s])=>{
+    const d=new Date(s.date);const day=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-(day===0?6:day-1));
+    const wk=fmtDate(mon);
+    if(!weeks[wk])weeks[wk]={start:wk,sessions:[],totalSets:0};
+    weeks[wk].sessions.push({k,s});
+    // Count completed sets
+    for(const sets of Object.values(s.ex||{})){(sets||[]).forEach(st=>{if(st.d)weeks[wk].totalSets++;});}
+  });
+
+  let html='';
+  // Summary bar
+  const totalSess=all.length;
+  const thisMonth=all.filter(([k,s])=>s.date?.startsWith(calYear+'-'+String(calMonth+1).padStart(2,'0'))).length;
+  html+=`<div style="display:flex;gap:16px;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;font-size:.76rem;">
+    <div><span style="color:var(--ac);font-weight:700;font-size:1.1rem;">${totalSess}</span><div style="color:var(--tx3);font-size:.6rem;text-transform:uppercase;">Total</div></div>
+    <div><span style="color:var(--bl);font-weight:700;font-size:1.1rem;">${thisMonth}</span><div style="color:var(--tx3);font-size:.6rem;text-transform:uppercase;">This month</div></div>
+    <div><span style="color:var(--gn);font-weight:700;font-size:1.1rem;">${Object.keys(weeks).length}</span><div style="color:var(--tx3);font-size:.6rem;text-transform:uppercase;">Weeks</div></div>
+  </div>`;
+
+  Object.values(weeks).forEach(wk=>{
+    const endDate=new Date(wk.start);endDate.setDate(endDate.getDate()+6);
+    const startLabel=new Date(wk.start).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    const endLabel=endDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    html+=`<div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin:12px 0 6px;display:flex;justify-content:space-between;">
+      <span>${startLabel} – ${endLabel}</span><span>${wk.sessions.length} sessions · ${wk.totalSets} sets</span></div>`;
+    wk.sessions.forEach(({k,s})=>{
+      html+=`<div class="cd" style="cursor:pointer;padding:12px;" onclick="selDate='${s.date}';activeSessKey='${k}';go('train');rSess();">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div><span style="font-weight:700;font-size:.85rem;">${s.name}</span><span style="font-size:.68rem;color:var(--tx3);margin-left:8px;">${s.date}</span></div>
+          <span class="rb ${s.rpe>=9?'rmx':s.rpe>=8?'rhi':s.rpe<=5?'rlo':'rmd'}">RPE ${s.rpe}</span>
+        </div></div>`;
+    });
+  });
+  document.getElementById('histList').innerHTML=html;
 }
 
 // ===== PRs =====
