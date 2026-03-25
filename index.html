@@ -415,9 +415,10 @@ function rSess(){
   if(!s.completed){
     h+=`<div style="display:flex;gap:8px;margin-top:12px;"><button class="btn bo bs" style="flex:1;" onclick="showAddExModal('${k}')">+ Add Exercise</button></div>`;
     h+=`<button class="btn bp bf" style="margin-top:10px;" onclick="completeSess('${k}')">Complete Session</button>`;
+    h+=`<div style="text-align:center;margin-top:10px;"><button class="btn bo bs" style="font-size:.64rem;color:var(--rd);border-color:var(--rd);" onclick="deleteSess('${k}')">Delete Session</button></div>`;
   }else{
     h+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Completed</div>
-    <div style="text-align:center;"><button class="btn bo bs" style="font-size:.64rem;color:var(--tx3);" onclick="uncompleteSess('${k}')">Reopen Session</button></div>`;
+    <div style="text-align:center;display:flex;gap:8px;justify-content:center;"><button class="btn bo bs" style="font-size:.64rem;color:var(--tx3);" onclick="uncompleteSess('${k}')">Reopen</button><button class="btn bo bs" style="font-size:.64rem;color:var(--rd);border-color:var(--rd);" onclick="deleteSess('${k}')">Delete</button></div>`;
   }
 
   document.getElementById('calArea').innerHTML='';
@@ -544,9 +545,18 @@ function completeSess(k){
 }
 function uncompleteSess(k){
   const s=D.sessions[k];s.completed=false;
-  // Remove last matching completed record
   for(let i=D.completed.length-1;i>=0;i--){if(D.completed[i].date===s.date&&D.completed[i].name===s.name){D.completed.splice(i,1);break;}}
   sv();toast('Session reopened');rSess();
+}
+function deleteSess(k){
+  const s=D.sessions[k];
+  const label=s.completed?'Delete this completed session? e1RM data will be removed.':'Delete this session?';
+  if(!confirm(label))return;
+  if(s.completed){
+    for(let i=D.completed.length-1;i>=0;i--){if(D.completed[i].date===s.date&&D.completed[i].name===s.name){D.completed.splice(i,1);break;}}
+  }
+  delete D.sessions[k];
+  sv();toast('Session deleted');activeSessKey=null;rTrain();
 }
 
 // ===== ADD EXERCISE =====
