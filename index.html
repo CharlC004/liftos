@@ -175,6 +175,7 @@ const IN_SEASON=[
     {id:'latpull',name:'Lat Pulldown',s:3,r:12,type:'acc',rest:90},
     {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:10,type:'acc',rest:120},
     {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:75},
+    {id:'landmine_rot',name:'Landmine Rotation',s:3,r:10,type:'acc',rest:60,note:'per side'},
     {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]},
   {id:'is_pbench',name:'Paused Bench',exercises:[
@@ -182,14 +183,18 @@ const IN_SEASON=[
     {id:'cgbench',name:'Close-Grip Bench',s:3,r:8,type:'sec',rest:180},
     {id:'pullup',name:'Pull-ups',s:3,r:12,type:'acc',rest:90},
     {id:'rdl',name:'Romanian Deadlift',s:3,r:12,type:'acc',rest:120},
+    {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:75},
+    {id:'sa_dbohp',name:'Single-Arm DB OHP',s:3,r:8,type:'acc',rest:90,note:'per arm'},
+    {id:'laterals',name:'Lateral Raises',s:3,r:12,type:'iso',rest:45},
     {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]},
   {id:'is_sqbench',name:'Squat + Bench',exercises:[
     {id:'squat',name:'Back Squat',s:5,r:5,type:'pri',rest:240},
     {id:'bench',name:'Bench Press',s:4,r:8,type:'pri',rest:240},
     {id:'ohp',name:'Overhead Press',s:3,r:8,type:'sec',rest:180},
-    {id:'oh_ext',name:'OH Tricep Extension',s:2,r:12,type:'acc',rest:75,fixedRpe:9.5},
-    {id:'tricep',name:'Tricep Pushdowns',s:2,r:12,type:'acc',rest:75,fixedRpe:9.5},
+    {id:'landmine_rot',name:'Landmine Rotation',s:3,r:10,type:'acc',rest:60,note:'per side'},
+    {id:'oh_ext',name:'OH Tricep Extension',s:3,r:12,type:'acc',rest:75,fixedRpe:9.5},
+    {id:'tricep',name:'Tricep Pushdowns',s:3,r:12,type:'acc',rest:75,fixedRpe:9.5},
     {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]}
 ];
@@ -259,7 +264,7 @@ function suggestRpe(templateId){
 
 // ===== FATIGUE =====
 function fatigueInfo(){
-  const all=Object.values(D.sessions).filter(s=>s.completed).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const all=Object.values(D.sessions).filter(s=>s.completed&&!s.isCardio).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   let sessCount=0,lastDeloadDate=null;
   for(let i=all.length-1;i>=0;i--){
     if(all[i].rpe<=5){lastDeloadDate=all[i].date;break;}
@@ -289,7 +294,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_fsq:'var(--yl)',is_pbench:'var(--rd)',is_sqbench:'var(--bl)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_fsq:'var(--yl)',is_pbench:'var(--rd)',is_sqbench:'var(--bl)',cardio_lsd:'var(--gn)',cardio_int:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
@@ -338,6 +343,7 @@ function rTrain(){
     sh+=`<div class="tmpl-btn" onclick="startSess('${selDate}','${t.id}',${sug})">${t.name}<div style="font-size:.64rem;color:var(--tx3);margin-top:2px;">RPE ${sug}</div></div>`;
   });
   sh+=`<div class="tmpl-btn" onclick="startCustom('${selDate}')">+ Custom<div style="font-size:.64rem;color:var(--tx3);margin-top:2px;">Freeform</div></div>`;
+  sh+=`<div class="tmpl-btn" style="border-color:var(--bl);color:var(--bl);" onclick="showCardioModal('${selDate}')">🫀 Cardio<div style="font-size:.64rem;color:var(--bl);margin-top:2px;opacity:.7;">Airdyne</div></div>`;
   sh+=`<div class="tmpl-btn" style="border-color:var(--gn);color:var(--gn);" onclick="startDeload('${selDate}')">Deload<div style="font-size:.64rem;color:var(--gn);margin-top:2px;opacity:.7;">RPE 5</div></div>`;
   sh+=`</div>`;
   if(existingSess.length)sh+=`</div>`;
@@ -375,8 +381,158 @@ function startDeload(date){
   sv();openSess(k);
 }
 
+// ===== CARDIO =====
+const CARDIO_PRESETS=[
+  {id:'z2_30',name:'Zone 2 Steady',cat:'lsd',duration:30,desc:'30 min continuous · HR 120-140 · Conversational pace'},
+  {id:'z2_45',name:'Long Zone 2',cat:'lsd',duration:45,desc:'45 min continuous · HR 120-140 · Endurance builder'},
+  {id:'easy_20',name:'Easy Spin',cat:'lsd',duration:20,desc:'20 min · HR <130 · Active recovery'},
+  {id:'int_10_20',name:'10/20s Sprints',cat:'short',duration:8,work:10,rest_int:20,rounds:15,desc:'10s all-out / 20s rest × 15'},
+  {id:'int_15_45',name:'15/45s Power',cat:'short',duration:12,work:15,rest_int:45,rounds:12,desc:'15s max / 45s rest × 12'},
+  {id:'int_30_60',name:'30/60s Intervals',cat:'mid',duration:15,work:30,rest_int:60,rounds:10,desc:'30s hard / 60s easy × 10'},
+  {id:'int_40_40',name:'40/40s Intervals',cat:'mid',duration:14,work:40,rest_int:40,rounds:10,desc:'40s hard / 40s rest × 10'},
+  {id:'int_2_2',name:'2min/2min',cat:'long',duration:24,work:120,rest_int:120,rounds:6,desc:'2 min hard / 2 min easy × 6'},
+  {id:'int_3_2',name:'3min/2min',cat:'long',duration:25,work:180,rest_int:120,rounds:5,desc:'3 min sustained / 2 min easy × 5'}
+];
+
+function suggestCardio(){
+  // Find recent cardio sessions, suggest based on 2:1 LSD:interval ratio
+  const recent=Object.values(D.sessions).filter(s=>s.completed&&s.isCardio).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
+  if(!recent.length)return CARDIO_PRESETS[0];// start with Zone 2
+  const lastCat=recent[0].cardioData?.cat||'lsd';
+  const lsdCount=recent.filter(s=>s.cardioData?.cat==='lsd').length;
+  const intCount=recent.filter(s=>s.cardioData?.cat!=='lsd').length;
+  // If last was interval, suggest LSD
+  if(lastCat!=='lsd')return CARDIO_PRESETS.find(p=>p.cat==='lsd');
+  // If 2+ LSDs in a row, suggest interval
+  if(recent.length>=2&&recent[0].cardioData?.cat==='lsd'&&recent[1].cardioData?.cat==='lsd'){
+    // Rotate through short->mid->long
+    const lastInt=recent.find(s=>s.cardioData?.cat!=='lsd');
+    const lastIntCat=lastInt?.cardioData?.cat||'long';
+    const order=['short','mid','long'];
+    const ni=(order.indexOf(lastIntCat)+1)%3;
+    return CARDIO_PRESETS.find(p=>p.cat===order[ni])||CARDIO_PRESETS[3];
+  }
+  return CARDIO_PRESETS[0];// default LSD
+}
+
+function showCardioModal(date){
+  const sug=suggestCardio();
+  let h=`<h2>🫀 Cardio Session</h2>`;
+  h+=`<div style="padding:8px 12px;background:var(--bld);border:1px solid var(--bl);border-radius:var(--rs);margin-bottom:14px;font-size:.76rem;color:var(--bl);">Suggested: <strong>${sug.name}</strong> — ${sug.desc}</div>`;
+
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-bottom:8px;">LSD (Steady State)</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='lsd').forEach(p=>{
+    h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
+  });
+
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Short Intervals</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='short').forEach(p=>{
+    h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
+  });
+
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Mid Intervals</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='mid').forEach(p=>{
+    h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
+  });
+
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Long Intervals</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='long').forEach(p=>{
+    h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
+  });
+  oM(h);
+}
+
+function startCardio(date,presetId){
+  const preset=CARDIO_PRESETS.find(p=>p.id===presetId);
+  const k=sessKey(date,'cardio_'+presetId);
+  if(D.sessions[k]){cM();openCardio(k);return;}
+  D.sessions[k]={
+    templateId:'cardio_'+preset.cat,name:'🫀 '+preset.name,date,rpe:0,completed:false,isCardio:true,
+    cardioData:{presetId,cat:preset.cat,duration:preset.duration,work:preset.work||0,rest_int:preset.rest_int||0,rounds:preset.rounds||0,
+      actualDuration:'',totalCals:'',avgHR:'',maxHR:'',avgRPM:'',notes:''}
+  };
+  sv();cM();openCardio(k);
+}
+
+function openCardio(k){activeSessKey=k;rCardio();}
+
+function rCardio(){
+  const k=activeSessKey;const s=D.sessions[k];if(!s||!s.isCardio){closeSess();return;}
+  const cd=s.cardioData;const preset=CARDIO_PRESETS.find(p=>p.id===cd.presetId);
+
+  let h=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+    <button class="btn bo bs" onclick="closeSess()">◀ Back</button>
+    <div style="flex:1;"><div style="font-size:1rem;font-weight:800;text-transform:uppercase;">${s.name}</div>
+    <div style="font-size:.7rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${s.date} · ${preset?.desc||cd.cat}</div></div></div>`;
+
+  // Protocol details
+  if(cd.cat!=='lsd'){
+    h+=`<div class="cd" style="border-left:3px solid var(--bl);padding-left:15px;">
+      <div style="font-size:.72rem;color:var(--tx2);line-height:1.8;">
+        Work: <strong>${cd.work}s</strong> · Rest: <strong>${cd.rest_int}s</strong> · Rounds: <strong>${cd.rounds}</strong><br>
+        Target Duration: <strong>${cd.duration} min</strong>
+      </div>
+    </div>`;
+  }else{
+    h+=`<div class="cd" style="border-left:3px solid var(--gn);padding-left:15px;">
+      <div style="font-size:.72rem;color:var(--tx2);line-height:1.8;">
+        Target: <strong>${cd.duration} min continuous</strong><br>
+        HR Zone: <strong>${preset?.id==='easy_20'?'<130 bpm':'120-140 bpm'}</strong>
+      </div>
+    </div>`;
+  }
+
+  // Input fields
+  h+=`<div class="cd"><h3>Session Data</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="fld"><label>Duration (min)</label><input class="inp" type="number" value="${cd.actualDuration||''}" placeholder="${cd.duration}" oninput="D.sessions['${k}'].cardioData.actualDuration=this.value;sv();"></div>
+      <div class="fld"><label>Total Calories</label><input class="inp" type="number" value="${cd.totalCals||''}" placeholder="—" oninput="D.sessions['${k}'].cardioData.totalCals=this.value;sv();"></div>
+      <div class="fld"><label>Avg Heart Rate</label><input class="inp" type="number" value="${cd.avgHR||''}" placeholder="—" oninput="D.sessions['${k}'].cardioData.avgHR=this.value;sv();"></div>
+      <div class="fld"><label>Max Heart Rate</label><input class="inp" type="number" value="${cd.maxHR||''}" placeholder="—" oninput="D.sessions['${k}'].cardioData.maxHR=this.value;sv();"></div>
+      <div class="fld"><label>Avg RPM</label><input class="inp" type="number" value="${cd.avgRPM||''}" placeholder="—" oninput="D.sessions['${k}'].cardioData.avgRPM=this.value;sv();"></div>
+    </div>
+    <div class="fld" style="margin-top:10px;"><label>Notes</label><textarea class="inp" rows="2" style="resize:vertical;font-size:.82rem;" placeholder="How did it feel?" oninput="D.sessions['${k}'].cardioData.notes=this.value;sv();">${(cd.notes||'').replace(/</g,'&lt;')}</textarea></div>
+  </div>`;
+
+  // Last cardio of same type
+  const lastSame=Object.values(D.sessions).filter(x=>x.completed&&x.isCardio&&x.cardioData?.presetId===cd.presetId&&x!==s).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(lastSame.length){
+    const ls=lastSame[0].cardioData;
+    h+=`<div class="cd" style="border-left:3px solid var(--yl);padding-left:15px;"><h3>Last ${preset?.name||'Session'}</h3>
+      <div style="font-size:.76rem;color:var(--tx2);font-family:'IBM Plex Mono',monospace;line-height:1.8;">
+        ${ls.actualDuration?ls.actualDuration+' min':''}${ls.totalCals?' · '+ls.totalCals+' cal':''}${ls.avgHR?' · Avg HR '+ls.avgHR:''}${ls.maxHR?' · Max HR '+ls.maxHR:''}${ls.avgRPM?' · '+ls.avgRPM+' RPM':''}
+        ${ls.notes?'<br><span style="color:var(--tx3);">'+ls.notes+'</span>':''}
+      </div>
+      <div style="font-size:.64rem;color:var(--tx3);margin-top:4px;">${lastSame[0].date}</div>
+    </div>`;
+  }
+
+  if(!s.completed){
+    h+=`<button class="btn bp bf" style="margin-top:12px;" onclick="completeCardio('${k}')">Complete Session</button>`;
+  }else{
+    h+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Completed</div>
+    <div style="text-align:center;"><button class="btn bo bs" style="font-size:.64rem;color:var(--tx3);" onclick="uncompleteCardio('${k}')">Reopen Session</button></div>`;
+  }
+
+  document.getElementById('calArea').innerHTML='';
+  document.getElementById('fatigueBar').innerHTML='';
+  document.getElementById('sessArea').innerHTML=h;
+}
+
+function completeCardio(k){
+  const s=D.sessions[k];s.completed=true;s.completedAt=new Date().toISOString();
+  D.completed.push({date:s.date,name:s.name,rpe:0,isCardio:true,cardioData:s.cardioData,e1:{}});
+  sv();toast('Cardio logged! 🫀');rCardio();
+}
+function uncompleteCardio(k){
+  const s=D.sessions[k];s.completed=false;
+  for(let i=D.completed.length-1;i>=0;i--){if(D.completed[i].date===s.date&&D.completed[i].isCardio){D.completed.splice(i,1);break;}}
+  sv();toast('Session reopened');rCardio();
+}
+
 function openSess(k){
-  activeSessKey=k;rSess();
+  activeSessKey=k;
+  if(D.sessions[k]?.isCardio)rCardio();else rSess();
 }
 
 function closeSess(){
@@ -485,7 +641,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const repDisp=isOpen?(ex.repRange||'AMRAP'):''+reps;
   const targDisp=isOpen?'max@'+eRpe:reps+'@'+eRpe;
 
-  return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}</div></div>
+  return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}${ex.note?` <span style="font-size:.64rem;color:var(--tx3);font-weight:400;">(${ex.note})</span>`:''}</div></div>
     <div style="text-align:right;">${ex.type!=='iso'&&eRpe>0?`<span class="rb ${rc}">RPE ${eRpe}</span>`:''}<div class="exm" style="margin-top:3px">${sets}×${repDisp}${sw?' · '+sw+' '+D.unit:''}</div></div></div>
     ${colBtns}${lastH}${noteH}
     <div class="exs"><div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
