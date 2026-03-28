@@ -168,32 +168,30 @@ const OFF_SEASON=[
 ];
 
 const IN_SEASON=[
-  {id:'is_fsq',name:'Front Squat',exercises:[
-    {id:'frontsquat',name:'Front Squat',s:5,r:5,type:'pri',rest:240},
-    {id:'legpress',name:'Leg Press',s:3,r:12,type:'acc',rest:75},
-    {id:'csrow',name:'Chest-Supported Row',s:3,r:10,type:'sec',rest:180},
-    {id:'latpull',name:'Lat Pulldown',s:3,r:12,type:'acc',rest:90},
-    {id:'sldl',name:'Stiff-Leg Deadlift',s:3,r:10,type:'acc',rest:120},
-    {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:75},
-    {id:'landmine_rot',name:'Landmine Rotation',s:3,r:10,type:'acc',rest:60,note:'per side'},
-    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
-  ]},
-  {id:'is_pbench',name:'Paused Bench',exercises:[
-    {id:'pause_bench',name:'Paused Bench Press',s:5,r:5,type:'pri',rest:240},
-    {id:'cgbench',name:'Close-Grip Bench',s:3,r:8,type:'sec',rest:180},
-    {id:'pullup',name:'Pull-ups',s:3,r:12,type:'acc',rest:90},
-    {id:'rdl',name:'Romanian Deadlift',s:3,r:12,type:'acc',rest:120},
-    {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:75},
-    {id:'sa_dbohp',name:'Single-Arm DB OHP',s:3,r:8,type:'acc',rest:90,note:'per arm'},
-    {id:'laterals',name:'Lateral Raises',s:3,r:12,type:'iso',rest:45},
-    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
-  ]},
-  {id:'is_sqbench',name:'Squat + Bench',exercises:[
-    {id:'squat',name:'Back Squat',s:5,r:5,type:'pri',rest:240},
-    {id:'bench',name:'Bench Press',s:4,r:8,type:'pri',rest:240},
+  {id:'is_sqday',name:'Back Squat',exercises:[
+    {id:'squat',name:'Back Squat',s:3,r:8,type:'pri',rest:240,topSet:{r:5,s:1}},
+    {id:'bench',name:'Bench Press',s:3,r:8,type:'pri',rest:240,topSet:{r:6,s:1}},
     {id:'ohp',name:'Overhead Press',s:3,r:8,type:'sec',rest:180},
+    {id:'stahl_rot',name:'Stahl Rotation',s:4,r:10,type:'acc',rest:60,note:'per side'},
+    {id:'cablerow',name:'Close Grip Cable Row',s:3,r:12,type:'acc',rest:75},
+    {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:75},
+    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
+  ]},
+  {id:'is_fsqday',name:'Front Squat',exercises:[
+    {id:'pause_bench',name:'Paused Bench Press',s:3,r:5,type:'pri',rest:240,topSet:{r:3,s:1}},
+    {id:'frontsquat',name:'Front Squat',s:3,r:6,type:'pri',rest:240,topSet:{r:4,s:1}},
+    {id:'rdl',name:'Romanian Deadlift',s:3,r:12,type:'acc',rest:120},
+    {id:'csrow',name:'Chest-Supported Row',s:3,r:10,type:'sec',rest:180},
+    {id:'oh_ext',name:'OH Tricep Extension',s:3,r:12,type:'acc',rest:75},
     {id:'landmine_rot',name:'Landmine Rotation',s:3,r:10,type:'acc',rest:60,note:'per side'},
-    {id:'oh_ext',name:'OH Tricep Extension',s:3,r:12,type:'acc',rest:75,fixedRpe:9.5},
+    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
+  ]},
+  {id:'is_benchday',name:'Bench',exercises:[
+    {id:'bench',name:'Bench Press',s:2,r:8,type:'pri',rest:240,topSet:{r:8,s:1},backoffDrop:true},
+    {id:'sldl',name:'Stiff-Leg Deadlift',s:2,r:8,type:'acc',rest:120,topSet:{r:6,s:1}},
+    {id:'legpress',name:'Leg Press',s:3,r:12,type:'acc',rest:75},
+    {id:'latpull',name:'Lat Pulldown',s:3,r:12,type:'acc',rest:90},
+    {id:'abwheel',name:'Ab Wheel',s:3,r:12,type:'acc',rest:60},
     {id:'tricep',name:'Tricep Pushdowns',s:3,r:12,type:'acc',rest:75,fixedRpe:9.5},
     {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]}
@@ -294,7 +292,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_fsq:'var(--yl)',is_pbench:'var(--rd)',is_sqbench:'var(--bl)',cardio_lsd:'var(--gn)',cardio_int:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_sqday:'var(--bl)',is_fsqday:'var(--yl)',is_benchday:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
@@ -509,9 +507,11 @@ function rCardio(){
 
   if(!s.completed){
     h+=`<button class="btn bp bf" style="margin-top:12px;" onclick="completeCardio('${k}')">Complete Session</button>`;
+    h+=`<button class="btn bd bf" style="margin-top:8px;" onclick="deleteCardio('${k}')">Delete Session</button>`;
   }else{
     h+=`<div style="text-align:center;padding:16px;color:var(--gn);font-weight:600;font-size:.88rem;">✓ Completed</div>
-    <div style="text-align:center;"><button class="btn bo bs" style="font-size:.64rem;color:var(--tx3);" onclick="uncompleteCardio('${k}')">Reopen Session</button></div>`;
+    <div style="text-align:center;"><button class="btn bo bs" style="font-size:.64rem;color:var(--tx3);" onclick="uncompleteCardio('${k}')">Reopen Session</button>
+    <button class="btn bd bs" style="font-size:.64rem;margin-top:6px;" onclick="deleteCardio('${k}')">Delete</button></div>`;
   }
 
   document.getElementById('calArea').innerHTML='';
@@ -528,6 +528,12 @@ function uncompleteCardio(k){
   const s=D.sessions[k];s.completed=false;
   for(let i=D.completed.length-1;i>=0;i--){if(D.completed[i].date===s.date&&D.completed[i].isCardio){D.completed.splice(i,1);break;}}
   sv();toast('Session reopened');rCardio();
+}
+function deleteCardio(k){
+  if(!confirm('Delete this cardio session?'))return;
+  const s=D.sessions[k];
+  if(s.completed){for(let i=D.completed.length-1;i>=0;i--){if(D.completed[i].date===s.date&&D.completed[i].isCardio){D.completed.splice(i,1);break;}}}
+  delete D.sessions[k];sv();toast('Session deleted');closeSess();
 }
 
 function openSess(k){
@@ -554,13 +560,26 @@ function rSess(){
 
   // Init sets
   allEntries.forEach(({ex,ek})=>{
-    const adj=(s.setAdj||{})[ek]||0;const sets=Math.max(1,(ex.s||3)+adj);
+    const hasTopSet=!!ex.topSet;
+    const adj=(s.setAdj||{})[ek]||0;
+    const totalSets=hasTopSet?Math.max(1,(ex.topSet.s||1)+(ex.s||3)+adj):Math.max(1,(ex.s||3)+adj);
     const eRpe=ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type));
     const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
-    const sw=rm>0&&eRpe>0&&ex.r>0?cWt(rm,ex.r,eRpe,D.round):0;
-    if(!s.ex[ek])s.ex[ek]=Array.from({length:sets},()=>({w:sw||'',r:ex.r||'',p:'',d:false}));
-    while(s.ex[ek].length<sets)s.ex[ek].push({w:'',r:ex.r||'',p:'',d:false});
-    if(s.ex[ek].length>sets)s.ex[ek]=s.ex[ek].slice(0,sets);
+    const topR=hasTopSet?ex.topSet.r:ex.r;
+    const sw=rm>0&&eRpe>0&&topR>0?cWt(rm,topR,eRpe,D.round):0;
+    const boSw=hasTopSet&&rm>0&&ex.r>0?cWt(rm,ex.r,7,D.round):0;
+    if(!s.ex[ek]){
+      const rows=[];
+      if(hasTopSet){
+        for(let i=0;i<(ex.topSet.s||1);i++)rows.push({w:sw||'',r:topR||'',p:'',d:false});
+        for(let i=0;i<(ex.s||3);i++)rows.push({w:boSw||'',r:ex.r||'',p:'',d:false});
+      }else{
+        for(let i=0;i<totalSets;i++)rows.push({w:sw||'',r:ex.r||'',p:'',d:false});
+      }
+      s.ex[ek]=rows;
+    }
+    while(s.ex[ek].length<totalSets)s.ex[ek].push({w:'',r:ex.r||'',p:'',d:false});
+    if(s.ex[ek].length>totalSets)s.ex[ek]=s.ex[ek].slice(0,totalSets);
   });
 
   let h=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;"><button class="btn bo bs" onclick="closeSess()">◀ Back</button><div style="flex:1;"><div style="font-size:1rem;font-weight:800;text-transform:uppercase;">${s.name}</div><div style="font-size:.7rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${s.date}</div></div>
@@ -607,11 +626,20 @@ function setRpe(k,r){D.sessions[k].rpe=r;sv();cM();rSess();}
 function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const s=D.sessions[k];
   const eRpe=isDl?5:(ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type)));
-  const adj=(s.setAdj||{})[ek]||0;const sets=Math.max(1,(ex.s||3)+adj);
-  const reps=ex.r;const isOpen=reps===0;
+  const hasTopSet=!!ex.topSet;
+  const topSetReps=hasTopSet?ex.topSet.r:0;
+  const topSetCount=hasTopSet?ex.topSet.s:0;
+  const boReps=ex.r;const boSets=ex.s;
+  const adj=(s.setAdj||{})[ek]||0;
+  const totalSets=hasTopSet?Math.max(1,topSetCount+boSets+adj):Math.max(1,(ex.s||3)+adj);
+  const reps=hasTopSet?topSetReps:ex.r;const isOpen=reps===0;
   const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
   const restSec=ex.rest||75;const completed=s.completed;
-  const sw=rm>0&&eRpe>0&&reps>0?cWt(rm,reps,eRpe,D.round):null;
+  // Weight suggestions
+  const topSw=rm>0&&eRpe>0&&topSetReps>0?cWt(rm,topSetReps,eRpe,D.round):null;
+  const boRpe=7;// back-offs always RPE 7
+  const boSw=rm>0&&boReps>0?cWt(rm,boReps,boRpe,D.round):null;
+  const sw=hasTopSet?topSw:(rm>0&&eRpe>0&&reps>0?cWt(rm,reps,eRpe,D.round):null);
   const rc=eRpe>=9?'rmx':eRpe>=8?'rhi':eRpe>=7?'rmd':'rlo';
   const saved=s.ex[ek]||[];
 
@@ -638,22 +666,56 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
     ${upB}${dnB}<div style="flex:1;"></div>
     <button style="padding:2px 8px;border:1px solid var(--rd);border-radius:4px;background:var(--rdd);color:var(--rd);font-size:.66rem;font-weight:600;cursor:pointer;" onclick="removeEx('${k}','${ek}')">Remove</button></div>`;
 
-  const repDisp=isOpen?(ex.repRange||'AMRAP'):''+reps;
-  const targDisp=isOpen?'max@'+eRpe:reps+'@'+eRpe;
+  // Header display
+  const repDisp=isOpen?(ex.repRange||'AMRAP'):hasTopSet?`1×${topSetReps} + ${boSets}×${boReps}`:''+reps;
+  const headerRpe=hasTopSet?eRpe:eRpe;
 
-  return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}${ex.note?` <span style="font-size:.64rem;color:var(--tx3);font-weight:400;">(${ex.note})</span>`:''}</div></div>
-    <div style="text-align:right;">${ex.type!=='iso'&&eRpe>0?`<span class="rb ${rc}">RPE ${eRpe}</span>`:''}<div class="exm" style="margin-top:3px">${sets}×${repDisp}${sw?' · '+sw+' '+D.unit:''}</div></div></div>
-    ${colBtns}${lastH}${noteH}
-    <div class="exs"><div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
-    ${saved.slice(0,sets).map((st,si)=>{
+  let setRows='';
+  if(hasTopSet){
+    // Top set rows
+    for(let si=0;si<topSetCount;si++){
+      const st=saved[si]||{w:'',r:'',p:'',d:false};
       const le=st.w>0&&st.r>0&&st.p>0?cE1(st.w,st.r,st.p):'';
-      return`<div class="sr"><div class="sn">${si+1}</div><div class="stg">${targDisp}</div>
+      setRows+=`<div class="sr" style="background:var(--acd);"><div class="sn" style="color:var(--ac);">T${si+1}</div><div class="stg" style="color:var(--ac);">${topSetReps}@${eRpe} <span style="font-size:.58rem;">TOP</span></div>
+      <input class="si" type="number" inputmode="decimal" value="${st.w}" placeholder="${topSw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
+      <input class="si" type="number" inputmode="numeric" value="${st.r}" placeholder="${topSetReps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
+      <input class="si" type="number" inputmode="decimal" step="0.5" value="${st.p}" placeholder="${eRpe}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
+      <div class="e1c" id="e1_${ek}_${si}">${le}</div>
+      <button class="sok ${st.d?'chk':''}" onclick="tglSet('${k}','${ek}',${si},${restSec},this)">✓</button></div>`;
+    }
+    // Back-off rows
+    const boTotal=totalSets-topSetCount;
+    for(let bi=0;bi<boTotal;bi++){
+      const si=topSetCount+bi;
+      const st=saved[si]||{w:'',r:'',p:'',d:false};
+      const le=st.w>0&&st.r>0&&st.p>0?cE1(st.w,st.r,st.p):'';
+      setRows+=`<div class="sr"><div class="sn">${bi+1}</div><div class="stg">${boReps}@${boRpe} <span style="font-size:.58rem;">BO</span></div>
+      <input class="si" type="number" inputmode="decimal" value="${st.w}" placeholder="${boSw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
+      <input class="si" type="number" inputmode="numeric" value="${st.r}" placeholder="${boReps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
+      <input class="si" type="number" inputmode="decimal" step="0.5" value="${st.p}" placeholder="${boRpe}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
+      <div class="e1c" id="e1_${ek}_${si}">${le}</div>
+      <button class="sok ${st.d?'chk':''}" onclick="tglSet('${k}','${ek}',${si},${restSec},this)">✓</button></div>`;
+    }
+  }else{
+    // Standard rows
+    const repD=isOpen?(ex.repRange||'AMRAP'):''+reps;
+    const targD=isOpen?'max@'+eRpe:reps+'@'+eRpe;
+    saved.slice(0,totalSets).forEach((st,si)=>{
+      const le=st.w>0&&st.r>0&&st.p>0?cE1(st.w,st.r,st.p):'';
+      setRows+=`<div class="sr"><div class="sn">${si+1}</div><div class="stg">${targD}</div>
       <input class="si" type="number" inputmode="decimal" value="${st.w}" placeholder="${sw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
       <input class="si" type="number" inputmode="numeric" value="${st.r}" placeholder="${isOpen?'':reps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
       <input class="si" type="number" inputmode="decimal" step="0.5" value="${st.p}" placeholder="${eRpe||''}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
       <div class="e1c" id="e1_${ek}_${si}">${le}</div>
       <button class="sok ${st.d?'chk':''}" onclick="tglSet('${k}','${ek}',${si},${restSec},this)">✓</button></div>`;
-    }).join('')}</div>${ctrl}</div>`;
+    });
+  }
+
+  return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}${ex.note?` <span style="font-size:.64rem;color:var(--tx3);font-weight:400;">(${ex.note})</span>`:''}</div></div>
+    <div style="text-align:right;">${ex.type!=='iso'&&eRpe>0?`<span class="rb ${rc}">RPE ${eRpe}</span>`:''}<div class="exm" style="margin-top:3px">${repDisp}${topSw?' · '+topSw+' '+D.unit:(sw?' · '+sw+' '+D.unit:'')}</div></div></div>
+    ${colBtns}${lastH}${noteH}
+    <div class="exs"><div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
+    ${setRows}</div>${ctrl}</div>`;
 }
 
 function togglePanel(btn,id){const el=document.getElementById(id);if(el)el.style.display=el.style.display==='none'?'block':'none';}
@@ -742,6 +804,7 @@ const ADD_EX=[
   {id:'dbflat',name:'Flat DB Press',r:12,rest:120},{id:'dbohp',name:'DB Overhead Press',r:12,rest:120},
   {id:'pullup',name:'Pull-ups',r:10,rest:90},{id:'cgbench',name:'Close-Grip Bench',r:8,rest:180},{id:'frontsquat',name:'Front Squat',r:5,rest:180},
   {id:'backext',name:'Back Extensions',r:12,rest:75},{id:'abwheel',name:'Ab Wheel',r:12,rest:60},{id:'cablerow',name:'Close Grip Cable Row',r:12,rest:75},
+  {id:'stahl_rot',name:'Stahl Rotation',r:10,rest:60},{id:'landmine_rot',name:'Landmine Rotation',r:10,rest:60},
 ];
 function showAddExModal(k){
   let h=`<h2>Add Exercise</h2><div style="margin-bottom:12px;"><input class="inp" id="cExN" placeholder="Custom name…"></div>
