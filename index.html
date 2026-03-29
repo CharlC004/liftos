@@ -168,31 +168,33 @@ const OFF_SEASON=[
 ];
 
 const IN_SEASON=[
-  {id:'is_sqday',name:'Back Squat',exercises:[
-    {id:'squat',name:'Back Squat',s:3,r:8,type:'pri',rest:240,topSet:{r:5,s:1}},
-    {id:'bench',name:'Bench Press',s:3,r:8,type:'pri',rest:240,topSet:{r:6,s:1}},
-    {id:'ohp',name:'Overhead Press',s:3,r:8,type:'sec',rest:180},
-    {id:'stahl_rot',name:'Stahl Rotation',s:4,r:10,type:'acc',rest:60,note:'per side'},
-    {id:'cablerow',name:'Close Grip Cable Row',s:3,r:12,type:'acc',rest:75},
-    {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:75},
+  {id:'is_sq1',name:'Squat + SLDL',exercises:[
+    {id:'squat',name:'Back Squat',s:4,r:5,type:'pri',rest:240,topSet:{r:5,s:1},backoffRpe:5},
+    {id:'sldl',name:'Stiff-Leg Deadlift',s:2,r:6,type:'pri',rest:240,topSet:{r:6,s:1},backoffRpe:5},
+    {id:'csrow',name:'Chest-Supported Row',s:3,r:12,type:'acc',rest:90},
+    {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:90},
+    {id:'stahl_rot',name:'Stahl Rotation',s:4,r:10,type:'acc',rest:90,note:'per side'}
+  ]},
+  {id:'is_bench1',name:'Bench (Volume)',exercises:[
+    {id:'bench',name:'Bench Press',s:2,r:8,type:'pri',rest:240,topSet:{r:8,s:1},backoffRpe:5},
+    {id:'cgbench',name:'Close-Grip Bench',s:3,r:8,type:'sec',rest:120},
+    {id:'dbflat',name:'Flat DB Press',s:3,r:12,type:'acc',rest:90},
+    {id:'tricep',name:'Tricep Pushdowns',s:3,r:15,type:'acc',rest:90},
     {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]},
-  {id:'is_dlday',name:'Deadlift',exercises:[
-    {id:'pause_bench',name:'Paused Bench Press',s:3,r:5,type:'pri',rest:240,topSet:{r:3,s:1}},
-    {id:'deadlift',name:'Deadlift',s:2,r:8,type:'pri',rest:300,topSet:{r:6,s:1},backoffRpe:6},
-    {id:'bss',name:'Bulgarian Split Squat (machine)',s:3,r:8,type:'acc',rest:90,note:'per leg'},
-    {id:'csrow',name:'Chest-Supported Row',s:3,r:10,type:'sec',rest:180},
-    {id:'oh_ext',name:'OH Tricep Extension',s:3,r:12,type:'acc',rest:75},
-    {id:'landmine_rot',name:'Landmine Rotation',s:3,r:10,type:'acc',rest:60,note:'per side'},
-    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
+  {id:'is_sq2',name:'Squat (Volume)',exercises:[
+    {id:'squat',name:'Back Squat',s:2,r:8,type:'pri',rest:240,topSet:{r:8,s:1},backoffRpe:5},
+    {id:'rdl',name:'Romanian Deadlift',s:3,r:12,type:'acc',rest:90},
+    {id:'legpress',name:'Leg Press',s:3,r:15,type:'acc',rest:90},
+    {id:'latpull',name:'Lat Pulldown',s:3,r:10,type:'acc',rest:90},
+    {id:'cablerow',name:'Close Grip Cable Row',s:3,r:15,type:'acc',rest:90},
+    {id:'landmine_rot',name:'Landmine Rotation',s:4,r:10,type:'acc',rest:90,note:'per side'}
   ]},
-  {id:'is_benchday',name:'Bench',exercises:[
-    {id:'bench',name:'Bench Press',s:2,r:8,type:'pri',rest:240,topSet:{r:8,s:1},backoffDrop:true},
-    {id:'sldl',name:'Stiff-Leg Deadlift',s:2,r:8,type:'acc',rest:120,topSet:{r:6,s:1}},
-    {id:'legpress',name:'Leg Press',s:3,r:12,type:'acc',rest:75},
-    {id:'latpull',name:'Lat Pulldown',s:3,r:12,type:'acc',rest:90},
-    {id:'abwheel',name:'Ab Wheel',s:3,r:12,type:'acc',rest:60},
-    {id:'tricep',name:'Tricep Pushdowns',s:3,r:12,type:'acc',rest:75,fixedRpe:9.5},
+  {id:'is_bench2',name:'Bench (Strength)',exercises:[
+    {id:'bench',name:'Bench Press',s:4,r:5,type:'pri',rest:240,topSet:{r:5,s:1},backoffRpe:5},
+    {id:'larsen',name:'Larsen Press',s:3,r:8,type:'sec',rest:120},
+    {id:'dbohp',name:'DB Overhead Press',s:3,r:12,type:'acc',rest:90},
+    {id:'oh_ext',name:'OH Tricep Extension',s:3,r:15,type:'acc',rest:90},
     {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]}
 ];
@@ -200,8 +202,8 @@ const IN_SEASON=[
 function getTemplates(){return D.mode==='in'?IN_SEASON:OFF_SEASON;}
 function findTemplate(tid){return getTemplates().find(t=>t.id===tid)||IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);}
 
-const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',cgbench:'bench',pause_bench:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
-const RPE_WAVE=[7,8,9];
+const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
+const RPE_WAVE=[7,8,9,7.5,8.5,9.5];
 
 // ===== FIREBASE =====
 const FC={apiKey:"AIzaSyBL_UgrA0Y15vZOHfhQr0aKs542RNZu0rI",authDomain:"liftos-76b82.firebaseapp.com",databaseURL:"https://liftos-76b82-default-rtdb.firebaseio.com",projectId:"liftos-76b82",storageBucket:"liftos-76b82.firebasestorage.app",messagingSenderId:"533099186089",appId:"1:533099186089:web:62af010ca789d2c56f66b8"};
@@ -250,14 +252,18 @@ function refreshView(){const c=document.querySelector('.vw.a');if(c){const id=c.
 
 // ===== RPE SUGGESTION =====
 function suggestRpe(templateId){
-  // Find last completed session of this template type, return next RPE in wave
-  const keys=Object.keys(D.sessions).filter(k=>k.endsWith('_'+templateId)&&D.sessions[k].completed).sort().reverse();
-  if(!keys.length)return 7;
-  const lastRpe=D.sessions[keys[0]].rpe||7;
-  if(lastRpe<=5)return 7;// after deload
-  const idx=RPE_WAVE.indexOf(lastRpe);
-  if(idx>=0&&idx<RPE_WAVE.length-1)return RPE_WAVE[idx+1];
-  return 7;// after 9, suggest 7 (or user picks deload)
+  // Count completed strength sessions (non-cardio) since last deload to determine wave position
+  const allStrength=Object.values(D.sessions).filter(s=>s.completed&&!s.isCardio).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  // Find sessions since last deload
+  let sinceDeload=0;
+  for(let i=allStrength.length-1;i>=0;i--){
+    if(allStrength[i].rpe<=5){break;}
+    sinceDeload++;
+  }
+  // Each week has 4 sessions, determine which week we're in
+  const weekNum=Math.floor(sinceDeload/4);
+  if(weekNum>=RPE_WAVE.length)return 7;// past week 6, suggest restart
+  return RPE_WAVE[weekNum];
 }
 
 // ===== FATIGUE =====
@@ -292,7 +298,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_sqday:'var(--bl)',is_dlday:'var(--yl)',is_benchday:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_sq1:'var(--bl)',is_bench1:'var(--ac)',is_sq2:'var(--bl)',is_bench2:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
