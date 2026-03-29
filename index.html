@@ -177,10 +177,10 @@ const IN_SEASON=[
     {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:75},
     {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
   ]},
-  {id:'is_fsqday',name:'Front Squat',exercises:[
+  {id:'is_dlday',name:'Deadlift',exercises:[
     {id:'pause_bench',name:'Paused Bench Press',s:3,r:5,type:'pri',rest:240,topSet:{r:3,s:1}},
-    {id:'frontsquat',name:'Front Squat',s:3,r:6,type:'pri',rest:240,topSet:{r:4,s:1}},
-    {id:'rdl',name:'Romanian Deadlift',s:3,r:12,type:'acc',rest:120},
+    {id:'deadlift',name:'Deadlift',s:2,r:8,type:'pri',rest:300,topSet:{r:6,s:1},backoffRpe:6},
+    {id:'bss',name:'Bulgarian Split Squat (machine)',s:3,r:8,type:'acc',rest:90,note:'per leg'},
     {id:'csrow',name:'Chest-Supported Row',s:3,r:10,type:'sec',rest:180},
     {id:'oh_ext',name:'OH Tricep Extension',s:3,r:12,type:'acc',rest:75},
     {id:'landmine_rot',name:'Landmine Rotation',s:3,r:10,type:'acc',rest:60,note:'per side'},
@@ -200,7 +200,7 @@ const IN_SEASON=[
 function getTemplates(){return D.mode==='in'?IN_SEASON:OFF_SEASON;}
 function findTemplate(tid){return getTemplates().find(t=>t.id===tid)||IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);}
 
-const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',cgbench:'bench',pause_bench:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
+const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',cgbench:'bench',pause_bench:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
 const RPE_WAVE=[7,8,9];
 
 // ===== FIREBASE =====
@@ -292,7 +292,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_sqday:'var(--bl)',is_fsqday:'var(--yl)',is_benchday:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_sqday:'var(--bl)',is_dlday:'var(--yl)',is_benchday:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
@@ -567,7 +567,7 @@ function rSess(){
     const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
     const topR=hasTopSet?ex.topSet.r:ex.r;
     const sw=rm>0&&eRpe>0&&topR>0?cWt(rm,topR,eRpe,D.round):0;
-    const boSw=hasTopSet&&rm>0&&ex.r>0?cWt(rm,ex.r,7,D.round):0;
+    const boSw=hasTopSet&&rm>0&&ex.r>0?cWt(rm,ex.r,ex.backoffRpe||7,D.round):0;
     if(!s.ex[ek]){
       const rows=[];
       if(hasTopSet){
@@ -637,7 +637,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const restSec=ex.rest||75;const completed=s.completed;
   // Weight suggestions
   const topSw=rm>0&&eRpe>0&&topSetReps>0?cWt(rm,topSetReps,eRpe,D.round):null;
-  const boRpe=7;// back-offs always RPE 7
+  const boRpe=ex.backoffRpe||7;// back-offs RPE 7 unless overridden
   const boSw=rm>0&&boReps>0?cWt(rm,boReps,boRpe,D.round):null;
   const sw=hasTopSet?topSw:(rm>0&&eRpe>0&&reps>0?cWt(rm,reps,eRpe,D.round):null);
   const rc=eRpe>=9?'rmx':eRpe>=8?'rhi':eRpe>=7?'rmd':'rlo';
