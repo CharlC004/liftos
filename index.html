@@ -168,42 +168,41 @@ const OFF_SEASON=[
 ];
 
 const IN_SEASON=[
-  {id:'is_sq1',name:'Squat + SLDL',exercises:[
-    {id:'squat',name:'Back Squat',s:3,r:5,type:'pri',rest:240,topSet:{r:5,s:1},backoffRpe:5},
-    {id:'sldl',name:'Stiff-Leg Deadlift',s:2,r:6,type:'pri',rest:240,topSet:{r:6,s:1},backoffRpe:5},
-    {id:'csrow',name:'Chest-Supported Row',s:3,r:12,type:'acc',rest:90},
-    {id:'legpress',name:'Leg Press',s:3,r:15,type:'acc',rest:90},
-    {id:'legcurl',name:'Leg Curls',s:3,r:12,type:'acc',rest:90},
-    {id:'stahl_rot',name:'Stahl Rotation',s:4,r:10,type:'acc',rest:90,note:'per side'}
+  {id:'is_me_lower',name:'ME Lower',exercises:[
+    {id:'boxjump',name:'Box Jumps',s:3,r:5,type:'acc',rest:120},
+    {id:'deadlift',name:'Deadlift (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
+    {id:'beltsquat',name:'Belt Squat',s:3,r:12,type:'acc',rest:120},
+    {id:'legcurl',name:'Leg Curls',s:4,r:12,type:'acc',rest:60},
+    {id:'stahl_rot',name:'Stahl Rotation',s:4,r:10,type:'acc',rest:60,note:'per side'},
+    {id:'abwheel',name:'Ab Wheel',s:4,r:12,type:'acc',rest:60}
   ]},
-  {id:'is_bench1',name:'Bench (Volume)',exercises:[
-    {id:'bench',name:'Bench Press',s:2,r:8,type:'pri',rest:240,topSet:{r:8,s:1},backoffRpe:5},
-    {id:'cgbench',name:'Close-Grip Bench',s:3,r:8,type:'sec',rest:120},
-    {id:'dbflat',name:'Flat DB Press',s:3,r:12,type:'acc',rest:90},
-    {id:'tricep',name:'Tricep Pushdowns',s:3,r:15,type:'acc',rest:90},
-    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
+  {id:'is_me_upper',name:'ME Upper',exercises:[
+    {id:'bench',name:'Bench Press',s:1,r:3,type:'pri',rest:300},
+    {id:'dbflat',name:'Flat DB Press',s:4,r:12,type:'acc',rest:120},
+    {id:'tricep',name:'Triceps',s:4,r:12,type:'acc',rest:60},
+    {id:'csrow',name:'Chest-Supported Row',s:4,r:12,type:'acc',rest:60},
+    {id:'facepull',name:'Face Pulls',s:4,r:15,type:'iso',rest:60}
   ]},
-  {id:'is_sq2',name:'Squat (Volume)',exercises:[
-    {id:'squat',name:'Back Squat',s:2,r:8,type:'pri',rest:240,topSet:{r:8,s:1},backoffRpe:5},
-    {id:'hipthrust',name:'Hip Thrust',s:3,r:12,type:'acc',rest:90},
-    {id:'legpress',name:'Leg Press',s:3,r:15,type:'acc',rest:90},
-    {id:'latpull',name:'Lat Pulldown',s:3,r:10,type:'acc',rest:90},
-    {id:'cablerow',name:'Close Grip Cable Row',s:3,r:15,type:'acc',rest:90},
-    {id:'landmine_rot',name:'Landmine Rotation',s:4,r:10,type:'acc',rest:90,note:'per side'}
+  {id:'is_de_lower',name:'DE Lower',exercises:[
+    {id:'speed_dead',name:'Speed Deadlift (banded)',s:8,r:2,type:'pri',rest:45},
+    {id:'legpress',name:'Leg Press',s:4,r:15,type:'acc',rest:60},
+    {id:'goodmorning',name:'Good Mornings',s:4,r:12,type:'acc',rest:60},
+    {id:'landmine_rot',name:'Landmine Rotation',s:4,r:10,type:'acc',rest:60,note:'per side'},
+    {id:'hanglegraise',name:'Hanging Leg Raise',s:4,r:12,type:'acc',rest:60}
   ]},
-  {id:'is_bench2',name:'Bench (Strength)',exercises:[
-    {id:'bench',name:'Bench Press',s:4,r:5,type:'pri',rest:240,topSet:{r:5,s:1},backoffRpe:5},
-    {id:'larsen',name:'Larsen Press',s:3,r:8,type:'sec',rest:120},
-    {id:'dbohp',name:'DB Overhead Press',s:3,r:12,type:'acc',rest:90},
-    {id:'oh_ext',name:'OH Tricep Extension',s:3,r:15,type:'acc',rest:90},
-    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:45}
+  {id:'is_upper2',name:'Upper (5/3/1)',exercises:[
+    {id:'bench',name:'Bench Press (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
+    {id:'ohp',name:'Overhead Press',s:4,r:8,type:'sec',rest:120},
+    {id:'pullup',name:'Pull-ups',s:4,r:12,type:'acc',rest:120},
+    {id:'tricep',name:'Triceps',s:4,r:12,type:'acc',rest:60},
+    {id:'facepull',name:'Face Pulls',s:4,r:15,type:'iso',rest:60}
   ]}
 ];
 
 function getTemplates(){return D.mode==='in'?IN_SEASON:OFF_SEASON;}
 function findTemplate(tid){return getTemplates().find(t=>t.id===tid)||IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);}
 
-const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
+const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',speed_dead:'deadlift',goodmorning:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
 const RPE_WAVE=[7,8,9,7.5,8.5,9.5];
 
 // ===== FIREBASE =====
@@ -299,7 +298,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_sq1:'var(--bl)',is_bench1:'var(--ac)',is_sq2:'var(--bl)',is_bench2:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_me_lower:'var(--bl)',is_me_upper:'var(--ac)',is_de_lower:'var(--yl)',is_upper2:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
@@ -812,6 +811,8 @@ const ADD_EX=[
   {id:'pullup',name:'Pull-ups',r:10,rest:90},{id:'cgbench',name:'Close-Grip Bench',r:8,rest:180},{id:'frontsquat',name:'Front Squat',r:5,rest:180},
   {id:'backext',name:'Back Extensions',r:12,rest:75},{id:'abwheel',name:'Ab Wheel',r:12,rest:60},{id:'cablerow',name:'Close Grip Cable Row',r:12,rest:75},
   {id:'stahl_rot',name:'Stahl Rotation',r:10,rest:60},{id:'landmine_rot',name:'Landmine Rotation',r:10,rest:60},
+  {id:'goodmorning',name:'Good Mornings',r:12,rest:60},{id:'boxjump',name:'Box Jumps',r:5,rest:120},{id:'beltsquat',name:'Belt Squat',r:12,rest:120},
+  {id:'hanglegraise',name:'Hanging Leg Raise',r:12,rest:60},{id:'hipthrust',name:'Hip Thrust',r:12,rest:90},
 ];
 function showAddExModal(k){
   let h=`<h2>Add Exercise</h2><div style="margin-bottom:12px;"><input class="inp" id="cExN" placeholder="Custom name…"></div>
