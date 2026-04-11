@@ -196,6 +196,15 @@ const IN_SEASON=[
     {id:'pullup',name:'Pull-ups',s:4,r:12,type:'acc',rest:120},
     {id:'tricep',name:'Triceps',s:4,r:12,type:'acc',rest:60},
     {id:'facepull',name:'Face Pulls',s:4,r:15,type:'iso',rest:60}
+  ]},
+  {id:'is_fullbody',name:'Full Body (5/3/1)',exercises:[
+    {id:'bench',name:'Bench Press (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
+    {id:'incline_db',name:'Low Incline DB Press',s:2,r:0,type:'acc',rest:120,fixedRpe:9.5,repRange:'AMRAP'},
+    {id:'deadlift',name:'Deadlift (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
+    {id:'beltsquat',name:'Belt Squat',s:3,r:12,type:'acc',rest:120},
+    {id:'latpull',name:'Lat Pulldown',s:4,r:12,type:'acc',rest:60},
+    {id:'abwheel',name:'Ab Wheel',s:4,r:12,type:'acc',rest:60},
+    {id:'tricep',name:'Triceps',s:3,r:12,type:'acc',rest:60}
   ]}
 ];
 
@@ -298,7 +307,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_me_lower:'var(--bl)',is_me_upper:'var(--ac)',is_de_lower:'var(--yl)',is_upper2:'var(--ac)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_me_lower:'var(--bl)',is_me_upper:'var(--ac)',is_de_lower:'var(--yl)',is_upper2:'var(--ac)',is_fullbody:'var(--rd)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
