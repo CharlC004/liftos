@@ -205,13 +205,28 @@ const IN_SEASON=[
     {id:'latpull',name:'Lat Pulldown',s:4,r:12,type:'acc',rest:60},
     {id:'abwheel',name:'Ab Wheel',s:4,r:12,type:'acc',rest:60},
     {id:'tricep',name:'Triceps',s:3,r:12,type:'acc',rest:60}
+  ]},
+  {id:'is_fb_pullup',name:'Full Body (Pull-ups)',exercises:[
+    {id:'pullup',name:'Pull-ups',s:4,r:8,type:'pri',rest:120},
+    {id:'bss',name:'Bulgarian Split Squat',s:3,r:8,type:'acc',rest:90,note:'per leg'},
+    {id:'ohp',name:'Overhead Press',s:4,r:8,type:'sec',rest:120},
+    {id:'backext',name:'Back Extensions',s:4,r:12,type:'acc',rest:60},
+    {id:'facepull',name:'Face Pulls',s:3,r:15,type:'iso',rest:60}
+  ]},
+  {id:'is_fb_fsq',name:'Full Body (Front Squat)',exercises:[
+    {id:'frontsquat',name:'Front Squat',s:3,r:6,type:'pri',rest:240},
+    {id:'goodmorning',name:'Good Mornings',s:3,r:12,type:'acc',rest:60},
+    {id:'legpress',name:'Leg Press',s:3,r:15,type:'acc',rest:60},
+    {id:'csrow',name:'Chest-Supported Row',s:3,r:10,type:'acc',rest:60},
+    {id:'incline_bench',name:'Incline Bench Press',s:3,r:8,type:'acc',rest:90},
+    {id:'abwheel',name:'Ab Wheel',s:4,r:12,type:'acc',rest:60}
   ]}
 ];
 
 function getTemplates(){return D.mode==='in'?IN_SEASON:OFF_SEASON;}
 function findTemplate(tid){return getTemplates().find(t=>t.id===tid)||IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);}
 
-const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',speed_dead:'deadlift',goodmorning:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
+const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',speed_dead:'deadlift',goodmorning:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',incline_bench:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
 const RPE_WAVE=[7,8,9,7.5,8.5,9.5];
 
 // ===== FIREBASE =====
@@ -307,7 +322,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_me_lower:'var(--bl)',is_me_upper:'var(--ac)',is_de_lower:'var(--yl)',is_upper2:'var(--ac)',is_fullbody:'var(--rd)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_me_lower:'var(--bl)',is_me_upper:'var(--ac)',is_de_lower:'var(--yl)',is_upper2:'var(--ac)',is_fullbody:'var(--rd)',is_fb_pullup:'var(--rd)',is_fb_fsq:'var(--rd)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
