@@ -168,36 +168,29 @@ const OFF_SEASON=[
 ];
 
 const IN_SEASON=[
-  {id:'is_me_lower',name:'ME Lower',exercises:[
+  {id:'is_power',name:'Power + Posterior',exercises:[
     {id:'boxjump',name:'Box Jumps',s:3,r:5,type:'acc',rest:120},
     {id:'deadlift',name:'Deadlift (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
-    {id:'beltsquat',name:'Belt Squat',s:3,r:12,type:'acc',rest:120},
-    {id:'legcurl',name:'Leg Curls',s:4,r:12,type:'acc',rest:60},
+    {id:'goodmorning',name:'Good Mornings',s:3,r:12,type:'acc',rest:60},
+    {id:'pullup',name:'Pull-ups',s:4,r:8,type:'pri',rest:120},
     {id:'stahl_rot',name:'Stahl Rotation',s:4,r:10,type:'acc',rest:60,note:'per side'},
     {id:'abwheel',name:'Ab Wheel',s:4,r:12,type:'acc',rest:60}
   ]},
-  {id:'is_me_upper',name:'ME Upper',exercises:[
+  {id:'is_press',name:'Press + Upper Back',exercises:[
     {id:'bench',name:'Bench Press',s:3,r:5,type:'pri',rest:240,topSet:{r:3,s:1},backoffRpe:5},
-    {id:'dbflat',name:'Flat DB Press',s:3,r:12,type:'acc',rest:120},
-    {id:'tricep',name:'Triceps',s:4,r:12,type:'acc',rest:60},
     {id:'csrow',name:'Chest-Supported Row',s:4,r:12,type:'acc',rest:60},
-    {id:'facepull',name:'Face Pulls',s:4,r:15,type:'iso',rest:60}
+    {id:'tricep',name:'Triceps',s:3,r:12,type:'acc',rest:60},
+    {id:'facepull',name:'Face Pulls',s:4,r:15,type:'iso',rest:60},
+    {id:'landmine_rot',name:'Landmine Rotation',s:3,r:10,type:'acc',rest:60,note:'per side'}
   ]},
-  {id:'is_de_lower',name:'DE Lower',exercises:[
-    {id:'deadlift',name:'Deadlift',s:4,r:6,type:'pri',rest:120},
-    {id:'legpress',name:'Leg Press',s:4,r:15,type:'acc',rest:60},
-    {id:'goodmorning',name:'Good Mornings',s:4,r:12,type:'acc',rest:60},
-    {id:'landmine_rot',name:'Landmine Rotation',s:4,r:10,type:'acc',rest:60,note:'per side'},
+  {id:'is_legs',name:'Legs + Athletic',exercises:[
+    {id:'frontsquat',name:'Front Squat',s:3,r:5,type:'pri',rest:240},
+    {id:'legpress',name:'Leg Press',s:3,r:15,type:'acc',rest:60},
+    {id:'bss',name:'Bulgarian Split Squat',s:3,r:8,type:'acc',rest:90,note:'per leg'},
+    {id:'backext',name:'Back Extensions',s:4,r:12,type:'acc',rest:60},
     {id:'hanglegraise',name:'Hanging Leg Raise',s:4,r:12,type:'acc',rest:60}
   ]},
-  {id:'is_upper2',name:'Upper (5/3/1)',exercises:[
-    {id:'bench',name:'Bench Press (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
-    {id:'ohp',name:'Overhead Press',s:4,r:8,type:'sec',rest:120},
-    {id:'pullup',name:'Pull-ups',s:4,r:12,type:'acc',rest:120},
-    {id:'tricep',name:'Triceps',s:4,r:12,type:'acc',rest:60},
-    {id:'facepull',name:'Face Pulls',s:4,r:15,type:'iso',rest:60}
-  ]},
-  {id:'is_fullbody',name:'Full Body (5/3/1)',exercises:[
+  {id:'is_fb_531',name:'Full Body (5/3/1)',exercises:[
     {id:'bench',name:'Bench Press (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
     {id:'incline_db',name:'Low Incline DB Press',s:2,r:0,type:'acc',rest:120,fixedRpe:9.5,repRange:'AMRAP'},
     {id:'deadlift',name:'Deadlift (5/3/1)',s:1,r:5,type:'pri',rest:300,is531:true},
@@ -322,7 +315,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_me_lower:'var(--bl)',is_me_upper:'var(--ac)',is_de_lower:'var(--yl)',is_upper2:'var(--ac)',is_fullbody:'var(--rd)',is_fb_pullup:'var(--rd)',is_fb_fsq:'var(--rd)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_power:'var(--bl)',is_press:'var(--ac)',is_legs:'var(--yl)',is_fb_531:'var(--rd)',is_fb_pullup:'var(--rd)',is_fb_fsq:'var(--rd)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
