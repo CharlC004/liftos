@@ -110,7 +110,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 </div>
 <div class="sess-timer-toggle" id="sessTimerToggle" onclick="toggleSessPanel()" style="display:none;"><span class="st-dot"></span><span id="sessTimerMini">0:00</span></div>
 <div class="sess-timer-expanded" id="sessTimerPanel"><div class="st-label">Session Duration</div><div class="st-time" id="sessTimerFull">0:00:00</div><div class="st-actions"><div class="st-btn stop" onclick="stopSessTimer();event.stopPropagation();">Stop</div><div class="st-btn" onclick="hideSessPanel();event.stopPropagation();">Hide</div></div></div>
-<div class="timer-bar" id="timerBar"><div class="tb-time" id="tbTime">0:00</div><div class="tb-prog"><div class="tb-fill" id="tbFill" style="width:100%"></div></div><button class="tb-x" onclick="stopTimer()">✕</button></div>
+<div class="timer-bar" id="timerBar"><div class="tb-time" id="tbTime">0:00</div><div class="tb-prog"><div class="tb-fill" id="tbFill" style="width:100%"></div></div><button class="tb-x" style="font-size:.7rem;font-weight:700;color:var(--ac);padding:6px 10px;border:1px solid var(--ac);border-radius:4px;background:var(--acd);" onclick="addTime(15)">+15s</button><button class="tb-x" onclick="stopTimer()">✕</button></div>
 <div class="bnav" style="display:none;"><button class="nb a" onclick="go('train')" id="n0"><span class="ni">🏋️</span>Train</button><button class="nb" onclick="go('hist')" id="n1"><span class="ni">📋</span>Log</button><button class="nb" onclick="go('prs')" id="n2"><span class="ni">📈</span>PRs</button><button class="nb" onclick="go('setup')" id="n3"><span class="ni">⚙️</span>Setup</button></div>
 <div class="mbg" id="mbg" onclick="if(event.target===this)cM();"><div class="mdl" id="mc"></div></div>
 <div class="toast" id="tst"></div>
@@ -860,6 +860,7 @@ let timerIntv=null,timerEnd=0,timerDur=0;
 function startTimer(sec){stopTimer();timerDur=sec;timerEnd=Date.now()+sec*1000;document.getElementById('timerBar').classList.add('on');timerIntv=setInterval(tickTimer,200);tickTimer();}
 function tickTimer(){const left=Math.max(0,Math.ceil((timerEnd-Date.now())/1000));const m=Math.floor(left/60);const s=left%60;document.getElementById('tbTime').textContent=m+':'+(s<10?'0':'')+s;document.getElementById('tbFill').style.width=Math.max(0,(left/timerDur)*100)+'%';if(left<=0)stopTimer();}
 function stopTimer(){clearInterval(timerIntv);timerIntv=null;document.getElementById('timerBar').classList.remove('on');}
+function addTime(sec){if(timerIntv){timerEnd+=sec*1000;timerDur+=sec;tickTimer();}}
 
 // ===== HISTORY =====
 function rHist(){
