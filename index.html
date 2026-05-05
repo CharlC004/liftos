@@ -104,6 +104,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
       <div class="mode-toggle" id="modeToggle"></div>
       <p style="font-size:.72rem;color:var(--tx3);line-height:1.5;" id="modeDesc"></p>
     </div>
+    <div class="cd"><h3>Edit Templates</h3><p style="font-size:.72rem;color:var(--tx3);margin-bottom:12px;">Customize exercises, sets, and reps. Changes persist across sessions.</p><div id="tmplList"></div></div>
     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;"><button class="btn bo bs" onclick="expD()">↓ Export</button><button class="btn bo bs" onclick="impD()">↑ Import</button><button class="btn bd bs" onclick="rstAll()">Reset</button></div>
     <input type="file" id="impF" accept=".json" style="display:none" onchange="doImp(event)">
   </div>
@@ -209,7 +210,12 @@ const IN_SEASON=[
 ];
 
 function getTemplates(){return D.mode==='in'?IN_SEASON:OFF_SEASON;}
-function findTemplate(tid){return getTemplates().find(t=>t.id===tid)||IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);}
+function findTemplate(tid){
+  const base=getTemplates().find(t=>t.id===tid)||IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);
+  if(!base)return null;
+  if(D.customTemplates?.[tid]){return{...base,exercises:D.customTemplates[tid]};}
+  return base;
+}
 
 const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',speed_dead:'deadlift',goodmorning:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',incline_bench:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup'};
 const RPE_WAVE=[7,8,9,7.5,8.5,9.5];
@@ -244,6 +250,7 @@ function ensureD(){
   if(!D.rm)D.rm={squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0};
   if(D.rm.pullup===undefined)D.rm.pullup=0;if(D.rm.frontsquat===undefined)D.rm.frontsquat=0;
   if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;if(!D.mode)D.mode='off';
+  if(!D.customTemplates)D.customTemplates={};
 }
 let lastSvTime=0;
 function sv(){localStorage.setItem(SK,JSON.stringify(D));lastSvTime=Date.now();if(dbRef&&syncReady){clearTimeout(svTimer);svTimer=setTimeout(()=>dbRef.set(D).catch(e=>console.error(e)),600);}}
@@ -874,40 +881,29 @@ function rHist(){
   const all=Object.entries(D.sessions).filter(([k,s])=>s.completed).sort((a,b)=>(b[1].date||'').localeCompare(a[1].date||''));
   if(!all.length){document.getElementById('histList').innerHTML='<div class="empty">No completed sessions yet</div>';return;}
 
-  // Group by week (ISO week: Monday-Sunday)
-  const weeks={};
+  let html=`<div style="font-family:'IBM Plex Mono',monospace;font-size:.76rem;color:var(--ac);font-weight:700;margin-bottom:14px;">${all.length} sessions</div>`;
+
   all.forEach(([k,s])=>{
-    const d=new Date(s.date);const day=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-(day===0?6:day-1));
-    const wk=fmtDate(mon);
-    if(!weeks[wk])weeks[wk]={start:wk,sessions:[],totalSets:0};
-    weeks[wk].sessions.push({k,s});
-    // Count completed sets
-    for(const sets of Object.values(s.ex||{})){(sets||[]).forEach(st=>{if(st.d)weeks[wk].totalSets++;});}
-  });
+    // Get exercise summary
+    const am={};(s.added||[]).forEach(a=>{am['add_'+a._addIdx]=a.name;});
+    let exSummary=[];
+    for(const[ek,sets]of Object.entries(s.ex||{})){
+      const name=am[ek]||ek.split('_t')[0].split('_').map(w=>w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+      const doneSets=(sets||[]).filter(st=>st.d);
+      if(doneSets.length){
+        const best=doneSets.reduce((a,b)=>(b.w>a.w?b:a),doneSets[0]);
+        exSummary.push(`${best.w}×${best.r}`);
+      }
+    }
 
-  let html='';
-  // Summary bar
-  const totalSess=all.length;
-  const thisMonth=all.filter(([k,s])=>s.date?.startsWith(calYear+'-'+String(calMonth+1).padStart(2,'0'))).length;
-  html+=`<div style="display:flex;gap:16px;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;font-size:.76rem;">
-    <div><span style="color:var(--ac);font-weight:700;font-size:1.1rem;">${totalSess}</span><div style="color:var(--tx3);font-size:.6rem;text-transform:uppercase;">Total</div></div>
-    <div><span style="color:var(--bl);font-weight:700;font-size:1.1rem;">${thisMonth}</span><div style="color:var(--tx3);font-size:.6rem;text-transform:uppercase;">This month</div></div>
-    <div><span style="color:var(--gn);font-weight:700;font-size:1.1rem;">${Object.keys(weeks).length}</span><div style="color:var(--tx3);font-size:.6rem;text-transform:uppercase;">Weeks</div></div>
-  </div>`;
-
-  Object.values(weeks).forEach(wk=>{
-    const endDate=new Date(wk.start);endDate.setDate(endDate.getDate()+6);
-    const startLabel=new Date(wk.start).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    const endLabel=endDate.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    html+=`<div style="font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin:12px 0 6px;display:flex;justify-content:space-between;">
-      <span>${startLabel} – ${endLabel}</span><span>${wk.sessions.length} sessions · ${wk.totalSets} sets</span></div>`;
-    wk.sessions.forEach(({k,s})=>{
-      html+=`<div class="cd" style="cursor:pointer;padding:12px;" onclick="selDate='${s.date}';activeSessKey='${k}';go('train');rSess();">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div><span style="font-weight:700;font-size:.85rem;">${s.name}</span><span style="font-size:.68rem;color:var(--tx3);margin-left:8px;">${s.date}</span></div>
-          <span class="rb ${s.rpe>=9?'rmx':s.rpe>=8?'rhi':s.rpe<=5?'rlo':'rmd'}">RPE ${s.rpe}</span>
-        </div></div>`;
-    });
+    html+=`<div style="padding:10px 0;border-bottom:1px solid var(--bdr);cursor:pointer;" onclick="selDate='${s.date}';activeSessKey='${k}';go('train');${s.isCardio?'rCardio()':'rSess()'};">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;">
+        <span style="font-weight:700;font-size:.82rem;">${s.name||'Session'}</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--tx3);">${s.date}</span>
+      </div>
+      ${exSummary.length?`<div style="font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--tx2);margin-top:3px;">${exSummary.slice(0,4).join(' · ')}</div>`:''}
+      ${s.isCardio&&s.cardioData?`<div style="font-size:.66rem;color:var(--bl);margin-top:3px;">${s.cardioData.actualDuration?s.cardioData.actualDuration+'min':''}${s.cardioData.totalCals?' · '+s.cardioData.totalCals+'cal':''}</div>`:''}
+    </div>`;
   });
   document.getElementById('histList').innerHTML=html;
 }
@@ -935,7 +931,99 @@ function rSetup(){
   document.getElementById('rmIn').innerHTML=mains.map(m=>`<div class="rmrow"><span style="flex:1;font-weight:600;font-size:.9rem;">${m.n}</span><input class="si" style="width:80px" type="number" value="${D.rm[m.id]||''}" placeholder="0" onchange="D.rm['${m.id}']=+this.value;sv();"><span style="font-size:.72rem;color:var(--tx3);">${D.unit}</span></div>`).join('');
   document.getElementById('modeToggle').innerHTML=`<button class="${D.mode==='off'?'act':''}" onclick="D.mode='off';sv();rSetup();rTrain();">Off-Season</button><button class="${D.mode==='in'?'act':''}" onclick="D.mode='in';sv();rSetup();rTrain();">In-Season</button>`;
   document.getElementById('modeDesc').textContent=D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy';
+  // Template list
+  const tmpls=getTemplates();
+  document.getElementById('tmplList').innerHTML=tmpls.map(t=>{
+    const cust=D.customTemplates?.[t.id];
+    const exList=cust||t.exercises;
+    return`<div class="cd" style="padding:12px;margin-bottom:8px;cursor:pointer;" onclick="editTemplate('${t.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:700;font-size:.85rem;">${t.name}</span>
+        <span style="font-size:.68rem;color:${cust?'var(--ac)':'var(--tx3)'};">${cust?'Custom':'Default'} · ${exList.length} exercises</span>
+      </div>
+      <div style="font-size:.68rem;color:var(--tx3);margin-top:4px;">${exList.map(e=>e.name).join(' · ')}</div>
+    </div>`;
+  }).join('');
 }
+
+// ===== TEMPLATE EDITOR =====
+function editTemplate(tid){
+  if(!D.customTemplates)D.customTemplates={};
+  const tmpl=getTemplates().find(t=>t.id===tid);
+  const exList=D.customTemplates[tid]||JSON.parse(JSON.stringify(tmpl.exercises));
+  // Save working copy
+  D.customTemplates[tid]=exList;sv();
+
+  let h=`<h2>${tmpl.name}</h2>`;
+  h+=exList.map((ex,i)=>{
+    return`<div style="padding:10px 0;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;">
+        <input class="inp" style="font-weight:600;font-size:.85rem;padding:6px 8px;" value="${ex.name}" onchange="updTmplEx('${tid}',${i},'name',this.value)">
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:.6rem;color:var(--tx3);">Sets</span><input class="si" style="width:40px;" type="number" value="${ex.s}" onchange="updTmplEx('${tid}',${i},'s',+this.value)"></div>
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:.6rem;color:var(--tx3);">Reps</span><input class="si" style="width:40px;" type="number" value="${ex.r}" onchange="updTmplEx('${tid}',${i},'r',+this.value)"></div>
+          <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:.6rem;color:var(--tx3);">Rest</span><input class="si" style="width:50px;" type="number" value="${ex.rest||60}" onchange="updTmplEx('${tid}',${i},'rest',+this.value)"></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        ${i>0?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.7rem;cursor:pointer;" onclick="moveTmplEx('${tid}',${i},-1)">▲</button>`:''}
+        ${i<exList.length-1?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.7rem;cursor:pointer;" onclick="moveTmplEx('${tid}',${i},1)">▼</button>`:''}
+      </div>
+      <button style="padding:4px 8px;border:1px solid var(--rd);border-radius:4px;background:var(--rdd);color:var(--rd);font-size:.66rem;font-weight:600;cursor:pointer;" onclick="rmTmplEx('${tid}',${i})">✕</button>
+    </div>`;
+  }).join('');
+
+  h+=`<div style="display:flex;gap:8px;margin-top:14px;">
+    <button class="btn bo bs" style="flex:1;" onclick="addTmplExModal('${tid}')">+ Add Exercise</button>
+    <button class="btn bd bs" onclick="resetTmpl('${tid}')">Reset to Default</button>
+  </div>`;
+  h+=`<button class="btn bp bf" style="margin-top:10px;" onclick="cM();rSetup();toast('Template saved');">Done</button>`;
+  oM(h);
+}
+
+function updTmplEx(tid,i,field,val){
+  if(!D.customTemplates?.[tid])return;
+  D.customTemplates[tid][i][field]=val;sv();
+}
+function moveTmplEx(tid,i,dir){
+  const ex=D.customTemplates[tid];if(!ex)return;
+  const ni=i+dir;if(ni<0||ni>=ex.length)return;
+  const tmp=ex[i];ex[i]=ex[ni];ex[ni]=tmp;sv();editTemplate(tid);
+}
+function rmTmplEx(tid,i){
+  D.customTemplates[tid].splice(i,1);sv();editTemplate(tid);
+}
+function resetTmpl(tid){
+  if(!confirm('Reset to default template?'))return;
+  delete D.customTemplates[tid];sv();editTemplate(tid);
+}
+function addTmplExModal(tid){
+  let h=`<h2>Add Exercise</h2><div style="margin-bottom:12px;"><input class="inp" id="tExN" placeholder="Exercise name…"></div>
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <div class="fld" style="flex:1;"><label>Sets</label><input class="inp" id="tExS" type="number" value="3" style="text-align:center;"></div>
+    <div class="fld" style="flex:1;"><label>Reps</label><input class="inp" id="tExR" type="number" value="12" style="text-align:center;"></div>
+    <div class="fld" style="flex:1;"><label>Rest</label><input class="inp" id="tExRst" type="number" value="120" style="text-align:center;"></div>
+  </div>
+  <button class="btn bp bf" style="margin-bottom:16px;" onclick="doAddTmplEx('${tid}')">Add</button>
+  <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-bottom:8px;">Quick Add</div>`;
+  h+=ADD_EX.map(e=>`<div class="rmrow" style="cursor:pointer;" onclick="doAddTmplExQuick('${tid}','${e.id}',\`${e.name}\`,3,${e.r},${e.rest||120})"><span style="flex:1;font-weight:500;font-size:.88rem;">${e.name}</span><span style="font-size:.72rem;color:var(--tx3);">3×${e.r}</span></div>`).join('');
+  oM(h);
+}
+function doAddTmplEx(tid){
+  const name=document.getElementById('tExN').value.trim();if(!name){toast('Enter a name');return;}
+  const s=parseInt(document.getElementById('tExS').value)||3;
+  const r=parseInt(document.getElementById('tExR').value)||12;
+  const rest=parseInt(document.getElementById('tExRst').value)||120;
+  const id=name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,20);
+  if(!D.customTemplates[tid])D.customTemplates[tid]=JSON.parse(JSON.stringify(getTemplates().find(t=>t.id===tid).exercises));
+  D.customTemplates[tid].push({id,name,s,r,type:'acc',rest});sv();editTemplate(tid);
+}
+function doAddTmplExQuick(tid,id,name,s,r,rest){
+  if(!D.customTemplates[tid])D.customTemplates[tid]=JSON.parse(JSON.stringify(getTemplates().find(t=>t.id===tid).exercises));
+  D.customTemplates[tid].push({id,name,s,r,type:'acc',rest});sv();editTemplate(tid);
+}
+
+// Custom templates are handled by findTemplate above
 
 // ===== MODAL/TOAST =====
 function oM(h){document.getElementById('mc').innerHTML=h;document.getElementById('mbg').classList.add('op');}
