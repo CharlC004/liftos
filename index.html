@@ -209,9 +209,26 @@ const IN_SEASON=[
   ]}
 ];
 
-function getTemplates(){return D.mode==='in'?IN_SEASON:OFF_SEASON;}
+function getTemplates(){
+  const base=D.mode==='in'?IN_SEASON:OFF_SEASON;
+  const archived=D.archivedTemplates||[];
+  const active=base.filter(t=>!archived.includes(t.id));
+  const user=(D.userTemplates||[]).filter(t=>!archived.includes(t.id));
+  return[...active,...user];
+}
+function getAllTemplates(){
+  // All templates including archived, for history lookups
+  const user=D.userTemplates||[];
+  return[...IN_SEASON,...OFF_SEASON,...user];
+}
 function findTemplate(tid){
-  const base=getTemplates().find(t=>t.id===tid)||IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);
+  // Check user templates first (they may override defaults)
+  const user=(D.userTemplates||[]).find(t=>t.id===tid);
+  if(user){
+    if(D.customTemplates?.[tid])return{...user,exercises:D.customTemplates[tid]};
+    return user;
+  }
+  const base=IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);
   if(!base)return null;
   if(D.customTemplates?.[tid]){return{...base,exercises:D.customTemplates[tid]};}
   return base;
@@ -251,6 +268,8 @@ function ensureD(){
   if(D.rm.pullup===undefined)D.rm.pullup=0;if(D.rm.frontsquat===undefined)D.rm.frontsquat=0;
   if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;if(!D.mode)D.mode='off';
   if(!D.customTemplates)D.customTemplates={};
+  if(!D.userTemplates)D.userTemplates=[];
+  if(!D.archivedTemplates)D.archivedTemplates=[];
 }
 let lastSvTime=0;
 function sv(){localStorage.setItem(SK,JSON.stringify(D));lastSvTime=Date.now();if(dbRef&&syncReady){clearTimeout(svTimer);svTimer=setTimeout(()=>dbRef.set(D).catch(e=>console.error(e)),600);}}
@@ -933,23 +952,52 @@ function rSetup(){
   document.getElementById('modeDesc').textContent=D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy';
   // Template list
   const tmpls=getTemplates();
-  document.getElementById('tmplList').innerHTML=tmpls.map(t=>{
+  const archived=D.archivedTemplates||[];
+  const archivedTmpls=IN_SEASON.concat(OFF_SEASON).concat(D.userTemplates||[]).filter(t=>archived.includes(t.id));
+
+  let tmplHtml=`<button class="btn bp bf" style="margin-bottom:14px;" onclick="createTemplateModal()">+ New Template</button>`;
+
+  tmpls.forEach(t=>{
     const cust=D.customTemplates?.[t.id];
     const exList=cust||t.exercises;
-    return`<div class="cd" style="padding:12px;margin-bottom:8px;cursor:pointer;" onclick="editTemplate('${t.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
+    const isUser=!!(D.userTemplates||[]).find(u=>u.id===t.id);
+    tmplHtml+=`<div class="cd" style="padding:12px;margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="editTemplate('${t.id}')">
         <span style="font-weight:700;font-size:.85rem;">${t.name}</span>
-        <span style="font-size:.68rem;color:${cust?'var(--ac)':'var(--tx3)'};">${cust?'Custom':'Default'} · ${exList.length} exercises</span>
+        <span style="font-size:.68rem;color:${cust?'var(--ac)':'var(--tx3)'};">${isUser?'User':cust?'Custom':'Default'} · ${exList.length} ex</span>
       </div>
-      <div style="font-size:.68rem;color:var(--tx3);margin-top:4px;">${exList.map(e=>e.name).join(' · ')}</div>
+      <div style="font-size:.68rem;color:var(--tx3);margin-top:4px;cursor:pointer;" onclick="editTemplate('${t.id}')">${exList.map(e=>e.name).join(' · ')}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="btn bo bs" style="font-size:.6rem;" onclick="editTemplate('${t.id}')">Edit</button>
+        <button class="btn bo bs" style="font-size:.6rem;color:var(--yl);border-color:var(--yl);" onclick="archiveTemplate('${t.id}')">Archive</button>
+        ${isUser?`<button class="btn bd bs" style="font-size:.6rem;" onclick="deleteTemplate('${t.id}')">Delete</button>`:''}
+      </div>
     </div>`;
-  }).join('');
+  });
+
+  if(archivedTmpls.length){
+    tmplHtml+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin:16px 0 8px;">Archived</div>`;
+    archivedTmpls.forEach(t=>{
+      const exList=D.customTemplates?.[t.id]||t.exercises;
+      tmplHtml+=`<div class="cd" style="padding:12px;margin-bottom:8px;opacity:.6;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;font-size:.85rem;">${t.name}</span>
+          <span style="font-size:.68rem;color:var(--tx3);">${exList.length} ex</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <button class="btn bo bs" style="font-size:.6rem;color:var(--gn);border-color:var(--gn);" onclick="restoreTemplate('${t.id}')">Restore</button>
+          ${!!(D.userTemplates||[]).find(u=>u.id===t.id)?`<button class="btn bd bs" style="font-size:.6rem;" onclick="deleteTemplate('${t.id}')">Delete</button>`:''}
+        </div>
+      </div>`;
+    });
+  }
+  document.getElementById('tmplList').innerHTML=tmplHtml;
 }
 
 // ===== TEMPLATE EDITOR =====
 function editTemplate(tid){
   if(!D.customTemplates)D.customTemplates={};
-  const tmpl=getTemplates().find(t=>t.id===tid);
+  const tmpl=findTemplate(tid)||{id:tid,name:'Template',exercises:[]};
   const exList=D.customTemplates[tid]||JSON.parse(JSON.stringify(tmpl.exercises));
   // Save working copy
   D.customTemplates[tid]=exList;sv();
@@ -994,8 +1042,14 @@ function rmTmplEx(tid,i){
   D.customTemplates[tid].splice(i,1);sv();editTemplate(tid);
 }
 function resetTmpl(tid){
-  if(!confirm('Reset to default template?'))return;
-  delete D.customTemplates[tid];sv();editTemplate(tid);
+  const isUser=!!(D.userTemplates||[]).find(t=>t.id===tid);
+  if(isUser){
+    if(!confirm('Clear all exercises from this template?'))return;
+    D.customTemplates[tid]=[];sv();editTemplate(tid);
+  }else{
+    if(!confirm('Reset to default template?'))return;
+    delete D.customTemplates[tid];sv();editTemplate(tid);
+  }
 }
 function addTmplExModal(tid){
   let h=`<h2>Add Exercise</h2><div style="margin-bottom:12px;"><input class="inp" id="tExN" placeholder="Exercise name…"></div>
@@ -1024,6 +1078,38 @@ function doAddTmplExQuick(tid,id,name,s,r,rest){
 }
 
 // Custom templates are handled by findTemplate above
+
+// ===== CREATE / ARCHIVE / RESTORE / DELETE TEMPLATES =====
+function createTemplateModal(){
+  let h=`<h2>New Template</h2>
+  <div class="fld"><label>Name</label><input class="inp" id="newTmplN" placeholder="e.g. Upper Body, Recovery…"></div>
+  <button class="btn bp bf" onclick="doCreateTemplate()">Create</button>`;
+  oM(h);
+}
+function doCreateTemplate(){
+  const name=document.getElementById('newTmplN').value.trim();
+  if(!name){toast('Enter a name');return;}
+  const id='user_'+Date.now();
+  if(!D.userTemplates)D.userTemplates=[];
+  D.userTemplates.push({id,name,exercises:[]});
+  sv();cM();rSetup();
+  // Open editor immediately
+  editTemplate(id);
+}
+function archiveTemplate(tid){
+  if(!D.archivedTemplates)D.archivedTemplates=[];
+  if(!D.archivedTemplates.includes(tid)){D.archivedTemplates.push(tid);sv();rSetup();toast('Archived');}
+}
+function restoreTemplate(tid){
+  D.archivedTemplates=(D.archivedTemplates||[]).filter(id=>id!==tid);sv();rSetup();toast('Restored');
+}
+function deleteTemplate(tid){
+  if(!confirm('Permanently delete this template? Session history will be kept.'))return;
+  D.userTemplates=(D.userTemplates||[]).filter(t=>t.id!==tid);
+  D.archivedTemplates=(D.archivedTemplates||[]).filter(id=>id!==tid);
+  if(D.customTemplates)delete D.customTemplates[tid];
+  sv();rSetup();toast('Deleted');
+}
 
 // ===== MODAL/TOAST =====
 function oM(h){document.getElementById('mc').innerHTML=h;document.getElementById('mbg').classList.add('op');}
