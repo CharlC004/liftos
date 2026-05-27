@@ -43,6 +43,8 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .cal-day:hover{background:var(--bg3);}.cal-day.today{border:1px solid var(--ac);}.cal-day.sel{background:var(--ac);color:#fff;}
 .cal-day.empty{cursor:default;}.cal-day.empty:hover{background:transparent;}
 .cal-dots{display:flex;gap:2px;justify-content:center;}.cal-dot{width:4px;height:4px;border-radius:50%;}.cal-dot.done{background:var(--gn);}.cal-dot.partial{background:var(--yl);}
+.cal-plan{font-family:'IBM Plex Mono',monospace;font-size:.5rem;color:var(--tx3);letter-spacing:.5px;line-height:1;margin-top:1px;}
+.cal-day.sel .cal-plan{color:rgba(255,255,255,.85);}
 /* Exercise blocks */
 .exb{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:8px;overflow:hidden;}
 .exh{padding:12px 14px;display:flex;justify-content:space-between;align-items:center;}.exn{font-weight:700;font-size:.88rem;}.exm{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--tx2);}
@@ -59,8 +61,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 .collapse-btn{padding:3px 10px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx3);font-size:.62rem;font-weight:600;cursor:pointer;margin:0 2px;}.collapse-btn.has{color:var(--ac);border-color:var(--acd);}
 .last-sess{padding:8px 14px;background:var(--bg3);border-radius:var(--rs);margin:4px 14px 8px;font-family:'IBM Plex Mono',monospace;font-size:.66rem;color:var(--tx2);line-height:1.6;}
 .ex-note{padding:6px 14px 8px;}.ex-note textarea{width:100%;padding:6px 8px;background:var(--bg3);border:1px solid var(--bdr);border-radius:4px;color:var(--tx);font-size:.78rem;resize:vertical;outline:none;min-height:32px;font-family:'Archivo',sans-serif;}.ex-note textarea:focus{border-color:var(--ac);}
-.fatigue-bar{padding:8px 14px;border-radius:var(--rs);margin-bottom:12px;font-size:.72rem;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-.fatigue-bar .fb-dots{display:flex;gap:3px;}.fatigue-bar .fb-dot{width:8px;height:8px;border-radius:50%;background:var(--bg4);}.fatigue-bar .fb-dot.on{background:var(--ac);}.fatigue-bar .fb-dot.warn{background:var(--rd);}
+.fatigue-bar{display:none;}
 .tmpl-btn{padding:12px;border:1px solid var(--bdr);border-radius:var(--r);background:var(--bg2);color:var(--tx);font-size:.82rem;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}.tmpl-btn:active{transform:scale(.97);border-color:var(--ac);}
 .timer-bar{position:fixed;bottom:calc(56px + var(--sb));left:0;right:0;background:var(--bg3);border-top:1px solid var(--bdr);padding:8px 16px;display:none;align-items:center;gap:12px;z-index:55;}.timer-bar.on{display:flex;}
 .timer-bar .tb-time{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;font-weight:600;min-width:50px;}.timer-bar .tb-prog{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;}.timer-bar .tb-fill{height:100%;background:var(--ac);transition:width 1s linear;border-radius:2px;}.timer-bar .tb-x{background:none;border:none;color:var(--tx3);font-size:1rem;cursor:pointer;padding:4px;}
@@ -93,7 +94,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
 </div>
 <div class="app" id="mainApp" style="display:none;">
   <div class="hdr"><h1>LiftOS</h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
-  <div id="trainV" class="vw a"><div id="calArea"></div><div id="fatigueBar"></div><div id="sessArea"></div></div>
+  <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
   <div id="setupV" class="vw">
@@ -238,11 +239,12 @@ auth.onAuthStateChanged(user=>{
 
 // ===== STATE =====
 const SK='liftos7';
-function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0},unit:'lbs',round:5,mode:'off',sessions:{},completed:[],exNotes:{}};}
+function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0},unit:'lbs',round:5,mode:'off',sessions:{},completed:[],exNotes:{},mobility:{}};}
 let D=ld();ensureD();
 function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm)return s;}catch{}return defs();}
 function ensureD(){
   if(!D.sessions)D.sessions={};if(!D.completed)D.completed=[];if(!D.exNotes)D.exNotes={};
+  if(!D.mobility)D.mobility={};
   if(!D.rm)D.rm={squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0};
   if(D.rm.pullup===undefined)D.rm.pullup=0;if(D.rm.frontsquat===undefined)D.rm.frontsquat=0;
   if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;if(!D.mode)D.mode='off';
@@ -280,16 +282,42 @@ function suggestRpe(templateId){
   return RPE_WAVE[weekNum];
 }
 
-// ===== FATIGUE =====
-function fatigueInfo(){
-  const all=Object.values(D.sessions).filter(s=>s.completed&&!s.isCardio).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
-  let sessCount=0,lastDeloadDate=null;
-  for(let i=all.length-1;i>=0;i--){
-    if(all[i].rpe<=5){lastDeloadDate=all[i].date;break;}
-    sessCount++;
+// ===== MOBILITY TRACKER =====
+function mobStreak(){
+  // Walk backwards from today; count unbroken consecutive checked days.
+  // Today itself doesn't break the streak if unchecked (the day isn't over yet).
+  const today=todayStr();
+  let streak=0;
+  let d=new Date(today);
+  // If today is checked, count it; either way step back and check yesterday onward.
+  if(D.mobility[today])streak++;
+  d.setDate(d.getDate()-1);
+  while(true){
+    const ds=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if(D.mobility[ds])streak++;else break;
+    d.setDate(d.getDate()-1);
+    if(streak>3650)break; // safety
   }
-  const daysSince=lastDeloadDate?Math.floor((new Date()-new Date(lastDeloadDate))/(86400000)):all.length?Math.floor((new Date()-new Date(all[0].date))/(86400000)):0;
-  return{sessCount,daysSince,warn:sessCount>=18||daysSince>=42};
+  return streak;
+}
+function tglMob(ds){D.mobility[ds]=!D.mobility[ds];if(!D.mobility[ds])delete D.mobility[ds];sv();rMobility();rTrain();}
+function rMobility(){
+  const el=document.getElementById('mobArea');if(!el)return;
+  const today=todayStr();
+  const done=!!D.mobility[today];
+  const streak=mobStreak();
+  const flame=streak>=7?'🔥 ':'';
+  el.innerHTML=`<div class="cd" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;">
+    <div style="display:flex;align-items:center;gap:12px;cursor:pointer;flex:1;" onclick="tglMob('${today}')">
+      <div style="width:28px;height:28px;border-radius:6px;border:2px solid ${done?'var(--gn)':'var(--bdr)'};background:${done?'var(--gn)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff;flex-shrink:0;">${done?'✓':''}</div>
+      <div><div style="font-weight:700;font-size:.86rem;">Mobility / Flexibility / Balance</div>
+      <div style="font-size:.66rem;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-top:2px;">15–20 min daily</div></div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;">
+      <div style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:1.1rem;color:${streak>0?'var(--ac)':'var(--tx3)'};">${flame}${streak}</div>
+      <div style="font-size:.6rem;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;">day${streak===1?'':'s'}</div>
+    </div>
+  </div>`;
 }
 
 // ===== CALENDAR =====
@@ -319,18 +347,10 @@ function rTrain(){
         return`<div class="cal-dot" style="background:${col};${done?'':'opacity:.5;'}"></div>`;
       }).join('')}</div>`;
     }
-    ch+=`<div class="cal-day ${isToday?'today':''} ${isSel?'sel':''}" onclick="selDate='${ds}';rTrain();">${d}${dots}</div>`;
+    ch+=`<div class="cal-day ${isToday?'today':''} ${isSel?'sel':''}" onclick="selDate='${ds}';rTrain();">${d}${dots}${D.mode==='in'?`<div class="cal-plan">${['RUN','Z2','LWR','UPR','INT','FB','—'][new Date(calYear,calMonth,d).getDay()]}</div>`:''}</div>`;
   }
   ch+=`</div>`;
   document.getElementById('calArea').innerHTML=ch;
-
-  // Fatigue
-  const fi=fatigueInfo();
-  document.getElementById('fatigueBar').innerHTML=fi.sessCount>0?`<div class="fatigue-bar" style="background:${fi.warn?'var(--rdd)':'var(--bg2)'};border:1px solid ${fi.warn?'var(--rd)':'var(--bdr)'};">
-    <span style="color:${fi.warn?'var(--rd)':'var(--tx3)'};">${fi.sessCount} sessions · ${fi.daysSince} days since deload</span>
-    <div class="fb-dots">${Array.from({length:6},(_,i)=>`<div class="fb-dot ${i<Math.min(6,Math.floor(fi.sessCount/3))?(fi.warn?'warn':'on'):''}"></div>`).join('')}</div>
-    ${fi.warn?'<span style="color:var(--rd);font-size:.66rem;">Deload recommended</span>':''}
-  </div>`:'';
 
   // Session area for selected date
   let sh='';
@@ -367,6 +387,7 @@ function rTrain(){
   if(existingSess.length)sh+=`</div>`;
 
   document.getElementById('sessArea').innerHTML=sh;
+  rMobility();
 }
 
 // ===== SESSION MANAGEMENT =====
@@ -550,7 +571,7 @@ function rCardio(){
   }
 
   document.getElementById('calArea').innerHTML='';
-  document.getElementById('fatigueBar').innerHTML='';
+  document.getElementById('mobArea').innerHTML='';
   document.getElementById('sessArea').innerHTML=h;
 }
 
@@ -646,7 +667,7 @@ function rSess(){
   }
 
   document.getElementById('calArea').innerHTML='';
-  document.getElementById('fatigueBar').innerHTML='';
+  document.getElementById('mobArea').innerHTML='';
   document.getElementById('sessArea').innerHTML=h;
 }
 
