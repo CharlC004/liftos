@@ -340,14 +340,14 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_dead:'var(--bl)',is_bench:'var(--ac)',is_fsq:'var(--yl)',is_fba:'var(--rd)',is_fbb:'var(--rd)',is_fbc:'var(--rd)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_dead:'var(--bl)',is_bench:'var(--ac)',is_fsq:'var(--yl)',is_fba:'var(--rd)',is_fbb:'var(--rd)',is_fbc:'var(--rd)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)',cardio_vo2:'var(--rd)',cardio_thr:'var(--yl)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
         return`<div class="cal-dot" style="background:${col};${done?'':'opacity:.5;'}"></div>`;
       }).join('')}</div>`;
     }
-    ch+=`<div class="cal-day ${isToday?'today':''} ${isSel?'sel':''}" onclick="selDate='${ds}';rTrain();">${d}${dots}${D.mode==='in'?`<div class="cal-plan">${['RUN','Z2','LWR','UPR','INT','FB','—'][new Date(calYear,calMonth,d).getDay()]}</div>`:''}</div>`;
+    ch+=`<div class="cal-day ${isToday?'today':''} ${isSel?'sel':''}" onclick="selDate='${ds}';rTrain();">${d}${dots}${D.mode==='in'?`<div class="cal-plan">${['OPEN','DL','INT','OHP','SQ','INT','FSQ'][new Date(calYear,calMonth,d).getDay()]}</div>`:''}</div>`;
   }
   ch+=`</div>`;
   document.getElementById('calArea').innerHTML=ch;
@@ -422,65 +422,151 @@ function startDeload(date){
 
 // ===== CARDIO =====
 const CARDIO_PRESETS=[
+  // ---- LSD / Steady state (aerobic base) ----
   {id:'z2_30',name:'Zone 2 Steady',cat:'lsd',duration:30,desc:'30 min continuous · HR 120-140 · Conversational pace'},
   {id:'z2_45',name:'Long Zone 2',cat:'lsd',duration:45,desc:'45 min continuous · HR 120-140 · Endurance builder'},
+  {id:'z2_60',name:'Z2 Long Haul',cat:'lsd',duration:60,desc:'60 min continuous · HR 120-140 · Big aerobic base block'},
   {id:'easy_20',name:'Easy Spin',cat:'lsd',duration:20,desc:'20 min · HR <130 · Active recovery'},
-  {id:'int_10_20',name:'10/20s Sprints',cat:'short',duration:8,work:10,rest_int:20,rounds:15,desc:'10s all-out / 20s rest × 15'},
-  {id:'int_15_45',name:'15/45s Power',cat:'short',duration:12,work:15,rest_int:45,rounds:12,desc:'15s max / 45s rest × 12'},
-  {id:'int_30_60',name:'30/60s Intervals',cat:'mid',duration:15,work:30,rest_int:60,rounds:10,desc:'30s hard / 60s easy × 10'},
-  {id:'int_40_40',name:'40/40s Intervals',cat:'mid',duration:14,work:40,rest_int:40,rounds:10,desc:'40s hard / 40s rest × 10'},
-  {id:'int_2_2',name:'2min/2min',cat:'long',duration:24,work:120,rest_int:120,rounds:6,desc:'2 min hard / 2 min easy × 6'},
-  {id:'int_3_2',name:'3min/2min',cat:'long',duration:25,work:180,rest_int:120,rounds:5,desc:'3 min sustained / 2 min easy × 5'},
-  {id:'run_100',name:'100m Sprints',cat:'short',duration:15,work:15,rest_int:60,rounds:8,desc:'100m all-out × 8 · Walk back rest'},
-  {id:'run_200',name:'200m Repeats',cat:'mid',duration:20,work:35,rest_int:90,rounds:6,desc:'200m hard × 6 · 90s rest'},
-  {id:'run_400',name:'400m Repeats',cat:'long',duration:25,work:75,rest_int:120,rounds:4,desc:'400m hard × 4 · 2 min rest'},
-  {id:'hill_short',name:'Hill Sprints (Short)',cat:'short',duration:15,work:12,rest_int:60,rounds:10,desc:'10-15 sec sprint × 10 · Walk down'},
-  {id:'hill_long',name:'Hill Sprints (Long)',cat:'mid',duration:18,work:30,rest_int:90,rounds:6,desc:'30 sec sprint × 6 · Walk down'}
+
+  // ---- VO2max / Long aerobic intervals (the high-value category) ----
+  {id:'norw_4x4',name:'Norwegian 4×4',cat:'vo2',duration:25,work:240,rest_int:180,rounds:4,intensity:'90-95% HRmax · recovery @ ~70%',desc:'4 min hard / 3 min active recovery × 4 · Helgerud gold-standard VO2max'},
+  {id:'seiler_4x8',name:'Seiler 4×8',cat:'vo2',duration:38,work:480,rest_int:120,rounds:4,intensity:'~88-92% HRmax · comfortably hard, sustainable',desc:'8 min hard / 2 min easy × 4 · Most time-at-intensity; best VO2max gains in Seiler data'},
+  {id:'vo2_5x3',name:'5×3 VO2',cat:'vo2',duration:23,work:180,rest_int:120,rounds:5,intensity:'92-95% HRmax',desc:'3 min hard / 2 min easy × 5 · Mid-length VO2max'},
+  {id:'vo2_6x2',name:'6×2 vVO2max',cat:'vo2',duration:22,work:120,rest_int:120,rounds:6,intensity:'~100% vVO2max (3k-5k race pace)',desc:'2 min @ vVO2max / 2 min easy × 6 · 1:1 ratio, hard'},
+
+  // ---- Threshold / Cruise intervals (raise the sustainable ceiling) ----
+  {id:'thr_4x5',name:'4×5 Threshold',cat:'thr',duration:26,work:300,rest_int:90,rounds:4,intensity:'~LT / ~85-88% HRmax · comfortably hard',desc:'5 min @ threshold / 90s easy × 4'},
+  {id:'thr_3x10',name:'3×10 Cruise',cat:'thr',duration:36,work:600,rest_int:180,rounds:3,intensity:'~LT / ~85% HRmax · "10-mile race" effort',desc:'10 min @ threshold / 3 min easy × 3'},
+  {id:'thr_2x20',name:'2×20 Threshold',cat:'thr',duration:45,work:1200,rest_int:300,rounds:2,intensity:'~LT / FTP · steady, controlled',desc:'20 min @ threshold / 5 min easy × 2 · Classic FTP builder'},
+
+  // ---- Long intervals (2-3 min) ----
+  {id:'int_2_2',name:'2min/2min',cat:'long',duration:24,work:120,rest_int:120,rounds:6,intensity:'hard · ~90% HRmax',desc:'2 min hard / 2 min easy × 6'},
+  {id:'int_3_2',name:'3min/2min',cat:'long',duration:25,work:180,rest_int:120,rounds:5,intensity:'hard · ~90% HRmax',desc:'3 min sustained / 2 min easy × 5'},
+
+  // ---- Mid intervals (30-40s) ----
+  {id:'int_30_60',name:'30/60s Intervals',cat:'mid',duration:15,work:30,rest_int:60,rounds:10,intensity:'hard · 1:2 work:rest',desc:'30s hard / 60s easy × 10'},
+  {id:'int_40_40',name:'40/40s Intervals',cat:'mid',duration:14,work:40,rest_int:40,rounds:10,intensity:'hard · 1:1 work:rest',desc:'40s hard / 40s rest × 10'},
+
+  // ---- Short intervals & sprint-interval training (anaerobic / power) ----
+  {id:'int_10_20',name:'10/20s Sprints',cat:'short',duration:8,work:10,rest_int:20,rounds:15,intensity:'all-out',desc:'10s all-out / 20s rest × 15'},
+  {id:'int_15_45',name:'15/45s Power',cat:'short',duration:12,work:15,rest_int:45,rounds:12,intensity:'max',desc:'15s max / 45s rest × 12'},
+  {id:'tabata',name:'Tabata',cat:'short',duration:4,work:20,rest_int:10,rounds:8,intensity:'~170% VO2max · all-out',desc:'20s all-out / 10s rest × 8 · True Tabata, 4 min total'},
+  {id:'billat_30_30',name:'Billat 30/30',cat:'short',duration:15,work:30,rest_int:30,rounds:15,intensity:'@ vVO2max / recovery @ ~50%',desc:'30s @ vVO2max / 30s @ 50% × 15 · VO2max staple'},
+  {id:'sit_wingate',name:'Wingate SIT',cat:'short',duration:19,work:30,rest_int:240,rounds:5,intensity:'all-out supramaximal',desc:'30s all-out / 4 min recovery × 5 · Sprint-interval, anaerobic'},
+  {id:'sit_gibala',name:'Gibala 10×1',cat:'short',duration:22,work:60,rest_int:75,rounds:10,intensity:'~90-100% HRmax',desc:'60s hard / 75s easy × 10 · Time-efficient HIIT'},
+
+  // ---- Running ----
+  {id:'run_100',name:'100m Sprints',cat:'short',duration:15,work:15,rest_int:60,rounds:8,intensity:'all-out',desc:'100m all-out × 8 · Walk back rest'},
+  {id:'run_200',name:'200m Repeats',cat:'mid',duration:20,work:35,rest_int:90,rounds:6,intensity:'~mile race pace',desc:'200m hard × 6 · 90s rest'},
+  {id:'run_400',name:'400m Repeats',cat:'long',duration:25,work:75,rest_int:120,rounds:4,intensity:'~3k-5k pace',desc:'400m hard × 4 · 2 min rest'},
+  {id:'run_800',name:'800m Repeats',cat:'vo2',duration:30,work:170,rest_int:150,rounds:5,intensity:'~3k-5k pace · VO2max',desc:'800m @ 3k-5k pace × 5 · 2.5 min jog rest'},
+
+  // ---- Hill sprints ----
+  {id:'hill_short',name:'Hill Sprints (Short)',cat:'short',duration:15,work:12,rest_int:60,rounds:10,intensity:'all-out',desc:'10-15 sec sprint × 10 · Walk down'},
+  {id:'hill_long',name:'Hill Sprints (Long)',cat:'mid',duration:18,work:30,rest_int:90,rounds:6,intensity:'hard',desc:'30 sec sprint × 6 · Walk down'}
 ];
 
-function suggestCardio(){
-  // Find recent cardio sessions, suggest based on 2:1 LSD:interval ratio
-  const recent=Object.values(D.sessions).filter(s=>s.completed&&s.isCardio).sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5);
-  if(!recent.length)return CARDIO_PRESETS[0];// start with Zone 2
-  const lastCat=recent[0].cardioData?.cat||'lsd';
-  const lsdCount=recent.filter(s=>s.cardioData?.cat==='lsd').length;
-  const intCount=recent.filter(s=>s.cardioData?.cat!=='lsd').length;
-  // If last was interval, suggest LSD
-  if(lastCat!=='lsd')return CARDIO_PRESETS.find(p=>p.cat==='lsd');
-  // If 2+ LSDs in a row, suggest interval
-  if(recent.length>=2&&recent[0].cardioData?.cat==='lsd'&&recent[1].cardioData?.cat==='lsd'){
-    // Rotate through short->mid->long
-    const lastInt=recent.find(s=>s.cardioData?.cat!=='lsd');
-    const lastIntCat=lastInt?.cardioData?.cat||'long';
-    const order=['short','mid','long'];
-    const ni=(order.indexOf(lastIntCat)+1)%3;
-    return CARDIO_PRESETS.find(p=>p.cat===order[ni])||CARDIO_PRESETS[3];
+function _cardioDayDiff(a,b){ // |a-b| in days, both 'YYYY-MM-DD'
+  if(!a||!b)return 0;
+  return Math.abs(Math.round((new Date(a+'T00:00:00')-new Date(b+'T00:00:00'))/86400000));
+}
+
+function suggestCardio(refDate){
+  // Reads recent cardio log and scores categories. Priority order (user-set):
+  // 1) Variety  2) Weakness-targeting  3) Polarized balance  4) Recovery-aware
+  const WIN=12;
+  const hist=Object.values(D.sessions)
+    .filter(s=>s.completed&&s.isCardio&&s.cardioData)
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||''))
+    .slice(0,WIN);
+  if(!hist.length){
+    const p=CARDIO_PRESETS.find(x=>x.id==='z2_30')||CARDIO_PRESETS[0];
+    return {...p,_reason:'No cardio logged yet — start with an aerobic base session.'};
   }
-  return CARDIO_PRESETS[0];// default LSD
+  refDate=refDate||hist[0].date||todayStr();
+
+  const cats=['lsd','vo2','thr','long','mid','short'];
+  const hardCats=['vo2','thr','long','mid','short'];
+  const labels={lsd:'Zone 2',vo2:'VO₂max',thr:'threshold',long:'long-interval',mid:'mid-interval',short:'sprint'};
+
+  const catCount={},catLastDays={},presetLastDays={};
+  cats.forEach(c=>{catCount[c]=0;catLastDays[c]=Infinity;});
+  hist.forEach(s=>{
+    const c=s.cardioData.cat;
+    const dd=_cardioDayDiff(refDate,s.date||refDate);
+    if(catCount[c]!=null){catCount[c]++;if(dd<catLastDays[c])catLastDays[c]=dd;}
+    const id=s.cardioData.presetId;
+    if(presetLastDays[id]==null||dd<presetLastDays[id])presetLastDays[id]=dd;
+  });
+
+  const hardCount=hist.filter(s=>hardCats.includes(s.cardioData.cat)).length;
+  const hardShare=hardCount/hist.length;          // polarized target ~0.25
+  const last=hist[0];
+  const lastHard=hardCats.includes(last.cardioData.cat);
+  const lastDays=_cardioDayDiff(refDate,last.date||refDate);
+  const maxCount=Math.max(1,...cats.map(c=>catCount[c]));
+
+  const CAP=21,norm=v=>Math.min(v===Infinity?CAP:v,CAP)/CAP;
+  const W={variety:1.0,weakness:0.7,polar:0.45,recovery:0.25}; // matches the ranking
+
+  function catScore(c){
+    const variety=norm(catLastDays[c]);                         // longer since = higher
+    const weakness=(maxCount-catCount[c])/maxCount;             // fewer done = higher
+    const polar=c==='lsd'
+      ? Math.max(-1,Math.min(1,(hardShare-0.25)*2))             // too much hard → favor easy
+      : Math.max(-1,Math.min(1,(0.25-hardShare)*2));            // too little hard → room to push
+    const rec=(lastHard&&lastDays<=1)?(c==='lsd'?1:-1):0;       // hard yesterday → nudge easy
+    return W.variety*variety+W.weakness*weakness+W.polar*polar+W.recovery*rec;
+  }
+
+  let best=cats[0],bestScore=-Infinity;
+  cats.forEach(c=>{const sc=catScore(c);if(sc>bestScore){bestScore=sc;best=c;}});
+
+  // Freshest preset within the winning category (never-done or longest-since first)
+  const pick=CARDIO_PRESETS.filter(p=>p.cat===best)
+    .sort((a,b)=>((presetLastDays[b.id]==null?CAP+1:presetLastDays[b.id])-(presetLastDays[a.id]==null?CAP+1:presetLastDays[a.id])))[0];
+
+  let reason;
+  if(best==='lsd'&&hardShare>0.3)reason=`Last ${hist.length} sessions are ${Math.round(hardShare*100)}% hard — easy aerobic day to keep it polarized.`;
+  else if(catCount[best]===0)reason=`No ${labels[best]} work in your recent log — filling the gap.`;
+  else if(lastHard&&lastDays<=1&&best==='lsd')reason='Hard session yesterday — easy day to absorb it.';
+  else reason=`Longest since your last ${labels[best]} session — rotating for variety.`;
+
+  return {...pick,_reason:reason};
 }
 
 function showCardioModal(date){
-  const sug=suggestCardio();
+  const sug=suggestCardio(date);
   let h=`<h2>🫀 Cardio Session</h2>`;
-  h+=`<div style="padding:8px 12px;background:var(--bld);border:1px solid var(--bl);border-radius:var(--rs);margin-bottom:14px;font-size:.76rem;color:var(--bl);">Suggested: <strong>${sug.name}</strong> — ${sug.desc}</div>`;
+  h+=`<div onclick="startCardio('${date}','${sug.id}')" style="padding:10px 12px;background:var(--bld);border:1px solid var(--bl);border-radius:var(--rs);margin-bottom:14px;font-size:.76rem;color:var(--bl);cursor:pointer;">Suggested: <strong>${sug.name}</strong> — ${sug.desc}<div style="font-size:.66rem;color:var(--tx3);margin-top:4px;">${sug._reason||''}</div><div style="font-size:.62rem;color:var(--bl);margin-top:4px;opacity:.8;">▸ Tap to start this session</div></div>`;
 
   h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-bottom:8px;">LSD (Steady State)</div>`;
   CARDIO_PRESETS.filter(p=>p.cat==='lsd').forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
-  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Short Intervals</div>`;
-  CARDIO_PRESETS.filter(p=>p.cat==='short').forEach(p=>{
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--rd);margin-top:12px;margin-bottom:8px;">VO₂max · Long Aerobic</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='vo2'&&!p.id.startsWith('run_')).forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
-  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Mid Intervals</div>`;
-  CARDIO_PRESETS.filter(p=>p.cat==='mid').forEach(p=>{
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--yl);margin-top:12px;margin-bottom:8px;">Threshold · Cruise</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='thr').forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
-  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Long Intervals</div>`;
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Long Intervals (2-3 min)</div>`;
   CARDIO_PRESETS.filter(p=>p.cat==='long'&&!p.id.startsWith('run_')).forEach(p=>{
+    h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
+  });
+
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Mid Intervals (30-40s)</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='mid'&&!p.id.startsWith('run_')&&!p.id.startsWith('hill_')).forEach(p=>{
+    h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
+  });
+
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Short Intervals & Sprints</div>`;
+  CARDIO_PRESETS.filter(p=>p.cat==='short'&&!p.id.startsWith('run_')&&!p.id.startsWith('hill_')).forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
@@ -502,7 +588,7 @@ function startCardio(date,presetId){
   if(D.sessions[k]){cM();openCardio(k);return;}
   D.sessions[k]={
     templateId:'cardio_'+preset.cat,name:'🫀 '+preset.name,date,rpe:0,completed:false,isCardio:true,
-    cardioData:{presetId,cat:preset.cat,duration:preset.duration,work:preset.work||0,rest_int:preset.rest_int||0,rounds:preset.rounds||0,
+    cardioData:{presetId,cat:preset.cat,duration:preset.duration,work:preset.work||0,rest_int:preset.rest_int||0,rounds:preset.rounds||0,intensity:preset.intensity||'',
       actualDuration:'',totalCals:'',avgHR:'',maxHR:'',avgRPM:'',notes:''}
   };
   sv();cM();openCardio(k);
@@ -524,7 +610,7 @@ function rCardio(){
     h+=`<div class="cd" style="border-left:3px solid var(--bl);padding-left:15px;">
       <div style="font-size:.72rem;color:var(--tx2);line-height:1.8;">
         Work: <strong>${cd.work}s</strong> · Rest: <strong>${cd.rest_int}s</strong> · Rounds: <strong>${cd.rounds}</strong><br>
-        Target Duration: <strong>${cd.duration} min</strong>
+        Target Duration: <strong>${cd.duration} min</strong>${(cd.intensity||preset?.intensity)?`<br>Intensity: <strong>${cd.intensity||preset?.intensity}</strong>`:''}
       </div>
     </div>`;
   }else{
