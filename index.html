@@ -347,7 +347,7 @@ function rTrain(){
         return`<div class="cal-dot" style="background:${col};${done?'':'opacity:.5;'}"></div>`;
       }).join('')}</div>`;
     }
-    ch+=`<div class="cal-day ${isToday?'today':''} ${isSel?'sel':''}" onclick="selDate='${ds}';rTrain();">${d}${dots}${D.mode==='in'?`<div class="cal-plan">${['OPEN','DL','INT','OHP','SQ','INT','FSQ'][new Date(calYear,calMonth,d).getDay()]}</div>`:''}</div>`;
+    ch+=`<div class="cal-day ${isToday?'today':''} ${isSel?'sel':''}" onclick="selDate='${ds}';rTrain();">${d}${dots}${D.mode==='in'?`<div class="cal-plan">${['INT','SQ/BN','INT','Z2','DL/BK','GOLF','FULL'][new Date(calYear,calMonth,d).getDay()]}</div>`:''}</div>`;
   }
   ch+=`</div>`;
   document.getElementById('calArea').innerHTML=ch;
