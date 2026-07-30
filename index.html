@@ -269,7 +269,7 @@ auth.onAuthStateChanged(user=>{
 
 // ===== STATE =====
 const SK='liftos7';
-function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0},unit:'lbs',round:5,mode:'off',sessions:{},completed:[],exNotes:{},mobility:{},wodEquip:{bike:true,bar:true,box:false,db:true,bench:true,bb:false}};}
+function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0},unit:'lbs',round:5,mode:'off',sessions:{},completed:[],exNotes:{},mobility:{},wodEquip:{bike:true,rope:true,bar:true,rings:true,box:true,db:true,bench:true,bb:true}};}
 let D=ld();ensureD();
 function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm)return s;}catch{}return defs();}
 function ensureD(){
@@ -281,9 +281,8 @@ function ensureD(){
   if(!D.customTemplates)D.customTemplates={};
   if(!D.userTemplates)D.userTemplates=[];
   if(!D.archivedTemplates)D.archivedTemplates=[];
-  if(!D.wodEquip)D.wodEquip={bike:true,bar:true,box:false,db:true,bb:false};
-  if(!D.wodEquipV2){D.wodEquip.db=true;D.wodEquipV2=true;} // enable DB once for half-weighted WODs
-  if(D.wodEquip.bench===undefined)D.wodEquip.bench=true;   // bench available
+  if(!D.wodEquip)D.wodEquip={};
+  if(!D.wodEquipV3){D.wodEquip={bike:true,rope:true,bar:true,rings:true,box:true,db:true,bench:true,bb:true};D.wodEquipV3=true;} // garage defaults — one-time reset for the house setup
 }
 let lastSvTime=0;
 function sv(){localStorage.setItem(SK,JSON.stringify(D));lastSvTime=Date.now();if(dbRef&&syncReady){clearTimeout(svTimer);svTimer=setTimeout(()=>dbRef.set(D).catch(e=>console.error(e)),600);}}
@@ -719,85 +718,102 @@ function deleteCardio(k){
 }
 
 // ===== WOD — RANDOM WORKOUT GENERATOR =====
-// CrossFit / circuit style, blending conditioning with strength-endurance.
-// equip: gear required ('bw' = bodyweight, always available). cat: cardio | gym | core | load.
-// rep: plausible per-set reps for round-based formats. unit: ''=reps, cal, m (meters), s (seconds).
-// pat = movement pattern (for full-body spread): push|pull|legs|hinge|core|cardio|full
-// impact 'high' = jump/skip/run — excluded from generation (apartment, 4th floor)
-// weighted is derived below (dumbbell/barbell). hand/wt as before for DB loading.
+// Garage edition (1 Suzor-Côté). Machine: Airdyne only — no rower, no running
+// inside WODs (running gets its own dedicated weekly session). Jumps are back:
+// box jumps, double-unders, jumping lunges. Rig work: pull-up bar + rings.
+// DB set 35/50/70 lb. Barbell + plates. Bench.
+// equip: 'bw' always available · bike(=Airdyne) rope bar rings box db bench bb
+// cat: cardio | gym | core | load. pat = movement pattern for full-body spread.
 const WOD_MOVES=[
-  // --- Low-impact conditioning (the cardio engine: machines + no-jump full-body) ---
-  {id:'bike_cal', n:'Bike',               unit:'cal',equip:'bike',cat:'cardio',pat:'cardio',rep:[10,12,15,18,20]},
-  {id:'row_cal',  n:'Row',                unit:'cal',equip:'bike',cat:'cardio',pat:'cardio',rep:[10,12,15,18,20]},
-  {id:'burpee',   n:'Step-back Burpees',  unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[8,10,12]},
-  {id:'inchworm', n:'Inchworm Walkouts',  unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[8,10,12]},
-  // --- High-impact (kept for future house use, never generated now) ---
-  {id:'run_m',    n:'Run',                unit:'m',  equip:'run', cat:'cardio',pat:'cardio',impact:'high',rep:[200,400]},
-  {id:'du',       n:'Double-Unders',      unit:'',   equip:'rope',cat:'cardio',pat:'cardio',impact:'high',rep:[20,30,40,50]},
-  {id:'su',       n:'Single-Unders',      unit:'',   equip:'rope',cat:'cardio',pat:'cardio',impact:'high',rep:[40,50,60]},
-  {id:'mtnclimb', n:'Mountain Climbers',  unit:'',   equip:'bw',  cat:'cardio',pat:'core',  impact:'high',rep:[20,30,40]},
-  {id:'highknee', n:'High Knees',         unit:'',   equip:'bw',  cat:'cardio',pat:'cardio',impact:'high',rep:[30,40,50]},
-  {id:'shuttle',  n:'Shuttle Runs (10m)', unit:'',   equip:'bw',  cat:'cardio',pat:'cardio',impact:'high',rep:[6,8,10]},
-  {id:'boxjump',  n:'Box Jumps',          unit:'',   equip:'box', cat:'gym',   pat:'legs',  impact:'high',rep:[10,12,15]},
-  {id:'sqjump',   n:'Squat Jumps',        unit:'',   equip:'bw',  cat:'gym',   pat:'legs',  impact:'high',rep:[10,12,15]},
-  {id:'jlunge',   n:'Jumping Lunges',     unit:'',   equip:'bw',  cat:'gym',   pat:'legs',  impact:'high',rep:[16,20,24]},
-  // --- Gymnastic / bodyweight (low impact). Pull = strict, no kipping ---
-  {id:'pushup',   n:'Push-ups',           unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[10,12,15,20]},
-  {id:'pike',     n:'Pike Push-ups',      unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[8,10,12]},
-  {id:'airsquat', n:'Air Squats',         unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[15,20,25,30]},
-  {id:'rlunge',   n:'Reverse Lunges',     unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24]},
-  {id:'pullup',   n:'Pull-ups (strict)',  unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8,10]},
-  {id:'chinup',   n:'Chin-ups (strict)',  unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8]},
-  {id:'dip',      n:'Dips',               unit:'',   equip:'bar', cat:'gym', pat:'push', rep:[8,10,12]},
-  {id:'invrow',   n:'Inverted Rows',      unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[10,12,15]},
-  {id:'stepup',   n:'Step-ups',           unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[16,20,24]},
-  // --- Core (low impact) ---
-  {id:'situp',    n:'Sit-ups',            unit:'',   equip:'bw',  cat:'core',pat:'core',  rep:[15,20,25]},
-  {id:'vup',      n:'V-ups',              unit:'',   equip:'bw',  cat:'core',pat:'core',  rep:[10,12,15]},
-  {id:'hollow',   n:'Hollow Hold',        unit:'s',  equip:'bw',  cat:'core',pat:'core',  rep:[30,40,45]},
-  {id:'plank',    n:'Plank',              unit:'s',  equip:'bw',  cat:'core',pat:'core',  rep:[30,45,60]},
-  {id:'superman', n:'Superman Holds',     unit:'',   equip:'bw',  cat:'core',pat:'hinge', rep:[12,15,20]},
-  {id:'hkr',      n:'Hanging Knee Raises (strict)',unit:'',equip:'bar',cat:'core',pat:'core',rep:[10,12,15]},
-  // --- Dumbbell · loaded (low impact). hand: 1 or 2 DBs. wt: lb from his 35/50/70 set ---
-  {id:'dbswing',  n:'DB Swing',           unit:'',   equip:'db',  cat:'load',pat:'hinge',rep:[15,20,25],hand:'1',wt:[50,70]},
-  {id:'dbrdl',    n:'DB Romanian Deadlift',unit:'',  equip:'db',  cat:'load',pat:'hinge',rep:[10,12,15],hand:'2',wt:[50,70]},
-  {id:'goblet',   n:'Goblet Squats',      unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,15,20],hand:'1',wt:[50,70]},
-  {id:'frlunge',  n:'Front-Rack Lunges',  unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,16,20],hand:'2',wt:[35,50]},
-  {id:'dbthrust', n:'DB Thrusters',       unit:'',   equip:'db',  cat:'load',pat:'full', rep:[10,12,15],hand:'2',wt:[35,50]},
-  {id:'dbsnatch', n:'DB Snatch (alt)',    unit:'',   equip:'db',  cat:'load',pat:'full', rep:[10,12,16],hand:'1',wt:[50,70]},
-  {id:'dbclean',  n:'DB Cleans',          unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50]},
-  {id:'devil',    n:'Devil Press',        unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50]},
-  {id:'dbpp',     n:'DB Push Press',      unit:'',   equip:'db',  cat:'load',pat:'push', rep:[10,12,15],hand:'2',wt:[35,50]},
-  {id:'dbfloor',  n:'DB Floor Press',     unit:'',   equip:'db',  cat:'load',pat:'push', rep:[10,12,15],hand:'2',wt:[50,70]},
-  {id:'dbrow',    n:'DB Rows',            unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[10,12,16],hand:'1',wt:[50,70]},
-  {id:'renegade', n:'Renegade Rows',      unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[8,10,12], hand:'2',wt:[35,50]},
-  {id:'carry',    n:'Farmer Carry (laps)',unit:'',   equip:'db',  cat:'load',pat:'full', rep:[1,2],     hand:'2',wt:[50,70]},
-  // --- Dumbbell · bodybuilding (low impact). Some need a bench (equip 'bench') ---
+  // --- Conditioning ---
+  {id:'airdyne',  n:'Airdyne',              unit:'cal',equip:'bike',cat:'cardio',pat:'cardio',rep:[10,12,15,18,20]},
+  {id:'du',       n:'Double-Unders',        unit:'',   equip:'rope',cat:'cardio',pat:'cardio',rep:[25,30,40,50]},
+  {id:'su',       n:'Single-Unders',        unit:'',   equip:'rope',cat:'cardio',pat:'cardio',rep:[50,60,80]},
+  {id:'burpee',   n:'Burpees',              unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[10,12,15]},
+  {id:'bbjo',     n:'Burpee Box Jump-Overs',unit:'',   equip:'box', cat:'cardio',pat:'full',  rep:[8,10,12]},
+  {id:'mtnclimb', n:'Mountain Climbers',    unit:'',   equip:'bw',  cat:'cardio',pat:'core',  rep:[20,30,40]},
+  {id:'inchworm', n:'Inchworm Walkouts',    unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[8,10,12]},
+  // --- Gymnastic / bodyweight ---
+  {id:'boxjump',  n:'Box Jumps',            unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[10,12,15]},
+  {id:'bjover',   n:'Box Jump-Overs',       unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[10,12,15]},
+  {id:'stepup',   n:'Step-ups',             unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[16,20,24]},
+  {id:'pushup',   n:'Push-ups',             unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[10,12,15,20]},
+  {id:'pike',     n:'Pike Push-ups',        unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[8,10,12]},
+  {id:'hspu',     n:'Handstand Push-ups',   unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[5,8,10]},
+  {id:'airsquat', n:'Air Squats',           unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[15,20,25,30]},
+  {id:'rlunge',   n:'Reverse Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24]},
+  {id:'jlunge',   n:'Jumping Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24]},
+  {id:'pullup',   n:'Pull-ups',             unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[8,10,12]},
+  {id:'strpull',  n:'Strict Pull-ups',      unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8]},
+  {id:'chinup',   n:'Chin-ups (strict)',    unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8]},
+  {id:'dip',      n:'Dips',                 unit:'',   equip:'bar', cat:'gym', pat:'push', rep:[8,10,12]},
+  {id:'invrow',   n:'Inverted Rows',        unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[10,12,15]},
+  {id:'ringrow',  n:'Ring Rows',            unit:'',   equip:'rings',cat:'gym',pat:'pull', rep:[10,12,15]},
+  {id:'ringpu',   n:'Ring Push-ups',        unit:'',   equip:'rings',cat:'gym',pat:'push', rep:[8,10,12]},
+  {id:'ringdip',  n:'Ring Dips',            unit:'',   equip:'rings',cat:'gym',pat:'push', rep:[6,8,10]},
+  // --- Core ---
+  {id:'situp',    n:'Sit-ups',              unit:'',   equip:'bw',  cat:'core',pat:'core',  rep:[15,20,25]},
+  {id:'vup',      n:'V-ups',                unit:'',   equip:'bw',  cat:'core',pat:'core',  rep:[10,12,15]},
+  {id:'hollow',   n:'Hollow Hold',          unit:'s',  equip:'bw',  cat:'core',pat:'core',  rep:[30,40,45]},
+  {id:'plank',    n:'Plank',                unit:'s',  equip:'bw',  cat:'core',pat:'core',  rep:[30,45,60]},
+  {id:'superman', n:'Superman Holds',       unit:'',   equip:'bw',  cat:'core',pat:'hinge', rep:[12,15,20]},
+  {id:'t2b',      n:'Toes-to-Bar',          unit:'',   equip:'bar', cat:'core',pat:'core',  rep:[8,10,12]},
+  {id:'hkr',      n:'Hanging Knee Raises',  unit:'',   equip:'bar', cat:'core',pat:'core',  rep:[10,12,15]},
+  // --- Dumbbell · loaded. hand: 1 or 2 DBs. wt: lb from the 35/50/70 set ---
+  {id:'dbswing',  n:'DB Swing',             unit:'',   equip:'db',  cat:'load',pat:'hinge',rep:[15,20,25],hand:'1',wt:[50,70]},
+  {id:'dbrdl',    n:'DB Romanian Deadlift', unit:'',   equip:'db',  cat:'load',pat:'hinge',rep:[10,12,15],hand:'2',wt:[50,70]},
+  {id:'goblet',   n:'Goblet Squats',        unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,15,20],hand:'1',wt:[50,70]},
+  {id:'frlunge',  n:'Front-Rack Lunges',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,16,20],hand:'2',wt:[35,50]},
+  {id:'dbthrust', n:'DB Thrusters',         unit:'',   equip:'db',  cat:'load',pat:'full', rep:[10,12,15],hand:'2',wt:[35,50]},
+  {id:'dbsnatch', n:'DB Snatch (alt)',      unit:'',   equip:'db',  cat:'load',pat:'full', rep:[10,12,16],hand:'1',wt:[50,70]},
+  {id:'dbclean',  n:'DB Cleans',            unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50]},
+  {id:'devil',    n:'Devil Press',          unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50]},
+  {id:'dbpp',     n:'DB Push Press',        unit:'',   equip:'db',  cat:'load',pat:'push', rep:[10,12,15],hand:'2',wt:[35,50]},
+  {id:'dbfloor',  n:'DB Floor Press',       unit:'',   equip:'db',  cat:'load',pat:'push', rep:[10,12,15],hand:'2',wt:[50,70]},
+  {id:'dbrow',    n:'DB Rows',              unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[10,12,16],hand:'1',wt:[50,70]},
+  {id:'renegade', n:'Renegade Rows',        unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[8,10,12], hand:'2',wt:[35,50]},
+  {id:'carry',    n:'Farmer Carry (laps)',  unit:'',   equip:'db',  cat:'load',pat:'full', rep:[1,2],     hand:'2',wt:[50,70]},
+  // --- Dumbbell · compound accessories. Some need a bench (equip 'bench').
+  // Isolation work (curls, raises, flyes, extensions) removed — post-workout add-ons only, not generated.
   {id:'dbohp',    n:'DB Shoulder Press (strict)',unit:'',equip:'db',cat:'load',pat:'push',rep:[8,10,12], hand:'2',wt:[35,50]},
-  {id:'arnold',   n:'Arnold Press',       unit:'',   equip:'db',  cat:'load',pat:'push', rep:[8,10,12], hand:'2',wt:[35,50]},
-  {id:'latraise', n:'DB Lateral Raises',  unit:'',   equip:'db',  cat:'load',pat:'push', rep:[12,15,20],hand:'2',wt:[35]},
-  {id:'tricext',  n:'DB Overhead Triceps Ext',unit:'',equip:'db', cat:'load',pat:'push', rep:[12,15,20],hand:'1',wt:[35,50]},
-  {id:'curl',     n:'DB Biceps Curls',    unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[10,12,15],hand:'2',wt:[35,50]},
-  {id:'hammer',   n:'DB Hammer Curls',    unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[10,12,15],hand:'2',wt:[35,50]},
-  {id:'rearfly',  n:'DB Rear-Delt Flyes', unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[12,15,20],hand:'2',wt:[35]},
-  {id:'bentrow',  n:'Bent-Over DB Rows',  unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[10,12,15],hand:'2',wt:[50,70]},
-  {id:'dbfsq',    n:'DB Front Squats',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,15],hand:'2',wt:[35,50]},
-  {id:'cossack',  n:'DB Cossack Squats',  unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,16],hand:'1',wt:[35,50]},
-  {id:'slrdl',    n:'DB Single-Leg RDL',  unit:'',   equip:'db',  cat:'load',pat:'hinge',rep:[10,12,16],hand:'1',wt:[50,70]},
-  {id:'dbbench',  n:'DB Bench Press',     unit:'',   equip:'bench',cat:'load',pat:'push',rep:[10,12,15],hand:'2',wt:[50,70]},
-  {id:'dbincl',   n:'DB Incline Press',   unit:'',   equip:'bench',cat:'load',pat:'push',rep:[10,12,15],hand:'2',wt:[35,50]},
-  {id:'bsupr',    n:'Chest-Supported DB Rows',unit:'',equip:'bench',cat:'load',pat:'pull',rep:[10,12,15],hand:'2',wt:[50,70]},
+  {id:'arnold',   n:'Arnold Press',         unit:'',   equip:'db',  cat:'load',pat:'push', rep:[8,10,12], hand:'2',wt:[35,50]},
+  {id:'bentrow',  n:'Bent-Over DB Rows',    unit:'',   equip:'db',  cat:'load',pat:'pull', rep:[10,12,15],hand:'2',wt:[50,70]},
+  {id:'dbfsq',    n:'DB Front Squats',      unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,15],hand:'2',wt:[35,50]},
+  {id:'cossack',  n:'DB Cossack Squats',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,16],hand:'1',wt:[35,50]},
+  {id:'slrdl',    n:'DB Single-Leg RDL',    unit:'',   equip:'db',  cat:'load',pat:'hinge',rep:[10,12,16],hand:'1',wt:[50,70]},
+  {id:'dbbench',  n:'DB Bench Press',       unit:'',   equip:'bench',cat:'load',pat:'push',rep:[10,12,15],hand:'2',wt:[50,70]},
+  {id:'dbincl',   n:'DB Incline Press',     unit:'',   equip:'bench',cat:'load',pat:'push',rep:[10,12,15],hand:'2',wt:[35,50]},
+  {id:'bsupr',    n:'Chest-Supported DB Rows',unit:'', equip:'bench',cat:'load',pat:'pull',rep:[10,12,15],hand:'2',wt:[50,70]},
   {id:'bss',      n:'DB Bulgarian Split Squats',unit:'',equip:'bench',cat:'load',pat:'legs',rep:[10,12,16],hand:'2',wt:[35,50]},
-  {id:'hipthr',   n:'DB Hip Thrusts',     unit:'',   equip:'bench',cat:'load',pat:'hinge',rep:[12,15,20],hand:'1',wt:[50,70]},
-  {id:'inclcurl', n:'DB Incline Curls',   unit:'',   equip:'bench',cat:'load',pat:'pull', rep:[10,12,15],hand:'2',wt:[35]},
-  {id:'deadlift', n:'Deadlifts',          unit:'',   equip:'bb',  cat:'load',pat:'hinge',rep:[8,10,12]}
+  {id:'hipthr',   n:'DB Hip Thrusts',       unit:'',   equip:'bench',cat:'load',pat:'hinge',rep:[12,15,20],hand:'1',wt:[50,70]},
+  // --- Barbell ---
+  {id:'deadlift', n:'Deadlifts',            unit:'',   equip:'bb',  cat:'load',pat:'hinge',rep:[8,10,12], wt:[135,185,225]},
+  {id:'pclean',   n:'Power Cleans',         unit:'',   equip:'bb',  cat:'load',pat:'full', rep:[6,8,10],  wt:[95,115,135]},
+  {id:'hpclean',  n:'Hang Power Cleans',    unit:'',   equip:'bb',  cat:'load',pat:'full', rep:[8,10,12], wt:[95,115]},
+  {id:'bbfsq',    n:'Front Squats',         unit:'',   equip:'bb',  cat:'load',pat:'legs', rep:[8,10,12], wt:[95,115,135]},
+  {id:'bbthr',    n:'Thrusters',            unit:'',   equip:'bb',  cat:'load',pat:'full', rep:[8,10,12], wt:[75,95,115]},
+  {id:'bbpp',     n:'Push Press',           unit:'',   equip:'bb',  cat:'load',pat:'push', rep:[8,10,12], wt:[95,115]}
 ];
-WOD_MOVES.forEach(m=>{m.weighted=(m.equip==='db'||m.equip==='bb');if(!m.impact)m.impact='low';if(!m.pat)m.pat=m.cat;});
+WOD_MOVES.forEach(m=>{m.weighted=(m.equip==='db'||m.equip==='bb'||m.equip==='bench');if(!m.pat)m.pat=m.cat;});
 const WOD_STIM=['Steady circuit pace — keep moving, short breaths between movements.','Pick loads/reps you can keep unbroken; let the density drive the heart rate.','Break the big sets early, before you have to.','Negative split — start controlled, finish hard.','Smooth transitions are the conditioning here — minimize standing around.','Grind it out at a pace you can hold to the last round.'];
+// Session focus — suggests the day's intent, biases format + movement mix.
+// wf = target weighted fraction of movements. need = required equipment toggle.
+const WOD_FOCI=[
+  {id:'engine',n:'Engine',      fmts:['amrap','intervals'],wf:.33,dur:[15,18,20],
+   stim:['Sustainable pace from minute one — this is an aerobic session, not a sprint.','Nose-breathing pace early; the last third is where you push.']},
+  {id:'sprint',n:'Sprint',      fmts:['rft','ladder'],     wf:.5,
+   stim:['Short and hot — go out fast and hold on.','Redline effort; rest as little as your form allows.']},
+  {id:'grind', n:'Grind',       fmts:['chipper','amrap'],  wf:.5,dur:[18,20],
+   stim:['One gear, no stopping — chip away at a pace you can hold to the end.','Long and steady; the win is never putting your hands on your knees.']},
+  {id:'power', n:'Barbell Power',fmts:['emom','rft'],      wf:.8,need:'bb',
+   stim:['Loads should feel crisp, not grindy — this is barbell conditioning, not a max-out.','Every rep with intent; drop the bar before the technique drops.']},
+  {id:'gymn',  n:'Gymnastics Density',fmts:['emom','amrap'],wf:.2,dur:[10,12,16],
+   stim:['Quality positions under fatigue — break sets before failure.','Accumulate clean reps; sloppy reps do not count today.']}
+];
 
 let _pendingWOD=null,_wodDate=null;
 function _wodEnabled(id){return id==='bw'||!!(D.wodEquip&&D.wodEquip[id]);}
-function _wodPool(){return WOD_MOVES.filter(m=>_wodEnabled(m.equip)&&m.impact!=='high');} // low-impact only
+function _wodPool(){return WOD_MOVES.filter(m=>_wodEnabled(m.equip));}
 function _rp(a){return a[Math.floor(Math.random()*a.length)];}
 function _samp(arr,n){const a=arr.slice(),o=[];while(a.length&&o.length<n)o.push(a.splice(Math.floor(Math.random()*a.length),1)[0]);return o;}
 // Pick `count` moves, preferring movement patterns not yet used (full-body spread).
@@ -811,20 +827,21 @@ function _pickCovering(pool,count,used){
   }
   return out;
 }
-// Build a WOD selection: one low-impact cardio engine, ~half weighted (DB/BB), spread across patterns.
-function _pickMovesFrom(pool,n){
+// Build a WOD selection: one cardio engine, weighted fraction per focus, spread across patterns.
+function _pickMovesFrom(pool,n,wf){
+  wf=(wf==null)?.5:wf;
   const used=new Set();let chosen=[];
   const cardio=pool.filter(m=>m.cat==='cardio');
   if(cardio.length){const c=_rp(cardio);chosen.push(c);used.add(c.pat);}
   const weighted=pool.filter(m=>m.weighted&&!chosen.includes(m));
-  const wTarget=Math.min(Math.round(n/2),weighted.length);
+  const wTarget=Math.min(Math.round(n*wf),weighted.length);
   chosen=chosen.concat(_pickCovering(weighted,wTarget,used));
   const need=n-chosen.length;
   if(need>0)chosen=chosen.concat(_pickCovering(pool.filter(m=>!m.weighted&&!chosen.includes(m)),need,used));
   if(chosen.length<n)chosen=chosen.concat(_samp(pool.filter(m=>!chosen.includes(m)),n-chosen.length));
   return _samp(chosen.slice(0,n),Math.min(chosen.length,n)); // shuffle order
 }
-function _pickMoves(n){return _pickMovesFrom(_wodPool(),n);}
+function _pickMoves(n,focus){return _pickMovesFrom(_wodPool(),n,focus?focus.wf:null);}
 function _inst(m,reps){const o={n:m.n,unit:m.unit,cat:m.cat,reps:reps};if(m.wt&&m.wt.length){o.wt=_rp(m.wt);o.hand=m.hand||'1';}return o;}
 function _withReps(m){return _inst(m,_rp(m.rep));}
 function _mvLine(m){
@@ -836,43 +853,47 @@ function _mvLine(m){
   return `${m.reps} ${m.n}${w}`;
 }
 function generateWOD(){
-  const fmt=_rp(['amrap','rft','ladder','emom','chipper','intervals']);
+  const foci=WOD_FOCI.filter(f=>!f.need||_wodEnabled(f.need));
+  const focus=_rp(foci);
+  const fmt=_rp(focus.fmts);
+  const stim=()=>_rp(focus.stim||WOD_STIM);
   if(fmt==='amrap'){
-    const dur=_rp([10,12,15,18,20]);
-    const moves=_pickMoves(_rp(dur<=10?[3]:[3,4])).map(_withReps);
-    return{format:'amrap',title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:_rp(WOD_STIM)};
+    const dur=_rp(focus.dur||[10,12,15,18,20]);
+    const moves=_pickMoves(_rp(dur<=10?[3]:[3,4]),focus).map(_withReps);
+    return{format:'amrap',focus:focus.n,title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:stim()};
   }
   if(fmt==='rft'){
-    const rounds=_rp([3,4,5]);
-    const moves=_pickMoves(_rp([3,4])).map(_withReps);
-    return{format:'rft',title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:_rp(WOD_STIM)};
+    const rounds=_rp(focus.id==='sprint'?[3,4]:[3,4,5]);
+    const moves=_pickMoves(_rp([3,4]),focus).map(_withReps);
+    return{format:'rft',focus:focus.n,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()};
   }
   if(fmt==='ladder'){
     const ladder=_rp([[21,15,9],[15,12,9],[21,18,15,12,9],[10,8,6,4,2],[27,21,15,9]]);
-    // ladder reps apply per movement; eligible = reps or cals (not m/s), low-impact, half-weighted
+    // ladder reps apply per movement; eligible = reps or cals (not s)
     const pool=_wodPool().filter(m=>m.unit===''||m.unit==='cal');
-    const moves=_pickMovesFrom(pool,_rp([2,3])).map(m=>_inst(m,null));
-    return{format:'ladder',title:`${ladder.join('-')} For Time`,scheme:`${ladder.join('-')} reps of each movement, descending, for time`,moves,ladder,resultType:'time',est:Math.ceil(ladder.reduce((a,b)=>a+b,0)/8),stimulus:_rp(WOD_STIM)};
+    const moves=_pickMovesFrom(pool,_rp([2,3]),focus.wf).map(m=>_inst(m,null));
+    return{format:'ladder',focus:focus.n,title:`${ladder.join('-')} For Time`,scheme:`${ladder.join('-')} reps of each movement, descending, for time`,moves,ladder,resultType:'time',est:Math.ceil(ladder.reduce((a,b)=>a+b,0)/8),stimulus:stim()};
   }
   if(fmt==='emom'){
     const total=_rp([12,16,20,24]);
-    const moves=_pickMoves(_rp([3,4])).map(_withReps);
-    return{format:'emom',title:`EMOM ${total}`,scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements`,moves,ladder:null,resultType:'check',est:total,stimulus:'Each set inside the minute; the rest of the minute is your rest.'};
+    const moves=_pickMoves(_rp([3,4]),focus).map(_withReps);
+    return{format:'emom',focus:focus.n,title:`EMOM ${total}`,scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements`,moves,ladder:null,resultType:'check',est:total,stimulus:'Each set inside the minute; the rest of the minute is your rest.'};
   }
   if(fmt==='chipper'){
-    const moves=_pickMoves(_rp([5,6])).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
-    return{format:'chipper',title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:_rp(WOD_STIM)};
+    const moves=_pickMoves(_rp([5,6]),focus).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
+    return{format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:stim()};
   }
   // intervals
   const rounds=_rp([5,6,8]),work=_rp([30,40,45]),rest=_rp([15,20,30]);
-  const moves=_pickMoves(_rp([3,4])).map(m=>_inst(m,null));
+  const moves=_pickMoves(_rp([3,4]),focus).map(m=>_inst(m,null));
   const est=Math.ceil(rounds*moves.length*(work+rest)/60);
-  return{format:'intervals',title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'};
+  return{format:'intervals',focus:focus.n,title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'};
 }
 function _wodCardHTML(w,ctx){
   let h=`<div class="cd" style="border-left:3px solid var(--pp);padding-left:15px;margin-bottom:0;">
-    <div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--pp);">${w.title}</div>
-    <div style="font-size:.72rem;color:var(--tx2);margin:5px 0 12px;line-height:1.5;">${w.scheme}</div>`;
+    <div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--pp);">${w.title}</div>`;
+  if(w.focus)h+=`<div style="display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);border:1px solid var(--bdr);border-radius:10px;padding:2px 8px;margin-top:5px;">🎯 ${w.focus}</div>`;
+  h+=`<div style="font-size:.72rem;color:var(--tx2);margin:5px 0 12px;line-height:1.5;">${w.scheme}</div>`;
   if(w.ladder)h+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:700;color:var(--tx);margin-bottom:10px;letter-spacing:1px;">${w.ladder.join('  –  ')}</div>`;
   w.moves.forEach((m,i)=>{
     const right=(w.format==='emom'?`<span class="mvr">min ${i+1}</span>`:'')
@@ -910,7 +931,8 @@ function openSwap(ctx,idx){
   const elig=_swapEligible(w);
   const groups=[
     ['Conditioning',elig.filter(m=>m.cat==='cardio')],
-    ['Bodyweight',  elig.filter(m=>!m.weighted&&m.cat!=='cardio')],
+    ['Rings',       elig.filter(m=>m.equip==='rings')],
+    ['Bodyweight',  elig.filter(m=>!m.weighted&&m.cat!=='cardio'&&m.equip!=='rings')],
     ['Dumbbell',    elig.filter(m=>m.equip==='db')],
     ['Bench',       elig.filter(m=>m.equip==='bench')],
     ['Barbell',     elig.filter(m=>m.equip==='bb')]
@@ -951,9 +973,9 @@ function showWODModal(date){
   _wodDate=date;
   if(!_pendingWOD)_pendingWOD=generateWOD();
   const e=D.wodEquip||{};
-  const chips=[['bike','Bike / Row'],['bar','Pull-up Bar'],['box','Box / Step'],['bench','Bench'],['db','Dumbbells'],['bb','Barbell']];
+  const chips=[['bike','Airdyne'],['rope','Jump Rope'],['bar','Pull-up Bar'],['rings','Rings'],['box','Box'],['bench','Bench'],['db','Dumbbells'],['bb','Barbell']];
   let h=`<h2>🔥 WOD</h2>`;
-  h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:8px;">Equipment on hand · bodyweight always in · low-impact (no jumps/skips)</div>`;
+  h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:8px;">Equipment on hand · bodyweight always in · no running (own weekly session)</div>`;
   h+=`<div class="wod-chips">`+chips.map(([id,lbl])=>`<div class="wod-chip ${e[id]?'on':''}" onclick="toggleWodEquip('${id}')">${lbl}</div>`).join('')+`</div>`;
   h+=_wodCardHTML(_pendingWOD,'pending');
   h+=`<button class="btn bo bf" style="margin-top:14px;" onclick="rerollWOD()">🎲 Re-roll</button>`;
