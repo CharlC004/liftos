@@ -811,7 +811,7 @@ const WOD_FOCI=[
    stim:['Quality positions under fatigue — break sets before failure.','Accumulate clean reps; sloppy reps do not count today.']}
 ];
 
-let _pendingWOD=null,_wodDate=null;
+let _pendingWOD=null,_wodDate=null,_wodType='classic';
 function _wodEnabled(id){return id==='bw'||!!(D.wodEquip&&D.wodEquip[id]);}
 function _wodPool(){return WOD_MOVES.filter(m=>_wodEnabled(m.equip));}
 function _rp(a){return a[Math.floor(Math.random()*a.length)];}
@@ -852,7 +852,81 @@ function _mvLine(m){
   if(m.unit==='s')return `${m.reps}s ${m.n}`;
   return `${m.reps} ${m.n}${w}`;
 }
-function generateWOD(){
+// ── WOD types ──────────────────────────────────────────────────────────────────
+// classic  = random mixed-modal metcon (the five foci above)
+// skill    = technical efficiency — low-rep quality EMOM on skill movements
+// bench    = classic benchmark ("Girls") adapted to available equipment
+// core     = quick core burner to tack on after the main session
+const SKILL_IDS=['du','hspu','pike','pullup','strpull','dip','ringdip','ringpu','t2b','pclean','hpclean','dbsnatch','hollow'];
+function _genSkill(){
+  let pool=_wodPool().filter(m=>SKILL_IDS.includes(m.id));
+  const total=_rp([12,15,18]);
+  const picks=_samp(pool,Math.min(3,pool.length));
+  const moves=picks.map(m=>{
+    const r=m.unit==='s'?m.rep[0]:Math.max(2,Math.round(m.rep[0]*0.6));
+    const o={n:m.n,unit:m.unit,cat:m.cat,reps:r};
+    if(m.wt&&m.wt.length){o.wt=m.wt[0];o.hand=m.hand||'1';} // lightest load — technique work
+    return o;
+  });
+  return{format:'emom',focus:'Technical',title:`Skill EMOM ${total}`,
+    scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements — technique practice, not a race`,
+    moves,ladder:null,resultType:'check',est:total,
+    stimulus:'Every rep crisp and identical. Stop the set the moment positions degrade — quality volume is the whole point.'};
+}
+function _genFinisher(){
+  const pool=_wodPool().filter(m=>m.cat==='core'||m.id==='mtnclimb');
+  if(Math.random()<0.5){
+    const dur=_rp([5,6,7]);
+    const moves=_samp(pool,Math.min(3,pool.length)).map(_withReps);
+    return{format:'amrap',focus:'Core',title:`Core Finisher — AMRAP ${dur}`,scheme:`As many rounds as possible in ${dur} min`,
+      moves,ladder:null,resultType:'rounds',est:dur,stimulus:'Tack on right after the main session — tight and quick, minimal rest.'};
+  }
+  const rounds=3;
+  const moves=_samp(pool,Math.min(3,pool.length)).map(_withReps);
+  return{format:'rft',focus:'Core',title:`Core Finisher — ${rounds} Rounds`,scheme:`${rounds} rounds for time`,
+    moves,ladder:null,resultType:'time',est:6,stimulus:'Tack on right after the main session — tight and quick, minimal rest.'};
+}
+// Benchmark library — only entries whose `req` equipment is all enabled can roll.
+const BENCH_WODS=[
+  {n:'Fran',req:['bb','bar'],fmt:'ladder',ladder:[21,15,9],est:8,
+   moves:[{n:'Thrusters',wt:95},{n:'Pull-ups'}],stim:'The classic sprint — unbroken as long as you dare, then fast singles.'},
+  {n:'Diane',req:['bb'],fmt:'ladder',ladder:[21,15,9],est:9,
+   moves:[{n:'Deadlifts',wt:225},{n:'Handstand Push-ups'}],stim:'Smooth deadlifts, break the HSPU early.'},
+  {n:'Elizabeth',req:['bb','rings'],fmt:'ladder',ladder:[21,15,9],est:12,
+   moves:[{n:'Squat Cleans',wt:135},{n:'Ring Dips'}],stim:'Cleans in small quick sets; protect the dips.'},
+  {n:'Grace',req:['bb'],fmt:'chipper',est:6,
+   moves:[{n:'Clean & Jerks',reps:30,wt:135}],scheme:'30 reps for time',stim:'Fast singles beat broken touch-and-go for most.'},
+  {n:'Annie',req:['rope'],fmt:'ladder',ladder:[50,40,30,20,10],est:10,
+   moves:[{n:'Double-Unders'},{n:'Sit-ups'}],stim:'A pacing test disguised as a warm-up. Big unbroken DU sets win it.'},
+  {n:'Cindy',req:['bar'],fmt:'amrap',est:20,
+   moves:[{n:'Pull-ups',reps:5},{n:'Push-ups',reps:10},{n:'Air Squats',reps:15}],
+   scheme:'As many rounds as possible in 20 min',resultType:'rounds',stim:'Steady rounds — the push-ups decide your score.'},
+  {n:'Chelsea',req:['bar'],fmt:'emom',est:30,
+   moves:[{n:'Pull-ups',reps:5},{n:'Push-ups',reps:10},{n:'Air Squats',reps:15}],
+   scheme:'EMOM 30 — one full round (5-10-15) every minute, all three movements inside the minute',resultType:'check',
+   stim:'Miss a minute, note the round — score is completed rounds out of 30.'},
+  {n:'DT',req:['bb'],fmt:'rft',est:12,
+   moves:[{n:'Deadlifts',reps:12,wt:155},{n:'Hang Power Cleans',reps:9,wt:155},{n:'Push Jerks',reps:6,wt:155}],
+   scheme:'5 rounds for time',stim:'Grip management is the workout — drop before the hang cleans force you to.'},
+  {n:'Angie',req:['bar'],fmt:'chipper',est:20,
+   moves:[{n:'Pull-ups',reps:100},{n:'Push-ups',reps:100},{n:'Sit-ups',reps:100},{n:'Air Squats',reps:100}],
+   scheme:'For time — complete all reps of one movement before moving to the next',stim:'Small consistent sets from rep one; heroic opening sets are paid back with interest.'}
+];
+function _genBenchmark(){
+  const elig=BENCH_WODS.filter(b=>b.req.every(_wodEnabled));
+  if(!elig.length)return null;
+  const b=_rp(elig);
+  const moves=b.moves.map(m=>({n:m.n,unit:m.unit||'',cat:'gym',reps:(m.reps!=null?m.reps:null),...(m.wt?{wt:m.wt,hand:m.hand}:{})}));
+  return{format:b.fmt,focus:'Benchmark',title:`Benchmark — ${b.n}`,
+    scheme:b.scheme||`${b.ladder?b.ladder.join('-')+' reps of each movement, ':''}for time · Rx as written, scale loads/movements as needed`,
+    moves,ladder:b.ladder||null,resultType:b.resultType||'time',est:b.est,
+    stimulus:b.stim+' Log the score — this one is a repeatable fitness test.'};
+}
+function generateWOD(type){
+  type=type||_wodType||'classic';
+  if(type==='skill')return _genSkill();
+  if(type==='core')return _genFinisher();
+  if(type==='bench'){const b=_genBenchmark();if(b)return b;} // no eligible benchmark → fall through to classic
   const foci=WOD_FOCI.filter(f=>!f.need||_wodEnabled(f.need));
   const focus=_rp(foci);
   const fmt=_rp(focus.fmts);
@@ -975,6 +1049,9 @@ function showWODModal(date){
   const e=D.wodEquip||{};
   const chips=[['bike','Airdyne'],['rope','Jump Rope'],['bar','Pull-up Bar'],['rings','Rings'],['box','Box'],['bench','Bench'],['db','Dumbbells'],['bb','Barbell']];
   let h=`<h2>🔥 WOD</h2>`;
+  const types=[['classic','🎲 Classic'],['skill','🎯 Technical'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher']];
+  h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Session type</div>`;
+  h+=`<div class="wod-chips" style="margin-bottom:12px;">`+types.map(([id,lbl])=>`<div class="wod-chip ${_wodType===id?'on':''}" onclick="setWodType('${id}')">${lbl}</div>`).join('')+`</div>`;
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:8px;">Equipment on hand · bodyweight always in · no running (own weekly session)</div>`;
   h+=`<div class="wod-chips">`+chips.map(([id,lbl])=>`<div class="wod-chip ${e[id]?'on':''}" onclick="toggleWodEquip('${id}')">${lbl}</div>`).join('')+`</div>`;
   h+=_wodCardHTML(_pendingWOD,'pending');
@@ -985,6 +1062,7 @@ function showWODModal(date){
   oM(h);
 }
 function toggleWodEquip(id){if(!D.wodEquip)D.wodEquip={};D.wodEquip[id]=!D.wodEquip[id];sv();_pendingWOD=generateWOD();showWODModal(_wodDate);}
+function setWodType(t){_wodType=t;_pendingWOD=generateWOD();showWODModal(_wodDate);}
 function rerollWOD(){_pendingWOD=generateWOD();showWODModal(_wodDate);}
 function _createWODSession(date){
   const w=_pendingWOD;if(!w)return null;
