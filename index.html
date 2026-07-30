@@ -811,7 +811,7 @@ const WOD_FOCI=[
    stim:['Quality positions under fatigue — break sets before failure.','Accumulate clean reps; sloppy reps do not count today.']}
 ];
 
-let _pendingWOD=null,_wodDate=null,_wodType='classic';
+let _pendingWOD=null,_wodDate=null,_wodType='classic',_wodBias=true;
 function _wodEnabled(id){return id==='bw'||!!(D.wodEquip&&D.wodEquip[id]);}
 function _wodPool(){return WOD_MOVES.filter(m=>_wodEnabled(m.equip));}
 function _rp(a){return a[Math.floor(Math.random()*a.length)];}
@@ -922,50 +922,132 @@ function _genBenchmark(){
     moves,ladder:b.ladder||null,resultType:b.resultType||'time',est:b.est,
     stimulus:b.stim+' Log the score — this one is a repeatable fitness test.'};
 }
+// ── Day profiles — Mayhem-style weekly structure ───────────────────────────────
+// Strength anchors: Mon back squat · Tue press · Wed pull · Fri front squat.
+// Wod bias (Classic type only, when _wodBias is on): spared patterns are
+// filtered out of generation so conditioning never competes with that day's
+// (or tomorrow's) strength work. Force + Extra render on every type.
+// spare rule: pattern excluded entirely, except 'hinge' which only excludes
+// weighted hinge (heavy hinge) — bodyweight hinge stays available.
+const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
+const DAY_PROFILES={
+  1:{label:'Mon · back squat day — sparing legs & heavy hinge',
+     force:'Back Squat — top set of 10 @ RPE 7-8 · 2 back-off sets',
+     spare:['legs','hinge'],foci:['gymn','sprint'],
+     exSup:['Superset 3×: DB Romanian Deadlifts ×12 + DB Hip Thrusts ×15','Superset 3×: DB Single-Leg RDL ×10/side + Superman Holds ×15'],
+     exSkill:['Skill: 5 sets of 20-30 unbroken Double-Under attempts','Skill: 3× max-distance Farmer Carry laps (2×70 lb)']},
+  2:{label:'Tue · press day — sparing push',
+     force:'Incline Press + Strict OHP — 3-4 sets × 10-15',
+     spare:['push'],foci:['engine','sprint'],
+     exSup:['Shoulder health 3×: DB Lateral Raises ×15 + DB Rear-Delt Flyes ×15','Superset 3×: DB Overhead Triceps Ext ×12 + slow Ring Push-up negatives ×6'],
+     exSkill:['Skill: 10 min wall handstand hold practice — accumulate time','Finisher: 3× max strict HSPU (or pike) — quality reps only']},
+  3:{label:'Wed · pull day — sparing pull',
+     force:'Pull-up strength (bar + rings) — weighted/strict 4-5 sets · assistance 10-15',
+     spare:['pull'],foci:['power','engine'],
+     exSup:['Posterior 3×: heavy DB RDL ×10 + Farmer Carry lap (2×70 lb)','Superset 3×: DB Hammer Curls ×12 + DB Biceps Curls ×12'],
+     exSkill:['Grip: 3× max-time bar hang','Skill: strict Ring Muscle-up transitions 3×3-5 (low rings)']},
+  4:{label:'Thu · front squat tomorrow — sparing legs',
+     force:null,
+     spare:['legs'],foci:['gymn','sprint'],
+     exSup:[],
+     exSkill:['HSPU progression: 5×3-5 strict quality reps','Strict MU prog: 3×5 low-ring transitions + 3×5 feet-elevated Ring Rows','Mobility: 15 min hips + T-spine flow']},
+  5:{label:'Fri · front squat day — sparing legs & heavy hinge',
+     force:'Front Squat — top set of 6 @ RPE 7-8 · 2 back-off sets',
+     spare:['legs','hinge'],foci:['gymn','engine'],
+     exSup:['Core 3×: Toes-to-Bar ×10 + Hollow Hold ×30s','Upper press finisher: 3× max Push-ups @ 21X1 tempo'],
+     exSkill:['Finisher: EMOM 6 — alt 5 strict HSPU / 10 V-ups']},
+  6:{label:'Sat · open day',
+     force:null,
+     spare:[],foci:['grind','power'],
+     exSup:['Optional: any accessory work left undone this week'],
+     exSkill:['Good day for a scored test — try the 🏆 Benchmark type']},
+  0:{label:'Sun · recovery — light only',
+     force:null,
+     spare:[],light:true,foci:['engine'],
+     exSup:[],
+     exSkill:['Mobility: 20-30 min full-body flow — hips, ankles, T-spine','Easy Airdyne 15-20 min conversational + 10 min stretching']}
+};
+function _dayProfile(){
+  let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();
+  if(isNaN(d))d=new Date();
+  return DAY_PROFILES[d.getDay()];
+}
+function _wodPoolBiased(prof){
+  let pool=_wodPool();
+  if(!prof)return pool;
+  if(prof.light)pool=pool.filter(m=>!m.weighted);
+  if(prof.spare&&prof.spare.length){
+    const f=pool.filter(m=>{
+      if(!prof.spare.includes(m.pat))return true;
+      if(m.pat==='hinge')return !m.weighted; // only heavy hinge is spared
+      return false;
+    });
+    if(f.length>=6)pool=f; // keep the bias only if the pool stays workable
+  }
+  return pool;
+}
+function _attachDay(w){
+  const prof=_dayProfile();
+  w.dayName=_rp(WOD_NAMES);
+  w.profileLabel=prof.label;
+  w.force=prof.force||null;
+  const sup=prof.exSup&&prof.exSup.length?_rp(prof.exSup):null;
+  const skill=prof.exSkill&&prof.exSkill.length?_rp(prof.exSkill):null;
+  w.extra=[sup,skill].filter(Boolean);
+  return w;
+}
 function generateWOD(type){
   type=type||_wodType||'classic';
-  if(type==='skill')return _genSkill();
-  if(type==='core')return _genFinisher();
-  if(type==='bench'){const b=_genBenchmark();if(b)return b;} // no eligible benchmark → fall through to classic
-  const foci=WOD_FOCI.filter(f=>!f.need||_wodEnabled(f.need));
+  if(type==='skill')return _attachDay(_genSkill());
+  if(type==='core')return _attachDay(_genFinisher());
+  if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
+  const prof=_wodBias?_dayProfile():null;
+  const pool=_wodPoolBiased(prof);
+  const pick=(n,focus)=>_pickMovesFrom(pool,n,focus?focus.wf:null);
+  let foci=WOD_FOCI.filter(f=>!f.need||_wodEnabled(f.need));
+  if(prof&&prof.foci){const r=foci.filter(f=>prof.foci.includes(f.id));if(r.length)foci=r;}
   const focus=_rp(foci);
   const fmt=_rp(focus.fmts);
   const stim=()=>_rp(focus.stim||WOD_STIM);
   if(fmt==='amrap'){
     const dur=_rp(focus.dur||[10,12,15,18,20]);
-    const moves=_pickMoves(_rp(dur<=10?[3]:[3,4]),focus).map(_withReps);
-    return{format:'amrap',focus:focus.n,title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:stim()};
+    const moves=pick(_rp(dur<=10?[3]:[3,4]),focus).map(_withReps);
+    return _attachDay({format:'amrap',focus:focus.n,title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:stim()});
   }
   if(fmt==='rft'){
     const rounds=_rp(focus.id==='sprint'?[3,4]:[3,4,5]);
-    const moves=_pickMoves(_rp([3,4]),focus).map(_withReps);
-    return{format:'rft',focus:focus.n,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()};
+    const moves=pick(_rp([3,4]),focus).map(_withReps);
+    return _attachDay({format:'rft',focus:focus.n,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()});
   }
   if(fmt==='ladder'){
     const ladder=_rp([[21,15,9],[15,12,9],[21,18,15,12,9],[10,8,6,4,2],[27,21,15,9]]);
     // ladder reps apply per movement; eligible = reps or cals (not s)
-    const pool=_wodPool().filter(m=>m.unit===''||m.unit==='cal');
-    const moves=_pickMovesFrom(pool,_rp([2,3]),focus.wf).map(m=>_inst(m,null));
-    return{format:'ladder',focus:focus.n,title:`${ladder.join('-')} For Time`,scheme:`${ladder.join('-')} reps of each movement, descending, for time`,moves,ladder,resultType:'time',est:Math.ceil(ladder.reduce((a,b)=>a+b,0)/8),stimulus:stim()};
+    const lpool=pool.filter(m=>m.unit===''||m.unit==='cal');
+    const moves=_pickMovesFrom(lpool,_rp([2,3]),focus.wf).map(m=>_inst(m,null));
+    return _attachDay({format:'ladder',focus:focus.n,title:`${ladder.join('-')} For Time`,scheme:`${ladder.join('-')} reps of each movement, descending, for time`,moves,ladder,resultType:'time',est:Math.ceil(ladder.reduce((a,b)=>a+b,0)/8),stimulus:stim()});
   }
   if(fmt==='emom'){
     const total=_rp([12,16,20,24]);
-    const moves=_pickMoves(_rp([3,4]),focus).map(_withReps);
-    return{format:'emom',focus:focus.n,title:`EMOM ${total}`,scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements`,moves,ladder:null,resultType:'check',est:total,stimulus:'Each set inside the minute; the rest of the minute is your rest.'};
+    const moves=pick(_rp([3,4]),focus).map(_withReps);
+    return _attachDay({format:'emom',focus:focus.n,title:`EMOM ${total}`,scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements`,moves,ladder:null,resultType:'check',est:total,stimulus:'Each set inside the minute; the rest of the minute is your rest.'});
   }
   if(fmt==='chipper'){
-    const moves=_pickMoves(_rp([5,6]),focus).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
-    return{format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:stim()};
+    const moves=pick(_rp([5,6]),focus).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
+    return _attachDay({format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:stim()});
   }
   // intervals
   const rounds=_rp([5,6,8]),work=_rp([30,40,45]),rest=_rp([15,20,30]);
-  const moves=_pickMoves(_rp([3,4]),focus).map(m=>_inst(m,null));
+  const moves=pick(_rp([3,4]),focus).map(m=>_inst(m,null));
   const est=Math.ceil(rounds*moves.length*(work+rest)/60);
-  return{format:'intervals',focus:focus.n,title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'};
+  return _attachDay({format:'intervals',focus:focus.n,title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'});
 }
 function _wodCardHTML(w,ctx){
-  let h=`<div class="cd" style="border-left:3px solid var(--pp);padding-left:15px;margin-bottom:0;">
-    <div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--pp);">${w.title}</div>`;
+  let h=`<div class="cd" style="border-left:3px solid var(--pp);padding-left:15px;margin-bottom:0;">`;
+  if(w.dayName)h+=`<div style="font-size:1.15rem;font-weight:800;letter-spacing:1.5px;color:var(--pp);">${w.dayName}</div>`;
+  if(w.profileLabel)h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin:3px 0 10px;">${w.profileLabel}</div>`;
+  if(w.force)h+=`<div style="font-size:.82rem;margin-bottom:12px;line-height:1.5;"><strong style="color:var(--tx);text-transform:uppercase;font-size:.68rem;letter-spacing:1.5px;">Force</strong><br>${w.force}</div>`;
+  h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);">Wod</div>`;
+  h+=`<div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--pp);margin-top:2px;">${w.title}</div>`;
   if(w.focus)h+=`<div style="display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);border:1px solid var(--bdr);border-radius:10px;padding:2px 8px;margin-top:5px;">🎯 ${w.focus}</div>`;
   h+=`<div style="font-size:.72rem;color:var(--tx2);margin:5px 0 12px;line-height:1.5;">${w.scheme}</div>`;
   if(w.ladder)h+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:700;color:var(--tx);margin-bottom:10px;letter-spacing:1px;">${w.ladder.join('  –  ')}</div>`;
@@ -975,7 +1057,12 @@ function _wodCardHTML(w,ctx){
     h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span><span class="mv-right">${right}</span></div>`;
   });
   if(w.stimulus)h+=`<div style="font-size:.7rem;color:var(--tx3);margin-top:12px;font-style:italic;">${w.stimulus}</div>`;
-  h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:6px;font-family:'IBM Plex Mono',monospace;">~${w.est} min</div></div>`;
+  h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:6px;font-family:'IBM Plex Mono',monospace;">~${w.est} min</div>`;
+  if(w.extra&&w.extra.length){
+    h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);margin-top:14px;">Extra <span style="font-weight:400;color:var(--tx3);text-transform:none;letter-spacing:0;">· optional</span></div>`;
+    w.extra.forEach(x=>{h+=`<div style="font-size:.78rem;color:var(--tx2);margin-top:5px;line-height:1.5;">${x}</div>`;});
+  }
+  h+=`</div>`;
   return h;
 }
 // ── Per-movement swap ──────────────────────────────────────────────────────────
@@ -1051,7 +1138,7 @@ function showWODModal(date){
   let h=`<h2>🔥 WOD</h2>`;
   const types=[['classic','🎲 Classic'],['skill','🎯 Technical'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher']];
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Session type</div>`;
-  h+=`<div class="wod-chips" style="margin-bottom:12px;">`+types.map(([id,lbl])=>`<div class="wod-chip ${_wodType===id?'on':''}" onclick="setWodType('${id}')">${lbl}</div>`).join('')+`</div>`;
+  h+=`<div class="wod-chips" style="margin-bottom:12px;">`+types.map(([id,lbl])=>`<div class="wod-chip ${_wodType===id?'on':''}" onclick="setWodType('${id}')">${lbl}</div>`).join('')+`<div class="wod-chip ${_wodBias?'on':''}" onclick="toggleWodBias()" title="Bias the Wod around the weekly strength split">📅 Day bias</div></div>`;
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:8px;">Equipment on hand · bodyweight always in · no running (own weekly session)</div>`;
   h+=`<div class="wod-chips">`+chips.map(([id,lbl])=>`<div class="wod-chip ${e[id]?'on':''}" onclick="toggleWodEquip('${id}')">${lbl}</div>`).join('')+`</div>`;
   h+=_wodCardHTML(_pendingWOD,'pending');
@@ -1063,11 +1150,12 @@ function showWODModal(date){
 }
 function toggleWodEquip(id){if(!D.wodEquip)D.wodEquip={};D.wodEquip[id]=!D.wodEquip[id];sv();_pendingWOD=generateWOD();showWODModal(_wodDate);}
 function setWodType(t){_wodType=t;_pendingWOD=generateWOD();showWODModal(_wodDate);}
+function toggleWodBias(){_wodBias=!_wodBias;_pendingWOD=generateWOD();showWODModal(_wodDate);}
 function rerollWOD(){_pendingWOD=generateWOD();showWODModal(_wodDate);}
 function _createWODSession(date){
   const w=_pendingWOD;if(!w)return null;
   const k=sessKey(date,'wod_'+Date.now());
-  D.sessions[k]={templateId:'wod',name:'🔥 '+w.title,date,rpe:7,completed:false,isWOD:true,wodData:{...w,result:'',notes:''}};
+  D.sessions[k]={templateId:'wod',name:'🔥 '+(w.dayName||w.title),date,rpe:7,completed:false,isWOD:true,wodData:{...w,result:'',notes:''}};
   sv();_pendingWOD=null;
   return k;
 }
