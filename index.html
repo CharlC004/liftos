@@ -735,6 +735,9 @@ const WOD_MOVES=[
   // --- Gymnastics / bodyweight (mod G) — CrossFit staples weighted up ---
   {id:'burpee',   n:'Burpees',              unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[10,12,15],w:3},
   {id:'bbjo',     n:'Burpee Box Jump-Overs',unit:'',   equip:'box', cat:'cardio',pat:'full',  rep:[8,10,12],w:2},
+  {id:'bfb',      n:'Bar-Facing Burpees',   unit:'',   equip:'bb',  cat:'cardio',pat:'full', rep:[8,10,12],w:1.5,bw0:true},
+  {id:'burppull', n:'Burpee Pull-ups',      unit:'',   equip:'bar', cat:'cardio',pat:'full', rep:[8,10,12],w:1},
+  {id:'burpdb',   n:'Burpees Over DB',      unit:'',   equip:'db',  cat:'cardio',pat:'full', rep:[10,12,15],w:1,bw0:true},
   {id:'mtnclimb', n:'Mountain Climbers',    unit:'',   equip:'bw',  cat:'cardio',pat:'core',  rep:[20,30,40],nx:true},
   {id:'inchworm', n:'Inchworm Walkouts',    unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[8,10,12],nx:true},
   {id:'boxjump',  n:'Box Jumps',            unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[10,12,15],w:2.5},
@@ -800,6 +803,7 @@ const WOD_MOVES=[
   {id:'devil',    n:'Devil Press',          unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50],w:2},
   {id:'dbthrust', n:'DB Thrusters',         unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,15],hand:'2',wt:[35,50],w:2},
   {id:'dbclean',  n:'DB Cleans',            unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50],w:1.5},
+  {id:'ohlunge',  n:'DB Overhead Lunges (1-arm)',unit:'',equip:'db',cat:'load',pat:'legs',rep:[12,16,20],hand:'1',wt:[35,50],w:1.2},
   {id:'frlunge',  n:'Front-Rack Lunges',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,16,20],hand:'2',wt:[35,50],w:1.2},
   {id:'dbpp',     n:'DB Push Press',        unit:'',   equip:'db',  cat:'load',pat:'push', rep:[10,12,15],hand:'2',wt:[35,50],w:1.5},
   {id:'goblet',   n:'Goblet Squats',        unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,15,20],hand:'1',wt:[50,70],w:1},
@@ -821,7 +825,7 @@ const WOD_MOVES=[
   {id:'hipthr',   n:'DB Hip Thrusts',       unit:'',   equip:'bench',cat:'load',pat:'hinge',rep:[12,15,20],hand:'1',wt:[50,70],nx:true}
 ];
 WOD_MOVES.forEach(m=>{
-  m.weighted=(m.equip==='db'||m.equip==='bb'||m.equip==='bench'||m.equip==='mb'||!!(m.wt&&m.wt.length));
+  m.weighted=m.bw0?false:(m.equip==='db'||m.equip==='bb'||m.equip==='bench'||m.equip==='mb'||!!(m.wt&&m.wt.length));
   m.mod=m.cat==='load'?'W':(['airdyne','du','su'].includes(m.id)?'M':'G');
   if(m.w==null)m.w=1;
   if(!m.pat)m.pat=m.cat;
@@ -891,6 +895,32 @@ function _genFinisher(){
   return{format:'rft',focus:'Core',title:`Core Finisher — ${rounds} Rounds`,scheme:`${rounds} rounds for time`,
     moves,ladder:null,resultType:'time',est:6,stimulus:'Tack on right after the main session — tight and quick, minimal rest.'};
 }
+const OLY_LIFTS=[
+  {n:'Power Snatch',pct:'70-80%'},{n:'Squat Snatch',pct:'70-80%'},
+  {n:'Power Clean + Push Jerk',pct:'75-85%'},{n:'Clean & Jerk',pct:'75-85%'},
+  {n:'Hang Power Clean + Jerk',pct:'70-80%'},{n:'Snatch Pull + Power Snatch',pct:'70-80%'}
+];
+function _genOly(){
+  if(!_wodEnabled('bb')){ // no barbell toggled → DB technique fallback
+    return{format:'oly',focus:'Olympic Lifting',title:'DB Snatch Technique',
+      scheme:'Every 90s × 8 — 3+3 DB Snatch (each arm), moderate load, crisp turnover',
+      moves:[{n:'DB Snatch (alt)',unit:'',cat:'load',reps:6}],ladder:null,resultType:'check',est:12,
+      stimulus:'Technique day — bar speed over load.'};
+  }
+  const lift=_rp(OLY_LIFTS);
+  if(Math.random()<0.5){
+    const sets=_rp([8,10,12]);
+    return{format:'oly',focus:'Olympic Lifting',title:`Every 90s × ${sets} — ${lift.n}`,
+      scheme:`${sets} working sets, one every 90s: 2 reps, building from ~60% toward a heavy-for-today double`,
+      moves:[{n:lift.n,unit:'',cat:'load',reps:2}],ladder:null,resultType:'check',est:Math.ceil(sets*1.5)+3,
+      stimulus:'Bar speed decides the loading — the moment it slows, hold the weight or drop back.'};
+  }
+  const total=_rp([10,12,15]);
+  return{format:'oly',focus:'Olympic Lifting',title:`EMOM ${total} — ${lift.n}`,
+    scheme:`Every minute: 1-2 ${lift.n} @ ${lift.pct} — same load across, technique under a clock`,
+    moves:[{n:lift.n,unit:'',cat:'load',reps:2}],ladder:null,resultType:'check',est:total,
+    stimulus:'Every rep identical. This is practice, not testing.'};
+}
 // Benchmark library — only entries whose `req` equipment is all enabled can roll.
 const BENCH_WODS=[
   {n:'Fran',req:['bb','bar'],fmt:'ladder',ladder:[21,15,9],est:8,
@@ -942,17 +972,24 @@ function _genBenchmark(){
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
   1:{label:'Mon · back squat day — sparing legs & heavy hinge',
-     force:'Back Squat — top set of 10 @ RPE 7-8 · 2 back-off sets',
+     force:'Back Squat — top set of 10 · 2 back-off sets',
+     forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:10},s:2,r:10,rest:240}],
      spare:['legs','hinge'],foci:['gymn','sprint'],
      exSup:['Superset 3×: DB Romanian Deadlifts ×12 + DB Hip Thrusts ×15','Superset 3×: DB Single-Leg RDL ×10/side + Superman Holds ×15','Superset 3×: Hip Extensions ×15 + GHD Sit-ups ×12'],
      exSkill:['Skill: 5 sets of 20-30 unbroken Double-Under attempts','Skill: 3× max-distance Farmer Carry laps (2×70 lb)']},
   2:{label:'Tue · press day — sparing push',
-     force:'Incline Press + Strict OHP — 3-4 sets × 10-15',
+     force:'Power Snatch — build to a heavy double, 3 drop sets · then Incline Press + Strict OHP 3-4 × 10-15',
+     forceEx:[{id:'psnatch',name:'Power Snatch',_force:true,type:'pri',s:5,r:2,rest:180,note:'build to heavy double, 3 drops'},
+              {id:'incline',name:'Incline Press',_force:true,type:'sec',s:4,r:12,rest:150,note:'10-15 reps'},
+              {id:'ohp',name:'Strict OHP',_force:true,type:'sec',s:3,r:12,rest:150,note:'10-15 reps'}],
      spare:['push'],foci:['engine','sprint'],
      exSup:['Shoulder health 3×: DB Lateral Raises ×15 + DB Rear-Delt Flyes ×15','Superset 3×: DB Overhead Triceps Ext ×12 + slow Ring Push-up negatives ×6'],
      exSkill:['Skill: 10 min wall handstand hold practice — accumulate time','Finisher: 3× max strict HSPU (or pike) — quality reps only','Skill: accumulate 60s L-Sit on parallettes']},
   3:{label:'Wed · pull day — sparing pull',
-     force:'Pull-up strength (bar + rings) — weighted/strict 4-5 sets · assistance 10-15',
+     force:'Clean & Jerk — build to a heavy double, 3 drop sets · then weighted/strict Pull-ups 4-5 sets + assistance 10-15',
+     forceEx:[{id:'cleanjerk',name:'Clean & Jerk',_force:true,type:'pri',s:5,r:2,rest:180,note:'build to heavy double, 3 drops'},
+              {id:'wpullup',name:'Weighted / Strict Pull-ups',_force:true,type:'pri',s:4,r:6,rest:150},
+              {id:'pullassist',name:'Pull Assistance (bar/rings)',_force:true,type:'acc',s:3,r:12,rest:90,note:'10-15 reps'}],
      spare:['pull'],foci:['power','engine'],
      exSup:['Posterior 3×: heavy DB RDL ×10 + Farmer Carry lap (2×70 lb)','Posterior 3×: Hip Extensions ×15 (add DB when easy) + GHD Sit-ups ×12','Superset 3×: DB Hammer Curls ×12 + DB Biceps Curls ×12'],
      exSkill:['Grip: 3× max-time bar hang','Skill: strict Ring Muscle-up transitions 3×3-5 (low rings)','Power: 3×10 Med-Ball Slams — max intent, full reset between reps']},
@@ -962,7 +999,8 @@ const DAY_PROFILES={
      exSup:[],
      exSkill:['HSPU progression: 5×3-5 strict quality reps','Strict MU prog: 3×5 low-ring transitions + 3×5 feet-elevated Ring Rows','Skill: 5× Seated Rope Climbs — slow controlled negatives','Mobility: 15 min hips + T-spine flow']},
   5:{label:'Fri · front squat day — sparing legs & heavy hinge',
-     force:'Front Squat — top set of 6 @ RPE 7-8 · 2 back-off sets',
+     force:'Front Squat — top set of 6 · 2 back-off sets',
+     forceEx:[{id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:6},s:2,r:6,rest:240}],
      spare:['legs','hinge'],foci:['gymn','engine'],
      exSup:['Core 3×: Toes-to-Bar ×10 + Hollow Hold ×30s','Upper press finisher: 3× max Push-ups @ 21X1 tempo'],
      exSkill:['Finisher: EMOM 6 — alt 5 strict HSPU / 10 V-ups']},
@@ -977,6 +1015,18 @@ const DAY_PROFILES={
      exSup:[],
      exSkill:['Mobility: 20-30 min full-body flow — hips, ankles, T-spine','Easy Airdyne 15-20 min conversational + 10 min stretching']}
 };
+function weeksSinceDeload(){
+  let last='',first='';
+  for(const x of Object.values(D.sessions||{})){
+    if(!x.completed||!x.date)continue;
+    if(!first||x.date<first)first=x.date;
+    if((x.rpe<=5||x.isDeload)&&x.date>last)last=x.date;
+  }
+  const anchor=last||first;
+  if(!anchor)return null;
+  const days=Math.floor((new Date(todayStr()+'T12:00:00')-new Date(anchor+'T12:00:00'))/864e5);
+  return Math.max(0,Math.floor(days/7));
+}
 function _dayProfile(){
   let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();
   if(isNaN(d))d=new Date();
@@ -1015,7 +1065,7 @@ const FOCUS_TMPLS={
   engine:[['M','G'],['M','G','G'],['M','W','G'],['M','G','M'],['M','G','W','G']],
   grind: [['M','W','G','G','M'],['W','G','M','W','G'],['G','M','W','G','M','G']],
   power: [['W','G'],['W','M'],['W','G','M'],['W','W','G']],
-  gymn:  [['G','G'],['G','G','M'],['G','M','G'],['G','G','G']]
+  gymn:  [['G','G'],['G','G','M'],['G','M','G'],['G','G','G'],['G','G','W']]
 };
 function _cfTmpl(focus,minN,maxN){
   const all=FOCUS_TMPLS[focus.id]||FOCUS_TMPLS.sprint;
@@ -1046,6 +1096,7 @@ function generateWOD(type){
   type=type||_wodType||'classic';
   if(type==='skill')return _attachDay(_genSkill(),false);
   if(type==='core')return _attachDay(_genFinisher(),false);
+  if(type==='oly')return _attachDay(_genOly(),false);
   if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
   const prof=_wodBias?_dayProfile():null;
   const pool=_wodPoolBiased(prof);
@@ -1092,6 +1143,8 @@ function _wodCardHTML(w,ctx){
   let h=`<div class="cd" style="border-left:3px solid var(--pp);padding-left:15px;margin-bottom:0;">`;
   if(w.dayName)h+=`<div style="font-size:1.15rem;font-weight:800;letter-spacing:1.5px;color:var(--pp);">${w.dayName}</div>`;
   if(w.profileLabel)h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin:3px 0 10px;">${w.profileLabel}</div>`;
+  const _wsd=weeksSinceDeload();
+  if(_wsd!=null)h+=`<div style="font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin:-6px 0 10px;">Week ${_wsd+1} since deload</div>`;
   if(w.force)h+=`<div style="font-size:.82rem;margin-bottom:12px;line-height:1.5;"><strong style="color:var(--tx);text-transform:uppercase;font-size:.68rem;letter-spacing:1.5px;">Force</strong><br>${w.force}</div>`;
   h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);">Wod</div>`;
   h+=`<div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--pp);margin-top:2px;">${w.title}</div>`;
@@ -1100,7 +1153,9 @@ function _wodCardHTML(w,ctx){
   if(w.vest)h+=`<div style="font-size:.7rem;color:#c9a227;font-weight:700;margin-bottom:8px;">Weight vest optional — wear it for Rx+</div>`;
   if(w.ladder)h+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:700;color:var(--tx);margin-bottom:10px;letter-spacing:1px;">${w.ladder.join('  –  ')}</div>`;
   w.moves.forEach((m,i)=>{
+    const editable=ctx&&(m.reps!=null||m.wt);
     const right=(w.format==='emom'?`<span class="mvr">min ${i+1}</span>`:'')
+      +(editable?`<button class="wod-swap" onclick="editMove('${ctx}',${i})" title="Edit reps / weight">✎</button>`:'')
       +(ctx?`<button class="wod-swap" onclick="openSwap('${ctx}',${i})" title="Swap movement">⇄</button>`:'');
     h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span><span class="mv-right">${right}</span></div>`;
   });
@@ -1133,6 +1188,29 @@ function _swapEligible(w){
   if(w.format==='ladder')pool=pool.filter(m=>m.unit!=='s'); // holds don't fit a rep ladder
   const used=new Set(w.moves.map(mm=>mm.n));
   return pool.filter(m=>!used.has(m.n));
+}
+function editMove(ctx,idx){
+  const w=_wodCtxObj(ctx);if(!w)return;
+  const m=w.moves[idx];
+  const unitLbl=m.unit==='cal'?'Calories':m.unit==='s'?'Seconds':'Reps';
+  let h=`<h2>Edit movement</h2>
+  <div style="font-size:.78rem;font-weight:700;color:var(--pp);margin-bottom:10px;">${m.n}</div>`;
+  if(m.reps!=null)h+=`<div class="fld"><label>${unitLbl}${w.format==='rft'||w.format==='amrap'?' (per round)':''}</label><input class="inp" id="emReps" type="number" inputmode="numeric" value="${m.reps}"></div>`;
+  if(m.wt)h+=`<div class="fld"><label>Weight (lb${m.hand==='2'?' · per dumbbell ×2':''})</label><input class="inp" id="emWt" type="number" inputmode="decimal" value="${m.wt}"></div>`;
+  h+=`<div style="display:flex;gap:8px;margin-top:6px;">
+    <button class="btn bp bs" style="flex:1;" onclick="applyEditMove('${ctx}',${idx})">Save</button>
+    <button class="btn bo bs" onclick="cM();_wodCtxRerender('${ctx}')">Cancel</button></div>`;
+  oM(h);
+}
+function applyEditMove(ctx,idx){
+  const w=_wodCtxObj(ctx);if(!w)return;
+  const m=w.moves[idx];
+  const r=document.getElementById('emReps');
+  const wt=document.getElementById('emWt');
+  if(r){const v=parseInt(r.value);if(!isNaN(v)&&v>0)m.reps=v;}
+  if(wt){const v=parseFloat(wt.value);if(!isNaN(v)&&v>0)m.wt=v;}
+  if(ctx.indexOf('sess:')===0)sv();
+  cM();_wodCtxRerender(ctx);
 }
 function openSwap(ctx,idx){
   const w=_wodCtxObj(ctx);if(!w)return;
@@ -1204,6 +1282,11 @@ function _createWODSession(date){
   const w=_pendingWOD;if(!w)return null;
   const k=sessKey(date,'wod_'+Date.now());
   D.sessions[k]={templateId:'wod',name:'🔥 '+(w.dayName||w.title),date,rpe:7,completed:false,isWOD:true,wodData:{...w,result:'',notes:''}};
+  const _pd=_wodDate;_wodDate=date;const prof=_dayProfile();_wodDate=_pd;
+  if(prof&&prof.forceEx&&prof.forceEx.length){
+    D.sessions[k].forceEx=JSON.parse(JSON.stringify(prof.forceEx));
+    D.sessions[k].ex={};D.sessions[k].setAdj={};
+  }
   sv();_pendingWOD=null;
   return k;
 }
@@ -1215,6 +1298,15 @@ function addWODToDay(date){
   const k=_createWODSession(date);if(!k)return;
   cM();selDate=date;rTrain();
 }
+let _sw={on:false,acc:0,t0:0,int:null};
+function _swFmt(ms){const t=Math.floor(ms/1000);return Math.floor(t/60)+':'+('0'+t%60).slice(-2);}
+function _swTick(){const el=document.getElementById('wodSw');if(el)el.textContent=_swFmt(_sw.acc+(_sw.on?Date.now()-_sw.t0:0));}
+function wodSwToggle(btn){
+  if(_sw.on){_sw.acc+=Date.now()-_sw.t0;_sw.on=false;clearInterval(_sw.int);if(btn)btn.textContent='Start';}
+  else{_sw.t0=Date.now();_sw.on=true;_sw.int=setInterval(_swTick,250);if(btn)btn.textContent='Pause';}
+  _swTick();
+}
+function wodSwReset(){_sw.acc=0;_sw.t0=Date.now();_swTick();}
 function openWOD(k){activeSessKey=k;rWOD();}
 function rWOD(){
   const k=activeSessKey;const s=D.sessions[k];if(!s||!s.isWOD){closeSess();return;}
@@ -1223,7 +1315,31 @@ function rWOD(){
     <button class="btn bo bs" onclick="closeSess()">◀ Back</button>
     <div style="flex:1;"><div style="font-size:1rem;font-weight:800;text-transform:uppercase;">${s.name}</div>
     <div style="font-size:.7rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${s.date} · WOD</div></div></div>`;
-  h+=_wodCardHTML(w,'sess:'+k);
+  // Force tracking — same per-set logging + rest timers as strength sessions
+  if(s.forceEx&&s.forceEx.length){
+    if(!s.ex)s.ex={};
+    s.forceEx.forEach((ex,i)=>{
+      const ek=ex.id+'_f'+i;const adj=(s.setAdj||{})[ek]||0;
+      const total=ex.topSet?Math.max(1,(ex.topSet.s||1)+(ex.s||0)+adj):Math.max(1,(ex.s||3)+adj);
+      if(!s.ex[ek]){
+        const rows=[];
+        for(let j=0;j<total;j++)rows.push({w:'',r:(ex.topSet&&j<(ex.topSet.s||1)?ex.topSet.r:ex.r)||'',p:'',d:false});
+        s.ex[ek]=rows;
+      }
+      while(s.ex[ek].length<total)s.ex[ek].push({w:'',r:ex.r||'',p:'',d:false});
+      if(s.ex[ek].length>total)s.ex[ek]=s.ex[ek].slice(0,total);
+    });
+    h+=`<div class="sec">Force</div>`;
+    s.forceEx.forEach((ex,i)=>{h+=mkEx(ex,ex.id+'_f'+i,i,s.forceEx.length,s.rpe||7,false,k);});
+    h+=`<div class="sec" style="margin-top:14px;">Wod</div>`;
+  }
+  const _wv={...w};if(s.forceEx&&s.forceEx.length)delete _wv.force; // tracked blocks replace the text line
+  h+=_wodCardHTML(_wv,'sess:'+k);
+  // Simple WOD stopwatch
+  h+=`<div class="cd" style="margin-top:12px;display:flex;align-items:center;gap:12px;">
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:1.6rem;font-weight:800;flex:1;" id="wodSw">${_swFmt(_sw.acc+(_sw.on?Date.now()-_sw.t0:0))}</div>
+    <button class="btn bo bs" onclick="wodSwToggle(this)">${_sw.on?'Pause':'Start'}</button>
+    <button class="btn bo bs" onclick="wodSwReset()">Reset</button></div>`;
   const rl=w.resultType==='rounds'?'Rounds + reps (e.g. 5 + 12)':w.resultType==='time'?'Time (mm:ss)':'Result / total reps (optional)';
   h+=`<div class="cd" style="margin-top:12px;"><h3>Result</h3>
     <div class="fld"><label>${rl}</label><input class="inp" value="${(w.result||'').replace(/"/g,'&quot;')}" placeholder="—" oninput="D.sessions['${k}'].wodData.result=this.value;sv();"></div>
@@ -1359,7 +1475,7 @@ function setRpe(k,r){D.sessions[k].rpe=r;sv();cM();rSess();}
 // ===== RENDER EXERCISE =====
 function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const s=D.sessions[k];
-  const eRpe=isDl?5:(ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type)));
+  const eRpe=isDl?5:(ex._force?0:(ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type))));
   const hasTopSet=!!ex.topSet;
   const topSetReps=hasTopSet?ex.topSet.r:0;
   const topSetCount=hasTopSet?ex.topSet.s:0;
@@ -1394,7 +1510,9 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
 
   const upB=ei>0?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;cursor:pointer;" onclick="moveEx('${k}',${ei},-1)">▲</button>`:'';
   const dnB=ei<total-1?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;cursor:pointer;" onclick="moveEx('${k}',${ei},1)">▼</button>`:'';
-  const ctrl=completed?'':`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
+  const ctrl=completed?'':ex._force?`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button></div>`:`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button>
     ${upB}${dnB}<div style="flex:1;"></div>
@@ -1410,7 +1528,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
     for(let si=0;si<topSetCount;si++){
       const st=saved[si]||{w:'',r:'',p:'',d:false};
       const le=st.w>0&&st.r>0&&st.p>0?cE1(st.w,st.r,st.p):'';
-      setRows+=`<div class="sr" style="background:var(--acd);"><div class="sn" style="color:var(--ac);">T${si+1}</div><div class="stg" style="color:var(--ac);">${topSetReps}@${eRpe} <span style="font-size:.58rem;">TOP</span></div>
+      setRows+=`<div class="sr" style="background:var(--acd);"><div class="sn" style="color:var(--ac);">T${si+1}</div><div class="stg" style="color:var(--ac);">${topSetReps}${eRpe>0?'@'+eRpe:''} <span style="font-size:.58rem;">TOP</span></div>
       <input class="si" type="number" inputmode="decimal" value="${st.w}" placeholder="${topSw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
       <input class="si" type="number" inputmode="numeric" value="${st.r}" placeholder="${topSetReps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
       <input class="si" type="number" inputmode="decimal" step="0.5" value="${st.p}" placeholder="${eRpe}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
@@ -1423,7 +1541,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
       const si=topSetCount+bi;
       const st=saved[si]||{w:'',r:'',p:'',d:false};
       const le=st.w>0&&st.r>0&&st.p>0?cE1(st.w,st.r,st.p):'';
-      setRows+=`<div class="sr"><div class="sn">${bi+1}</div><div class="stg">${boReps}@${boRpe} <span style="font-size:.58rem;">BO</span></div>
+      setRows+=`<div class="sr"><div class="sn">${bi+1}</div><div class="stg">${boReps}${ex._force?'':'@'+boRpe} <span style="font-size:.58rem;">BO</span></div>
       <input class="si" type="number" inputmode="decimal" value="${st.w}" placeholder="${boSw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
       <input class="si" type="number" inputmode="numeric" value="${st.r}" placeholder="${boReps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
       <input class="si" type="number" inputmode="decimal" step="0.5" value="${st.p}" placeholder="${boRpe}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
@@ -1433,7 +1551,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   }else{
     // Standard rows
     const repD=isOpen?(ex.repRange||'AMRAP'):''+reps;
-    const targD=isOpen?'max@'+eRpe:reps+'@'+eRpe;
+    const targD=isOpen?(eRpe>0?'max@'+eRpe:'max'):(eRpe>0?reps+'@'+eRpe:''+reps);
     saved.slice(0,totalSets).forEach((st,si)=>{
       const le=st.w>0&&st.r>0&&st.p>0?cE1(st.w,st.r,st.p):'';
       setRows+=`<div class="sr"><div class="sn">${si+1}</div><div class="stg">${targD}</div>
@@ -1481,13 +1599,14 @@ function getExHist(exId,curKey){
 // ===== SET OPERATIONS =====
 function uSL(k,ek,si,f,v){const n=parseFloat(v);const s=D.sessions[k];if(s?.ex[ek]){s.ex[ek][si][f]=isNaN(n)?'':n;const st=s.ex[ek][si];const el=document.getElementById('e1_'+ek+'_'+si);if(el)el.textContent=(st.w>0&&st.r>0&&st.p>0)?cE1(st.w,st.r,st.p):'';sv();}}
 function tglSet(k,ek,si,restSec,btn){const s=D.sessions[k];if(s?.ex[ek]){const was=s.ex[ek][si].d;s.ex[ek][si].d=!was;btn.classList.toggle('chk');sv();if(!was){startTimer(restSec);startSessTimer();}}}
-function adjSet(k,ek,d){const s=D.sessions[k];if(!s.setAdj)s.setAdj={};s.setAdj[ek]=(s.setAdj[ek]||0)+d;sv();rSess();}
+function rerenderSess(){const s=D.sessions[activeSessKey];if(s&&s.isWOD)rWOD();else rSess();}
+function adjSet(k,ek,d){const s=D.sessions[k];if(!s.setAdj)s.setAdj={};s.setAdj[ek]=(s.setAdj[ek]||0)+d;sv();rerenderSess();}
 function removeEx(k,ek){
   const s=D.sessions[k];
   if(ek.startsWith('add_')){const ai=parseInt(ek.split('_')[1]);s.added=(s.added||[]).filter(a=>a._addIdx!==ai);}
   else{const oi=parseInt(ek.split('_t')[1]);if(!isNaN(oi)&&!(s.removed||[]).includes(oi)){if(!s.removed)s.removed=[];s.removed.push(oi);}}
   delete s.ex[ek];if(s.setAdj)delete s.setAdj[ek];
-  if(s.exOrder)s.exOrder=s.exOrder.filter(x=>x!==ek);sv();rSess();
+  if(s.exOrder)s.exOrder=s.exOrder.filter(x=>x!==ek);sv();rerenderSess();
 }
 function moveEx(k,ei,dir){
   const s=D.sessions[k];const tmpl=s.templateId?findTemplate(s.templateId):null;
@@ -1496,7 +1615,7 @@ function moveEx(k,ei,dir){
   (s.added||[]).forEach(a=>keys.push('add_'+a._addIdx));
   if(s.exOrder?.length){const om={};s.exOrder.forEach((x,i)=>{om[x]=i;});keys.sort((a,b)=>(om[a]??9999)-(om[b]??9999));}
   const ni=ei+dir;if(ni<0||ni>=keys.length)return;
-  const tmp=keys[ei];keys[ei]=keys[ni];keys[ni]=tmp;s.exOrder=keys;sv();rSess();
+  const tmp=keys[ei];keys[ei]=keys[ni];keys[ni]=tmp;s.exOrder=keys;sv();rerenderSess();
 }
 
 // ===== COMPLETE/UNCOMPLETE =====
