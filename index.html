@@ -984,7 +984,7 @@ const DAY_PROFILES={
               {id:'ohp',name:'Strict OHP',_force:true,type:'sec',s:3,r:12,rest:150,note:'10-15 reps'}],
      spare:['push'],foci:['engine','sprint'],
      exSup:['Shoulder health 3×: DB Lateral Raises ×15 + DB Rear-Delt Flyes ×15','Superset 3×: DB Overhead Triceps Ext ×12 + slow Ring Push-up negatives ×6'],
-     exSkill:['Skill: 10 min wall handstand hold practice — accumulate time','Finisher: 3× max strict HSPU (or pike) — quality reps only','Skill: accumulate 60s L-Sit on parallettes']},
+     exSkill:['Skill: accumulate 60s L-Sit on parallettes','Skill: 5 sets of 20-30 unbroken Double-Unders','Finisher: 2× max-cal Airdyne sprint (60s), full rest between']},
   3:{label:'Wed · pull day — sparing pull',
      force:'Clean & Jerk — build to a heavy double, 3 drop sets · then weighted/strict Pull-ups 4-5 sets + assistance 10-15',
      forceEx:[{id:'cleanjerk',name:'Clean & Jerk',_force:true,type:'pri',s:5,r:2,rest:180,note:'build to heavy double, 3 drops'},
@@ -992,7 +992,7 @@ const DAY_PROFILES={
               {id:'pullassist',name:'Pull Assistance (bar/rings)',_force:true,type:'acc',s:3,r:12,rest:90,note:'10-15 reps'}],
      spare:['pull'],foci:['power','engine'],
      exSup:['Posterior 3×: heavy DB RDL ×10 + Farmer Carry lap (2×70 lb)','Posterior 3×: Hip Extensions ×15 (add DB when easy) + GHD Sit-ups ×12','Superset 3×: DB Hammer Curls ×12 + DB Biceps Curls ×12'],
-     exSkill:['Grip: 3× max-time bar hang','Skill: strict Ring Muscle-up transitions 3×3-5 (low rings)','Power: 3×10 Med-Ball Slams — max intent, full reset between reps']},
+     exSkill:['Power: 3×10 Med-Ball Slams — max intent, full reset between reps','Skill: 10 min wall handstand hold / Handstand Walk practice','Mobility: 10 min hips + ankles between sets']},
   4:{label:'Thu · front squat tomorrow — sparing legs',
      force:null,
      spare:['legs'],foci:['gymn','sprint'],
@@ -1003,7 +1003,7 @@ const DAY_PROFILES={
      forceEx:[{id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:6},s:2,r:6,rest:240}],
      spare:['legs','hinge'],foci:['gymn','engine'],
      exSup:['Core 3×: Toes-to-Bar ×10 + Hollow Hold ×30s','Upper press finisher: 3× max Push-ups @ 21X1 tempo'],
-     exSkill:['Finisher: EMOM 6 — alt 5 strict HSPU / 10 V-ups']},
+     exSkill:['Core finisher: EMOM 6 — alt 8 Toes-to-Bar / 12 V-ups','Skill: 5 sets of 20+ unbroken Double-Unders','Grip: 3× max-time bar hang']},
   6:{label:'Sat · open day',
      force:null,
      spare:[],foci:['grind','power'],
@@ -1046,6 +1046,13 @@ function _wodPoolBiased(prof){
   }
   return pool;
 }
+const CARDIO_TOPUPS=[
+  {t:'Cardio top-up: Airdyne 20-30 min Zone 2 — conversational pace',ez:true},
+  {t:'Cardio top-up: easy run 20-30 min (Airdyne instead if joints are achy)',ez:true},
+  {t:'Cardio top-up: Airdyne intervals — 10× 30s hard / 30s easy'},
+  {t:'Cardio top-up: Airdyne 5× 2 min moderate-hard / 1 min easy'},
+  {t:'Cardio top-up: run intervals — 6× 400m brisk, 90s walk between (Airdyne 6× 90s if achy)'}
+];
 function _attachDay(w,allowVest){
   if(allowVest===undefined)allowVest=true;
   const prof=_dayProfile();
@@ -1056,6 +1063,10 @@ function _attachDay(w,allowVest){
   const sup=prof.exSup&&prof.exSup.length?_rp(prof.exSup):null;
   const skill=prof.exSkill&&prof.exSkill.length?_rp(prof.exSkill):null;
   w.extra=[sup,skill].filter(Boolean);
+  if(!w.noTopup&&(w.est||0)<=12){
+    const menu=prof.light?CARDIO_TOPUPS.filter(c=>c.ez):CARDIO_TOPUPS;
+    w.extra.push(_rp(menu).t+' — short Wod today, top up the engine');
+  }
   return w;
 }
 // ── CrossFit construction — weighted pick across W/G/M modality templates ──────
@@ -1095,7 +1106,7 @@ function _cfPick(pool,tmpl,bbBias){
 function generateWOD(type){
   type=type||_wodType||'classic';
   if(type==='skill')return _attachDay(_genSkill(),false);
-  if(type==='core')return _attachDay(_genFinisher(),false);
+  if(type==='core'){const f=_genFinisher();f.noTopup=true;return _attachDay(f,false);}
   if(type==='oly')return _attachDay(_genOly(),false);
   if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
   const prof=_wodBias?_dayProfile():null;
