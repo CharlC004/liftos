@@ -1291,13 +1291,17 @@ function openSwap(ctx,idx){
   const w=_wodCtxObj(ctx);if(!w)return;
   const cur=w.moves[idx];
   const elig=_swapEligible(w);
+  // assign-once grouping with a catch-all so no enabled movement can fall through
+  const _used=new Set();
+  const _take=f=>elig.filter(m=>{if(_used.has(m.id)||!f(m))return false;_used.add(m.id);return true;});
   const groups=[
-    ['Conditioning',elig.filter(m=>m.cat==='cardio')],
-    ['Rings',       elig.filter(m=>m.equip==='rings')],
-    ['Bodyweight',  elig.filter(m=>!m.weighted&&m.cat!=='cardio'&&m.equip!=='rings')],
-    ['Dumbbell',    elig.filter(m=>m.equip==='db')],
-    ['Bench',       elig.filter(m=>m.equip==='bench')],
-    ['Barbell',     elig.filter(m=>m.equip==='bb')]
+    ['Conditioning',      _take(m=>m.cat==='cardio')],
+    ['Barbell',           _take(m=>m.equip==='bb')],
+    ['Med Ball',          _take(m=>m.equip==='mb')],
+    ['Dumbbell',          _take(m=>m.equip==='db'||(m.weighted&&m.wt))],
+    ['Bench / Stand',     _take(m=>m.equip==='bench')],
+    ['Rings',             _take(m=>m.equip==='rings')],
+    ['Bodyweight & Skill',_take(m=>true)]
   ];
   let h=`<h2>Swap movement</h2>`;
   h+=`<div style="font-size:.74rem;color:var(--tx2);margin-bottom:6px;">Replacing <strong style="color:var(--pp);">${_mvLine(cur)}</strong></div>`;
@@ -1307,8 +1311,28 @@ function openSwap(ctx,idx){
     arr.forEach(m=>{const hint=m.wt?` <span style="color:var(--tx3);font-size:.72rem;">${m.hand==='2'?'2×':''}${m.wt.join('/')} lb</span>`:'';
       h+=`<div class="rmrow" style="cursor:pointer;" onclick="applySwap('${ctx}',${idx},'${m.id}')"><span style="flex:1;font-size:.88rem;">${m.n}${hint}</span></div>`;});
   });
-  h+=`<button class="btn bo bf" style="margin-top:16px;" onclick="_wodCtxRerender('${ctx}')">← Cancel</button>`;
+  h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin:15px 0 5px;">Custom movement</div>
+  <input class="inp" id="swName" placeholder="Movement name (anything)" style="margin-bottom:6px;">
+  <div style="display:flex;gap:6px;margin-bottom:8px;">
+    <input class="inp" id="swReps" type="number" inputmode="numeric" placeholder="Reps" style="flex:1;">
+    <input class="inp" id="swWt" type="number" inputmode="decimal" placeholder="lb (optional)" style="flex:1;">
+  </div>
+  <button class="btn bp bs bf" onclick="applySwapCustom('${ctx}',${idx})">Use custom movement</button>`;
+  h+=`<button class="btn bo bf" style="margin-top:12px;" onclick="_wodCtxRerender('${ctx}')">← Cancel</button>`;
   oM(h);
+}
+function applySwapCustom(ctx,idx){
+  const w=_wodCtxObj(ctx);if(!w)return;
+  const name=(document.getElementById('swName')||{}).value;
+  if(!name||!name.trim())return;
+  const r=parseInt((document.getElementById('swReps')||{}).value);
+  const wt=parseFloat((document.getElementById('swWt')||{}).value);
+  const cur=w.moves[idx];
+  const inst={n:name.trim(),unit:'',cat:'gym',reps:(!isNaN(r)&&r>0)?r:(cur&&cur.reps!=null?10:null)};
+  if(!isNaN(wt)&&wt>0)inst.wt=wt;
+  w.moves[idx]=inst;
+  if(ctx.indexOf('sess:')===0)sv();
+  cM();_wodCtxRerender(ctx);
 }
 function applySwap(ctx,idx,baseId){
   const w=_wodCtxObj(ctx);if(!w)return;
