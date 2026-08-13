@@ -1106,12 +1106,18 @@ function _attachDay(w,allowVest){
   w.dayName=_rp(WOD_NAMES);
   w.profileLabel=prof.label;
   w.force=prof.force||null;
-  const sup=prof.exSup&&prof.exSup.length?_rp(prof.exSup):null;
-  const skill=prof.exSkill&&prof.exSkill.length?_rp(prof.exSkill):null;
-  w.extra=[sup,skill].filter(Boolean);
-  if(!w.noTopup&&(w.est||0)<=12){
-    const menu=prof.light?CARDIO_TOPUPS.filter(c=>c.ez):CARDIO_TOPUPS;
-    w.extra.push(_rp(menu).t+' — short Wod today, top up the engine');
+  let _d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(_d))_d=new Date();
+  const _xo=D.dayExtraOverrides&&D.dayExtraOverrides[_d.getDay()];
+  if(_xo&&_xo.length){
+    w.extra=[..._xo]; // user's exact extras for this weekday — no random pick, no top-up append
+  }else{
+    const sup=prof.exSup&&prof.exSup.length?_rp(prof.exSup):null;
+    const skill=prof.exSkill&&prof.exSkill.length?_rp(prof.exSkill):null;
+    w.extra=[sup,skill].filter(Boolean);
+    if(!w.noTopup&&(w.est||0)<=12){
+      const menu=prof.light?CARDIO_TOPUPS.filter(c=>c.ez):CARDIO_TOPUPS;
+      w.extra.push(_rp(menu).t+' — short Wod today, top up the engine');
+    }
   }
   return w;
 }
@@ -1236,8 +1242,11 @@ function _wodCardHTML(w,ctx){
   });
   if(w.stimulus)h+=`<div style="font-size:.7rem;color:var(--tx3);margin-top:12px;font-style:italic;">${w.stimulus}</div>`;
   h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:6px;font-family:'IBM Plex Mono',monospace;">~${w.est} min</div>`;
+  if(ctx&&(!w.extra||!w.extra.length)){
+    h+=`<div style="margin-top:14px;"><button class="wod-swap" onclick="editExtras('${ctx}')" style="font-size:.7rem;">✎ Add Extra items</button></div>`;
+  }
   if(w.extra&&w.extra.length){
-    h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);margin-top:14px;">Extra <span style="font-weight:400;color:var(--tx3);text-transform:none;letter-spacing:0;">· optional</span></div>`;
+    h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);margin-top:14px;">Extra <span style="font-weight:400;color:var(--tx3);text-transform:none;letter-spacing:0;">· optional</span>${ctx?`<button class="wod-swap" style="margin-left:8px;" onclick="editExtras('${ctx}')" title="Edit extras">✎</button>`:''}</div>`;
     w.extra.forEach(x=>{h+=`<div style="font-size:.78rem;color:var(--tx2);margin-top:5px;line-height:1.5;">${x}</div>`;});
   }
   h+=`</div>`;
@@ -1263,6 +1272,136 @@ function _swapEligible(w){
   if(w.format==='ladder')pool=pool.filter(m=>m.unit!=='s'); // holds don't fit a rep ladder
   const used=new Set(w.moves.map(mm=>mm.n));
   return pool.filter(m=>!used.has(m.n));
+}
+const DOW_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+function _sessDow(k){const s=D.sessions[k];return new Date((s.date||todayStr())+'T12:00:00').getDay();}
+function editForceEx(k,i){
+  const s=D.sessions[k];const ex=s.forceEx[i];
+  let h=`<h2>Edit strength exercise</h2>
+  <div class="fld"><label>Name</label><input class="inp" id="feName" value="${ex.name.replace(/"/g,'&quot;')}"></div>
+  <div class="fld"><label>Top set reps (blank = no top set)</label><input class="inp" id="feTop" type="number" inputmode="numeric" value="${ex.topSet?ex.topSet.r:''}"></div>
+  <div style="display:flex;gap:6px;">
+    <div class="fld" style="flex:1;"><label>Sets</label><input class="inp" id="feSets" type="number" inputmode="numeric" value="${ex.s||0}"></div>
+    <div class="fld" style="flex:1;"><label>Reps</label><input class="inp" id="feReps" type="number" inputmode="numeric" value="${ex.r||''}"></div>
+    <div class="fld" style="flex:1;"><label>Rest (s)</label><input class="inp" id="feRest" type="number" inputmode="numeric" value="${ex.rest||120}"></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="feDef"> Save as my default ${DOW_NAMES[_sessDow(k)]} Force</label>
+  <div style="display:flex;gap:8px;">
+    <button class="btn bp bs" style="flex:1;" onclick="applyForceEdit('${k}',${i})">Save</button>
+    <button class="btn bo bs" onclick="cM();rWOD()">Cancel</button>
+  </div>`;
+  if(D.dayForceOverrides&&D.dayForceOverrides[_sessDow(k)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetForceDefault('${k}')">↺ Reset ${DOW_NAMES[_sessDow(k)]} Force to built-in template</button>`;
+  oM(h);
+}
+function applyForceEdit(k,i){
+  const s=D.sessions[k];const ex=s.forceEx[i];
+  const g=id=>document.getElementById(id);
+  const name=(g('feName')||{}).value;if(name&&name.trim())ex.name=name.trim();
+  const top=parseInt((g('feTop')||{}).value);
+  if(!isNaN(top)&&top>0)ex.topSet={s:1,r:top};else delete ex.topSet;
+  const sets=parseInt((g('feSets')||{}).value);if(!isNaN(sets)&&sets>=0)ex.s=sets;
+  const reps=parseInt((g('feReps')||{}).value);if(!isNaN(reps)&&reps>0)ex.r=reps;
+  const rest=parseInt((g('feRest')||{}).value);if(!isNaN(rest)&&rest>0)ex.rest=rest;
+  const ek=ex._ek||(ex.id+'_f'+i);
+  const adj=(s.setAdj||{})[ek]||0;
+  const total=ex.topSet?Math.max(1,(ex.topSet.s||1)+(ex.s||0)+adj):Math.max(1,(ex.s||0)+adj||1);
+  if(s.ex&&s.ex[ek]){
+    while(s.ex[ek].length<total)s.ex[ek].push({w:'',r:ex.r||'',p:'',d:false});
+    if(s.ex[ek].length>total)s.ex[ek]=s.ex[ek].slice(0,total);
+  }
+  if((g('feDef')||{}).checked)_saveForceDefault(k);
+  sv();cM();rWOD();
+}
+function removeForceEx(k,i){
+  const s=D.sessions[k];const ex=s.forceEx[i];
+  const ek=ex._ek||(ex.id+'_f'+i);
+  s.forceEx.splice(i,1);
+  if(s.ex)delete s.ex[ek];
+  if(s.setAdj)delete s.setAdj[ek];
+  sv();rWOD();
+}
+function addForceEx(k){
+  let h=`<h2>Add strength exercise</h2>
+  <div class="fld"><label>Name</label><input class="inp" id="faName" placeholder="e.g. Pause Front Squat"></div>
+  <div class="fld"><label>Top set reps (optional)</label><input class="inp" id="faTop" type="number" inputmode="numeric" placeholder="—"></div>
+  <div style="display:flex;gap:6px;">
+    <div class="fld" style="flex:1;"><label>Sets</label><input class="inp" id="faSets" type="number" inputmode="numeric" value="3"></div>
+    <div class="fld" style="flex:1;"><label>Reps</label><input class="inp" id="faReps" type="number" inputmode="numeric" value="10"></div>
+    <div class="fld" style="flex:1;"><label>Rest (s)</label><input class="inp" id="faRest" type="number" inputmode="numeric" value="120"></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="faDef"> Save as my default ${DOW_NAMES[_sessDow(k)]} Force</label>
+  <div style="display:flex;gap:8px;">
+    <button class="btn bp bs" style="flex:1;" onclick="applyForceAdd('${k}')">Add</button>
+    <button class="btn bo bs" onclick="cM();rWOD()">Cancel</button>
+  </div>`;
+  if(D.dayForceOverrides&&D.dayForceOverrides[_sessDow(k)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetForceDefault('${k}')">↺ Reset ${DOW_NAMES[_sessDow(k)]} Force to built-in template</button>`;
+  oM(h);
+}
+function applyForceAdd(k){
+  const s=D.sessions[k];
+  const g=id=>document.getElementById(id);
+  const name=(g('faName')||{}).value;if(!name||!name.trim())return;
+  const ex={id:'custom',name:name.trim(),_force:true,type:'acc',_ek:'cf_'+Date.now(),
+    s:Math.max(0,parseInt((g('faSets')||{}).value)||3),
+    r:Math.max(1,parseInt((g('faReps')||{}).value)||10),
+    rest:Math.max(15,parseInt((g('faRest')||{}).value)||120)};
+  const top=parseInt((g('faTop')||{}).value);
+  if(!isNaN(top)&&top>0)ex.topSet={s:1,r:top};
+  if(!s.forceEx)s.forceEx=[];
+  if(!s.ex)s.ex={};if(!s.setAdj)s.setAdj={};
+  s.forceEx.push(ex);
+  if((g('faDef')||{}).checked)_saveForceDefault(k);
+  sv();cM();rWOD();
+}
+function _saveForceDefault(k){
+  const s=D.sessions[k];
+  if(!D.dayForceOverrides)D.dayForceOverrides={};
+  D.dayForceOverrides[_sessDow(k)]=JSON.parse(JSON.stringify(s.forceEx||[]));
+}
+function _exDow(ctx){
+  if(ctx.indexOf('sess:')===0)return _sessDow(ctx.slice(5));
+  let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
+  return d.getDay();
+}
+function resetForceDefault(k){
+  if(D.dayForceOverrides)delete D.dayForceOverrides[_sessDow(k)];
+  sv();cM();rWOD();
+}
+function resetExtraDefault(ctx){
+  if(D.dayExtraOverrides)delete D.dayExtraOverrides[_exDow(ctx)];
+  sv();cM();_wodCtxRerender(ctx);
+}
+function editExtras(ctx){
+  const w=_wodCtxObj(ctx);if(!w)return;
+  const lines=(w.extra||[]).join('\n');
+  const isSess=ctx.indexOf('sess:')===0;
+  const dowLbl=isSess?DOW_NAMES[_sessDow(ctx.slice(5))]:'this weekday';
+  let h=`<h2>Edit Extra</h2>
+  <div style="font-size:.72rem;color:var(--tx2);margin-bottom:6px;">One line per item. Delete a line to drop it, add lines for your own accessories or cardio.</div>
+  <textarea class="inp" id="exLines" rows="6" style="width:100%;font-size:.8rem;line-height:1.5;">${lines}</textarea>
+  <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="exDef"> Save as my default ${dowLbl} Extra (replaces the random pool)</label>
+  <div style="display:flex;gap:8px;">
+    <button class="btn bp bs" style="flex:1;" onclick="applyExtras('${ctx}')">Save</button>
+    <button class="btn bo bs" onclick="cM();_wodCtxRerender('${ctx}')">Cancel</button>
+  </div>`;
+  if(D.dayExtraOverrides&&D.dayExtraOverrides[_exDow(ctx)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetExtraDefault('${ctx}')">↺ Reset ${dowLbl} Extra to built-in pool</button>`;
+  oM(h);
+}
+function applyExtras(ctx){
+  const w=_wodCtxObj(ctx);if(!w)return;
+  const ta=document.getElementById('exLines');if(!ta)return;
+  const lines=ta.value.split('\n').map(x=>x.trim()).filter(Boolean);
+  w.extra=lines;
+  const def=document.getElementById('exDef');
+  if(def&&def.checked){
+    if(!D.dayExtraOverrides)D.dayExtraOverrides={};
+    let dow;
+    if(ctx.indexOf('sess:')===0)dow=_sessDow(ctx.slice(5));
+    else{let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();dow=d.getDay();}
+    D.dayExtraOverrides[dow]=[...lines];
+  }
+  if(ctx.indexOf('sess:')===0)sv();else sv();
+  cM();_wodCtxRerender(ctx);
 }
 function editMove(ctx,idx){
   const w=_wodCtxObj(ctx);if(!w)return;
@@ -1383,8 +1522,11 @@ function _createWODSession(date){
   const k=sessKey(date,'wod_'+Date.now());
   D.sessions[k]={templateId:'wod',name:'🔥 '+(w.dayName||w.title),date,rpe:7,completed:false,isWOD:true,wodData:{...w,result:'',notes:''}};
   const _pd=_wodDate;_wodDate=date;const prof=_dayProfile();_wodDate=_pd;
-  if(prof&&prof.forceEx&&prof.forceEx.length){
-    D.sessions[k].forceEx=JSON.parse(JSON.stringify(prof.forceEx));
+  const _dow=new Date(date+'T12:00:00').getDay();
+  const _fx=(D.dayForceOverrides&&D.dayForceOverrides[_dow]&&D.dayForceOverrides[_dow].length)?D.dayForceOverrides[_dow]:(prof&&prof.forceEx);
+  if(_fx&&_fx.length){
+    D.sessions[k].forceEx=JSON.parse(JSON.stringify(_fx));
+    D.sessions[k].forceEx.forEach((e,i)=>{if(!e._ek)e._ek=(e.id||'custom')+'_f'+i;});
     D.sessions[k].ex={};D.sessions[k].setAdj={};
   }
   sv();_pendingWOD=null;
@@ -1419,7 +1561,7 @@ function rWOD(){
   if(s.forceEx&&s.forceEx.length){
     if(!s.ex)s.ex={};
     s.forceEx.forEach((ex,i)=>{
-      const ek=ex.id+'_f'+i;const adj=(s.setAdj||{})[ek]||0;
+      const ek=ex._ek||(ex.id+'_f'+i);const adj=(s.setAdj||{})[ek]||0;
       const total=ex.topSet?Math.max(1,(ex.topSet.s||1)+(ex.s||0)+adj):Math.max(1,(ex.s||3)+adj);
       if(!s.ex[ek]){
         const rows=[];
@@ -1429,9 +1571,12 @@ function rWOD(){
       while(s.ex[ek].length<total)s.ex[ek].push({w:'',r:ex.r||'',p:'',d:false});
       if(s.ex[ek].length>total)s.ex[ek]=s.ex[ek].slice(0,total);
     });
-    h+=`<div class="sec">Force</div>`;
-    s.forceEx.forEach((ex,i)=>{h+=mkEx(ex,ex.id+'_f'+i,i,s.forceEx.length,s.rpe||7,false,k);});
+    h+=`<div class="sec" style="display:flex;align-items:center;">Force<button class="btn bo" style="margin-left:auto;padding:2px 10px;font-size:.68rem;" onclick="addForceEx('${k}')">＋ Add</button></div>`;
+    s.forceEx.forEach((ex,i)=>{h+=mkEx(ex,ex._ek||(ex.id+'_f'+i),i,s.forceEx.length,s.rpe||7,false,k);});
     h+=`<div class="sec" style="margin-top:14px;">Wod</div>`;
+  }
+  if(!s.forceEx||!s.forceEx.length){
+    h+=`<div style="margin-bottom:10px;"><button class="btn bo bs" onclick="addForceEx('${k}')">＋ Add strength work</button></div>`;
   }
   const _wv={...w};if(s.forceEx&&s.forceEx.length)delete _wv.force; // tracked blocks replace the text line
   h+=_wodCardHTML(_wv,'sess:'+k);
@@ -1612,7 +1757,9 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const dnB=ei<total-1?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;cursor:pointer;" onclick="moveEx('${k}',${ei},1)">▼</button>`:'';
   const ctrl=completed?'':ex._force?`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
-    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button></div>`:`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button>
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="editForceEx('${k}',${ei})">✎ Edit</button>
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--gn,#c66);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="removeForceEx('${k}',${ei})">✕</button></div>`:`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button>
     ${upB}${dnB}<div style="flex:1;"></div>
