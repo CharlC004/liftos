@@ -975,49 +975,64 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat day — metcon adds heavy leg volume',
-     force:'Back Squat — build to a top set of 10 · the metcon carries the squat volume',
-     forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:10},s:0,r:10,rest:240}],
-     spare:['hinge'],legBias:true,foci:['gymn','sprint'],
-     exSup:['Superset 3×: DB Romanian Deadlifts ×12 + DB Hip Thrusts ×15','Superset 3×: DB Single-Leg RDL ×10/side + Superman Holds ×15','Superset 3×: Hip Extensions ×15 + GHD Sit-ups ×12'],
-     exSkill:['Skill: 3× max-distance Farmer Carry laps (2×70 lb)','Power: 3×10 Med-Ball Slams — max intent, full reset between reps']},
-  2:{label:'Tue · press day — sparing push',
-     force:'Power Snatch — build to a heavy double, 3 drop sets · then Incline Press + Strict OHP 3-4 × 10-15',
-     forceEx:[{id:'psnatch',name:'Power Snatch',_force:true,type:'pri',s:5,r:2,rest:180,note:'build to heavy double, 3 drops'},
-              {id:'incline',name:'Incline Press',_force:true,type:'sec',s:4,r:12,rest:150,note:'10-15 reps'},
-              {id:'ohp',name:'Strict OHP',_force:true,type:'sec',s:3,r:12,rest:150,note:'10-15 reps'}],
-     spare:['push'],foci:['engine','sprint'],
-     exSup:['Shoulder health 3×: DB Lateral Raises ×15 + DB Rear-Delt Flyes ×15','Superset 3×: DB Overhead Triceps Ext ×12 + slow Ring Push-up negatives ×6'],
-     exSkill:['Skill: accumulate 60s L-Sit on parallettes','Finisher: 2× max-cal Airdyne sprint (60s), full rest between']},
-  3:{label:'Wed · pull day — sparing pull',
-     force:'Clean & Jerk — build to a heavy double, 3 drop sets · then weighted/strict Pull-ups 4-5 sets + assistance 10-15',
-     forceEx:[{id:'cleanjerk',name:'Clean & Jerk',_force:true,type:'pri',s:5,r:2,rest:180,note:'build to heavy double, 3 drops'},
-              {id:'wpullup',name:'Weighted / Strict Pull-ups',_force:true,type:'pri',s:4,r:6,rest:150},
-              {id:'pullassist',name:'Pull Assistance (bar/rings)',_force:true,type:'acc',s:3,r:12,rest:90,note:'10-15 reps'}],
-     spare:['pull'],foci:['power','engine'],
-     exSup:['Posterior 3×: heavy DB RDL ×10 + Farmer Carry lap (2×70 lb)','Posterior 3×: Hip Extensions ×15 (add DB when easy) + GHD Sit-ups ×12','Superset 3×: DB Hammer Curls ×12 + DB Biceps Curls ×12'],
-     exSkill:['Power: 3×10 Med-Ball Slams — max intent, full reset between reps','Skill: 10 min wall handstand hold / Handstand Walk practice','Mobility: 10 min hips + ankles between sets']},
-  4:{label:'Thu · front squat tomorrow — sparing legs',
+  1:{label:'Mon · back squat + hard metcon (heavy leg volume)',plan:'hard',
+     force:'Back Squat — top set of 5 · 2 back-off sets of 8',
+     forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
+     spare:['hinge'],legBias:true,foci:['grind','engine','power'],
+     extraEx:[
+       {id:'bsupr',name:'Chest-Supported DB Rows (50s → 70s)',_force:true,type:'sec',s:4,r:10,rest:120},
+       {id:'ghdback',name:'GHD Back Extensions (add DB when 15 is easy)',_force:true,type:'acc',s:3,r:15,rest:90},
+       {id:'calfstand',name:'Standing Calf Raises (slow eccentric)',_force:true,type:'acc',s:4,r:15,rest:75},
+       {id:'dbcurl',name:'DB Biceps Curls',_force:true,type:'acc',s:3,r:12,rest:60},
+       {id:'dbtriext',name:'DB Overhead Triceps Extensions',_force:true,type:'acc',s:3,r:12,rest:60}]},
+  2:{label:'Tue · snatch day — recovery metcon',plan:'recovery',
+     force:'Snatch — build, then 3×3 working sets',
+     forceEx:[{id:'snatch',name:'Snatch',_force:true,type:'pri',s:3,r:3,rest:180}],
+     spare:['push'],foci:['engine'],
+     extraEx:[
+       {id:'incline',name:'Barbell Incline Press',_force:true,type:'sec',s:4,r:8,rest:150},
+       {id:'hspustr',name:'Strict HSPU (3-5 reps · scale: pike / negatives)',_force:true,type:'sec',s:5,r:5,rest:120},
+       {id:'latraise',name:'DB Lateral Raises',_force:true,type:'acc',s:3,r:15,rest:60}]},
+  3:{label:'Wed · clean day + hard metcon',plan:'hard',
+     force:'Clean — build, then 3×3 working sets',
+     forceEx:[{id:'clean',name:'Clean',_force:true,type:'pri',s:3,r:3,rest:180}],
+     spare:['pull'],foci:['power','engine','grind'],
+     extraEx:[
+       {id:'wpullup',name:'Weighted Strict Pull-ups',_force:true,type:'pri',s:4,r:5,rest:150},
+       {id:'ringpustr',name:'Ring Pull-ups (strict)',_force:true,type:'sec',s:3,r:8,rest:120},
+       {id:'mutrans',name:'Low-Ring MU Transitions',_force:true,type:'sec',s:3,r:3,rest:120},
+       {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'acc',s:3,r:10,rest:120}]},
+  4:{label:'Thu · extras only — shortest day',plan:'extras',
      force:null,
      spare:['legs'],foci:['gymn','sprint'],
-     exSup:[],
-     exSkill:['HSPU progression: 5×3-5 strict quality reps','Strict MU prog: 3×5 low-ring transitions + 3×5 feet-elevated Ring Rows','Skill: 5× Seated Rope Climbs — slow controlled negatives','Mobility: 15 min hips + T-spine flow']},
-  5:{label:'Fri · front squat day — metcon adds heavy leg volume',
-     force:'Front Squat — build to a top set of 6 · the metcon carries the squat volume',
-     forceEx:[{id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:6},s:0,r:6,rest:240}],
-     spare:['hinge'],legBias:true,foci:['gymn','engine'],
-     exSup:['Core 3×: Toes-to-Bar ×10 + Hollow Hold ×30s','Upper press finisher: 3× max Push-ups @ 21X1 tempo'],
-     exSkill:['Core finisher: EMOM 6 — alt 8 Toes-to-Bar / 12 V-ups','Grip: 3× max-time bar hang']},
-  6:{label:'Sat · open day',
+     extraEx:[
+       {id:'ohpstr',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:150},
+       {id:'ghdside',name:'GHD Side Crunches (per side)',_force:true,type:'acc',s:3,r:15,rest:60},
+       {id:'pushdown',name:'Cable Triceps Pushdowns',_force:true,type:'acc',s:3,r:15,rest:60},
+       {id:'facepull',name:'Face Pulls (cable)',_force:true,type:'acc',s:3,r:15,rest:60},
+       {id:'calfseat',name:'Seated Calf Raises',_force:true,type:'acc',s:4,r:20,rest:60}]},
+  5:{label:'Fri · front squat 3RM — cardio-specific metcon',plan:'cardio',
+     force:'Front Squat — build to a 3RM top set · nothing after',
+     forceEx:[{id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:3},s:0,r:3,rest:240}],
+     spare:['legs','hinge'],foci:['engine'],
+     extraEx:[
+       {id:'heelsquat',name:'Heel-Elevated Back Squat (quads · moderate load)',_force:true,type:'sec',s:3,r:12,rest:150},
+       {id:'wbackext',name:'Weighted Back Extensions (GHD)',_force:true,type:'acc',s:3,r:12,rest:90},
+       {id:'dbflat',name:'Flat DB Bench Press (50s → 70s)',_force:true,type:'sec',s:4,r:10,rest:120},
+       {id:'calfstand2',name:'Standing Calf Raises',_force:true,type:'acc',s:4,r:15,rest:75}]},
+  6:{label:'Sat · open day',plan:'open',
      force:null,
      spare:[],foci:['grind','power'],
-     exSup:['Optional: any accessory work left undone this week'],
-     exSkill:['Good day for a scored test — try the 🏆 Benchmark type']},
-  0:{label:'Sun · recovery — light only',
+     extraEx:[
+       {id:'hspuemom',name:'Strict HSPU — EMOM 8 (2-3 per minute)',_force:true,type:'pri',s:8,r:3,rest:60},
+       {id:'ringpustr2',name:'Ring Pull-ups (strict)',_force:true,type:'sec',s:3,r:8,rest:120},
+       {id:'mutrans2',name:'Low-Ring MU Transitions',_force:true,type:'sec',s:3,r:3,rest:120},
+       {id:'hammer',name:'DB Hammer Curls',_force:true,type:'acc',s:3,r:12,rest:60},
+       {id:'cabletri',name:'Cable Overhead Triceps Extensions',_force:true,type:'acc',s:3,r:12,rest:60}]},
+  0:{label:'Sun · recovery',plan:'recovery',
      force:null,
      spare:[],light:true,foci:['engine'],
-     exSup:[],
-     exSkill:['Mobility: 20-30 min full-body flow — hips, ankles, T-spine','Easy Airdyne 15-20 min conversational + 10 min stretching']}
+     extraEx:[]}
 };
 function weeksSinceDeload(){
   let last='',first='';
@@ -1051,13 +1066,6 @@ function _wodPoolBiased(prof){
   }
   return pool;
 }
-const CARDIO_TOPUPS=[
-  {t:'Cardio top-up: Airdyne 20-30 min Zone 2 — conversational pace',ez:true},
-  {t:'Cardio top-up: easy run 20-30 min (Airdyne instead if joints are achy)',ez:true},
-  {t:'Cardio top-up: Airdyne intervals — 10× 30s hard / 30s easy'},
-  {t:'Cardio top-up: Airdyne 5× 2 min moderate-hard / 1 min easy'},
-  {t:'Cardio top-up: run intervals — 6× 400m brisk, 90s walk between (Airdyne 6× 90s if achy)'}
-];
 const TEAM_SCHEMES={
   amrap:'TEAM: alternate full rounds \u2014 I go / you go; your rest is your partner\'s round',
   rft:'TEAM: alternate full rounds \u2014 each partner completes every round at their own pace',
@@ -1096,6 +1104,14 @@ function _ensureLegVolume(w){
   if(idx<0)idx=w.moves.length-1;
   w.moves[idx]=inst;
 }
+function _extraExFor(){
+  let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
+  const dow=d.getDay();
+  const ov=D.dayExtraOverridesV2&&D.dayExtraOverridesV2[dow];
+  if(ov&&ov.length)return ov;
+  const prof=DAY_PROFILES[dow];
+  return (prof&&prof.extraEx)||[];
+}
 function _attachDay(w,allowVest){
   const _p=_dayProfile();
   if(_wodBias&&_p.legBias&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length)_ensureLegVolume(w);
@@ -1106,19 +1122,10 @@ function _attachDay(w,allowVest){
   w.dayName=_rp(WOD_NAMES);
   w.profileLabel=prof.label;
   w.force=prof.force||null;
-  let _d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(_d))_d=new Date();
-  const _xo=D.dayExtraOverrides&&D.dayExtraOverrides[_d.getDay()];
-  if(_xo&&_xo.length){
-    w.extra=[..._xo]; // user's exact extras for this weekday — no random pick, no top-up append
-  }else{
-    const sup=prof.exSup&&prof.exSup.length?_rp(prof.exSup):null;
-    const skill=prof.exSkill&&prof.exSkill.length?_rp(prof.exSkill):null;
-    w.extra=[sup,skill].filter(Boolean);
-    if(!w.noTopup&&(w.est||0)<=12){
-      const menu=prof.light?CARDIO_TOPUPS.filter(c=>c.ez):CARDIO_TOPUPS;
-      w.extra.push(_rp(menu).t+' — short Wod today, top up the engine');
-    }
-  }
+  // Extras are a fixed weekly hypertrophy/skill plan (tracked in-session).
+  // Cardio lives only in the Wod now — no top-up appends.
+  const _xEx=_extraExFor();
+  w.extra=_xEx.map(e=>`${e.name} — ${e.topSet?('top '+e.topSet.r+' + '):''}${e.s}×${e.r}`);
   return w;
 }
 // ── CrossFit construction — weighted pick across W/G/M modality templates ──────
@@ -1169,11 +1176,47 @@ function _cfPick(pool,tmpl,bbBias){
   }
   return chosen;
 }
+// Fri cardio-specific pool — exactly the favored movements, Airdyne as sole machine
+const CARDIO_WOD_IDS=['airdyne','du','wallball','burpee','airsquat','pushup'];
+function _genCardio(){
+  const pool=WOD_MOVES.filter(m=>CARDIO_WOD_IDS.includes(m.id)&&_wodEnabled(m.equip));
+  const moves=_samp(pool,Math.min(_rp([3,4]),pool.length)).map(_withReps);
+  if(Math.random()<0.55){
+    const dur=_rp([15,18,20]);
+    return{format:'amrap',focus:'Cardio',title:`AMRAP ${dur}`,scheme:`As many rounds as possible in ${dur} min — smooth, cyclical engine pace`,
+      moves,ladder:null,resultType:'rounds',est:dur,
+      stimulus:'Pure aerobic stimulus — nothing heavy, nothing grindy. Breathe and cycle.'};
+  }
+  const rounds=_rp([4,5,6]);
+  return{format:'rft',focus:'Cardio',title:`${rounds} Rounds — Steady Engine`,scheme:`${rounds} rounds at an even pace — the clock is a witness, not a whip`,
+    moves,ladder:null,resultType:'time',est:Math.round(rounds*3.5),
+    stimulus:'Negative-split it: each round the same or slightly faster than the last.'};
+}
+const RECOVERY_CARDS=[
+  {title:'Active Recovery — Easy Spin',scheme:'Airdyne 20-25 min Zone 1-2 · nasal breathing · conversation pace',est:25},
+  {title:'Active Recovery — Mobility Flow',scheme:'25-30 min full-body flow: hips, ankles, T-spine, shoulders · long holds, slow breathing',est:30},
+  {title:'Active Recovery — Spin + Stretch',scheme:'Airdyne 15 min easy · then 15 min long-hold stretching (hips, hamstrings, lats)',est:30},
+  {title:'Active Recovery — Walk + Flow',scheme:'20-30 min brisk walk (dog counts) · finish with 10 min hip openers',est:30}
+];
+function _genRecovery(){
+  const c=_rp(RECOVERY_CARDS);
+  return{format:'recovery',focus:'Recovery',title:c.title,scheme:c.scheme,moves:[],ladder:null,
+    resultType:'check',est:c.est,noTeam:true,noTopup:true,
+    stimulus:'This session is the training. Leaving fresher than you arrived is the score.'};
+}
+function _genExtrasOnly(){
+  return{format:'rest',focus:'Extras Only',title:'Extras — In & Out',
+    scheme:'No metcon today. Run the Extra work below and done — shortest day of the week.',
+    moves:[],ladder:null,resultType:'check',est:20,noTeam:true,noTopup:true,stimulus:null};
+}
 function generateWOD(type){
   type=type||_wodType||'classic';
   if(type==='skill'){const f=_genSkill();f.noTeam=true;return _attachDay(f,false);}
   if(type==='core'){const f=_genFinisher();f.noTopup=true;f.noTeam=true;return _attachDay(f,false);}
   if(type==='oly'){const f=_genOly();f.noTeam=true;return _attachDay(f,false);}
+  if(type==='cardio')return _attachDay(_genCardio(),true);
+  if(type==='recovery')return _attachDay(_genRecovery(),false);
+  if(type==='extras')return _attachDay(_genExtrasOnly(),false);
   if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
   const prof=_wodBias?_dayProfile():null;
   const pool=_wodPoolBiased(prof);
@@ -1242,11 +1285,8 @@ function _wodCardHTML(w,ctx){
   });
   if(w.stimulus)h+=`<div style="font-size:.7rem;color:var(--tx3);margin-top:12px;font-style:italic;">${w.stimulus}</div>`;
   h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:6px;font-family:'IBM Plex Mono',monospace;">~${w.est} min</div>`;
-  if(ctx&&(!w.extra||!w.extra.length)){
-    h+=`<div style="margin-top:14px;"><button class="wod-swap" onclick="editExtras('${ctx}')" style="font-size:.7rem;">✎ Add Extra items</button></div>`;
-  }
   if(w.extra&&w.extra.length){
-    h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);margin-top:14px;">Extra <span style="font-weight:400;color:var(--tx3);text-transform:none;letter-spacing:0;">· optional</span>${ctx?`<button class="wod-swap" style="margin-left:8px;" onclick="editExtras('${ctx}')" title="Edit extras">✎</button>`:''}</div>`;
+    h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);margin-top:14px;">Extra <span style="font-weight:400;color:var(--tx3);text-transform:none;letter-spacing:0;">· optional</span></div>`;
     w.extra.forEach(x=>{h+=`<div style="font-size:.78rem;color:var(--tx2);margin-top:5px;line-height:1.5;">${x}</div>`;});
   }
   h+=`</div>`;
@@ -1275,8 +1315,9 @@ function _swapEligible(w){
 }
 const DOW_NAMES=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 function _sessDow(k){const s=D.sessions[k];return new Date((s.date||todayStr())+'T12:00:00').getDay();}
-function editForceEx(k,i){
-  const s=D.sessions[k];const ex=s.forceEx[i];
+function editForceEx(k,i,sec){
+  sec=sec||'forceEx';
+  const s=D.sessions[k];const ex=s[sec][i];
   let h=`<h2>Edit strength exercise</h2>
   <div class="fld"><label>Name</label><input class="inp" id="feName" value="${ex.name.replace(/"/g,'&quot;')}"></div>
   <div class="fld"><label>Top set reps (blank = no top set)</label><input class="inp" id="feTop" type="number" inputmode="numeric" value="${ex.topSet?ex.topSet.r:''}"></div>
@@ -1287,14 +1328,16 @@ function editForceEx(k,i){
   </div>
   <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="feDef"> Save as my default ${DOW_NAMES[_sessDow(k)]} Force</label>
   <div style="display:flex;gap:8px;">
-    <button class="btn bp bs" style="flex:1;" onclick="applyForceEdit('${k}',${i})">Save</button>
+    <button class="btn bp bs" style="flex:1;" onclick="applyForceEdit('${k}',${i},'${sec}')">Save</button>
     <button class="btn bo bs" onclick="cM();rWOD()">Cancel</button>
   </div>`;
-  if(D.dayForceOverrides&&D.dayForceOverrides[_sessDow(k)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetForceDefault('${k}')">↺ Reset ${DOW_NAMES[_sessDow(k)]} Force to built-in template</button>`;
+  const _store=sec==='extraEx'?D.dayExtraOverridesV2:D.dayForceOverrides;
+  if(_store&&_store[_sessDow(k)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetSecDefault('${k}','${sec}')">↺ Reset ${DOW_NAMES[_sessDow(k)]} ${sec==='extraEx'?'Extra':'Force'} to built-in template</button>`;
   oM(h);
 }
-function applyForceEdit(k,i){
-  const s=D.sessions[k];const ex=s.forceEx[i];
+function applyForceEdit(k,i,sec){
+  sec=sec||'forceEx';
+  const s=D.sessions[k];const ex=s[sec][i];
   const g=id=>document.getElementById(id);
   const name=(g('feName')||{}).value;if(name&&name.trim())ex.name=name.trim();
   const top=parseInt((g('feTop')||{}).value);
@@ -1309,19 +1352,21 @@ function applyForceEdit(k,i){
     while(s.ex[ek].length<total)s.ex[ek].push({w:'',r:ex.r||'',p:'',d:false});
     if(s.ex[ek].length>total)s.ex[ek]=s.ex[ek].slice(0,total);
   }
-  if((g('feDef')||{}).checked)_saveForceDefault(k);
+  if((g('feDef')||{}).checked)_saveSecDefault(k,sec);
   sv();cM();rWOD();
 }
-function removeForceEx(k,i){
-  const s=D.sessions[k];const ex=s.forceEx[i];
-  const ek=ex._ek||(ex.id+'_f'+i);
-  s.forceEx.splice(i,1);
+function removeForceEx(k,i,sec){
+  sec=sec||'forceEx';
+  const s=D.sessions[k];const ex=s[sec][i];
+  const ek=ex._ek||(ex.id+(sec==='extraEx'?'_x':'_f')+i);
+  s[sec].splice(i,1);
   if(s.ex)delete s.ex[ek];
   if(s.setAdj)delete s.setAdj[ek];
   sv();rWOD();
 }
-function addForceEx(k){
-  let h=`<h2>Add strength exercise</h2>
+function addForceEx(k,sec){
+  sec=sec||'forceEx';
+  let h=`<h2>${sec==='extraEx'?'Add Extra exercise':'Add strength exercise'}</h2>
   <div class="fld"><label>Name</label><input class="inp" id="faName" placeholder="e.g. Pause Front Squat"></div>
   <div class="fld"><label>Top set reps (optional)</label><input class="inp" id="faTop" type="number" inputmode="numeric" placeholder="—"></div>
   <div style="display:flex;gap:6px;">
@@ -1331,77 +1376,47 @@ function addForceEx(k){
   </div>
   <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="faDef"> Save as my default ${DOW_NAMES[_sessDow(k)]} Force</label>
   <div style="display:flex;gap:8px;">
-    <button class="btn bp bs" style="flex:1;" onclick="applyForceAdd('${k}')">Add</button>
+    <button class="btn bp bs" style="flex:1;" onclick="applyForceAdd('${k}','${sec}')">Add</button>
     <button class="btn bo bs" onclick="cM();rWOD()">Cancel</button>
   </div>`;
-  if(D.dayForceOverrides&&D.dayForceOverrides[_sessDow(k)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetForceDefault('${k}')">↺ Reset ${DOW_NAMES[_sessDow(k)]} Force to built-in template</button>`;
+  const _store=sec==='extraEx'?D.dayExtraOverridesV2:D.dayForceOverrides;
+  if(_store&&_store[_sessDow(k)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetSecDefault('${k}','${sec}')">↺ Reset ${DOW_NAMES[_sessDow(k)]} ${sec==='extraEx'?'Extra':'Force'} to built-in template</button>`;
   oM(h);
 }
-function applyForceAdd(k){
+function applyForceAdd(k,sec){
+  sec=sec||'forceEx';
   const s=D.sessions[k];
   const g=id=>document.getElementById(id);
   const name=(g('faName')||{}).value;if(!name||!name.trim())return;
-  const ex={id:'custom',name:name.trim(),_force:true,type:'acc',_ek:'cf_'+Date.now(),
+  const ex={id:'custom',name:name.trim(),_force:true,type:'acc',_ek:(sec==='extraEx'?'cx_':'cf_')+Date.now(),
     s:Math.max(0,parseInt((g('faSets')||{}).value)||3),
     r:Math.max(1,parseInt((g('faReps')||{}).value)||10),
     rest:Math.max(15,parseInt((g('faRest')||{}).value)||120)};
   const top=parseInt((g('faTop')||{}).value);
   if(!isNaN(top)&&top>0)ex.topSet={s:1,r:top};
-  if(!s.forceEx)s.forceEx=[];
+  if(!s[sec])s[sec]=[];
   if(!s.ex)s.ex={};if(!s.setAdj)s.setAdj={};
-  s.forceEx.push(ex);
-  if((g('faDef')||{}).checked)_saveForceDefault(k);
+  s[sec].push(ex);
+  if((g('faDef')||{}).checked)_saveSecDefault(k,sec);
   sv();cM();rWOD();
 }
-function _saveForceDefault(k){
+function _saveSecDefault(k,sec){
+  sec=sec||'forceEx';
   const s=D.sessions[k];
-  if(!D.dayForceOverrides)D.dayForceOverrides={};
-  D.dayForceOverrides[_sessDow(k)]=JSON.parse(JSON.stringify(s.forceEx||[]));
+  const store=sec==='extraEx'?'dayExtraOverridesV2':'dayForceOverrides';
+  if(!D[store])D[store]={};
+  D[store][_sessDow(k)]=JSON.parse(JSON.stringify(s[sec]||[]));
 }
+function addExtraEx(k){addForceEx(k,'extraEx');}
 function _exDow(ctx){
   if(ctx.indexOf('sess:')===0)return _sessDow(ctx.slice(5));
   let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
   return d.getDay();
 }
-function resetForceDefault(k){
-  if(D.dayForceOverrides)delete D.dayForceOverrides[_sessDow(k)];
+function resetSecDefault(k,sec){
+  const store=sec==='extraEx'?'dayExtraOverridesV2':'dayForceOverrides';
+  if(D[store])delete D[store][_sessDow(k)];
   sv();cM();rWOD();
-}
-function resetExtraDefault(ctx){
-  if(D.dayExtraOverrides)delete D.dayExtraOverrides[_exDow(ctx)];
-  sv();cM();_wodCtxRerender(ctx);
-}
-function editExtras(ctx){
-  const w=_wodCtxObj(ctx);if(!w)return;
-  const lines=(w.extra||[]).join('\n');
-  const isSess=ctx.indexOf('sess:')===0;
-  const dowLbl=isSess?DOW_NAMES[_sessDow(ctx.slice(5))]:'this weekday';
-  let h=`<h2>Edit Extra</h2>
-  <div style="font-size:.72rem;color:var(--tx2);margin-bottom:6px;">One line per item. Delete a line to drop it, add lines for your own accessories or cardio.</div>
-  <textarea class="inp" id="exLines" rows="6" style="width:100%;font-size:.8rem;line-height:1.5;">${lines}</textarea>
-  <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="exDef"> Save as my default ${dowLbl} Extra (replaces the random pool)</label>
-  <div style="display:flex;gap:8px;">
-    <button class="btn bp bs" style="flex:1;" onclick="applyExtras('${ctx}')">Save</button>
-    <button class="btn bo bs" onclick="cM();_wodCtxRerender('${ctx}')">Cancel</button>
-  </div>`;
-  if(D.dayExtraOverrides&&D.dayExtraOverrides[_exDow(ctx)])h+=`<button class="btn bo bf" style="margin-top:10px;color:var(--gd,#c9a227);" onclick="resetExtraDefault('${ctx}')">↺ Reset ${dowLbl} Extra to built-in pool</button>`;
-  oM(h);
-}
-function applyExtras(ctx){
-  const w=_wodCtxObj(ctx);if(!w)return;
-  const ta=document.getElementById('exLines');if(!ta)return;
-  const lines=ta.value.split('\n').map(x=>x.trim()).filter(Boolean);
-  w.extra=lines;
-  const def=document.getElementById('exDef');
-  if(def&&def.checked){
-    if(!D.dayExtraOverrides)D.dayExtraOverrides={};
-    let dow;
-    if(ctx.indexOf('sess:')===0)dow=_sessDow(ctx.slice(5));
-    else{let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();dow=d.getDay();}
-    D.dayExtraOverrides[dow]=[...lines];
-  }
-  if(ctx.indexOf('sess:')===0)sv();else sv();
-  cM();_wodCtxRerender(ctx);
 }
 function editMove(ctx,idx){
   const w=_wodCtxObj(ctx);if(!w)return;
@@ -1494,13 +1509,18 @@ function applySwapRandom(ctx,idx){
   if(ctx.indexOf('sess:')===0)sv();
   _wodCtxRerender(ctx);
 }
+const DAY_PLAN_TYPE={hard:'classic',cardio:'cardio',recovery:'recovery',extras:'extras',open:'classic'};
 function showWODModal(date){
   _wodDate=date;
-  if(!_pendingWOD)_pendingWOD=generateWOD();
+  if(!_pendingWOD){
+    const prof=_dayProfile();
+    if(prof&&prof.plan&&DAY_PLAN_TYPE[prof.plan])_wodType=DAY_PLAN_TYPE[prof.plan];
+    _pendingWOD=generateWOD();
+  }
   const e=D.wodEquip||{};
   const chips=[['bike','Airdyne'],['row','Rower'],['ski','SkiErg'],['rope','Jump Rope'],['crope','Climbing Rope'],['bar','Pull-up Bar'],['rings','Rings'],['para','Parallettes'],['box','Box'],['mb','Med Ball'],['vest','Weight Vest'],['ghd','GHD'],['bench','Bench'],['db','Dumbbells'],['bb','Barbell']];
   let h=`<h2>🔥 WOD</h2>`;
-  const types=[['classic','🎲 Classic'],['skill','🎯 Technical'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher']];
+  const types=[['classic','🎲 Classic'],['cardio','🫀 Cardio'],['recovery','🧘 Recovery'],['extras','📋 Extras'],['skill','🎯 Technical'],['oly','🏋️ Oly'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher']];
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Session type</div>`;
   h+=`<div class="wod-chips" style="margin-bottom:12px;">`+types.map(([id,lbl])=>`<div class="wod-chip ${_wodType===id?'on':''}" onclick="setWodType('${id}')">${lbl}</div>`).join('')+`<div class="wod-chip ${_wodBias?'on':''}" onclick="toggleWodBias()" title="Bias the Wod around the weekly strength split">📅 Day bias</div><div class="wod-chip ${_wodTeam?'on':''}" onclick="toggleWodTeam()" title="Convert the metcon to a partner format">👥 Team</div></div>`;
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:8px;">Equipment on hand · bodyweight always in · sub Airdyne for row/ski/run on the day as needed</div>`;
@@ -1527,8 +1547,13 @@ function _createWODSession(date){
   if(_fx&&_fx.length){
     D.sessions[k].forceEx=JSON.parse(JSON.stringify(_fx));
     D.sessions[k].forceEx.forEach((e,i)=>{if(!e._ek)e._ek=(e.id||'custom')+'_f'+i;});
-    D.sessions[k].ex={};D.sessions[k].setAdj={};
   }
+  const _xx=(function(){const _pd2=_wodDate;_wodDate=date;const r=_extraExFor();_wodDate=_pd2;return r;})();
+  if(_xx&&_xx.length){
+    D.sessions[k].extraEx=JSON.parse(JSON.stringify(_xx));
+    D.sessions[k].extraEx.forEach((e,i)=>{if(!e._ek)e._ek=(e.id||'custom')+'_x'+i;});
+  }
+  if(D.sessions[k].forceEx||D.sessions[k].extraEx){D.sessions[k].ex={};D.sessions[k].setAdj={};}
   sv();_pendingWOD=null;
   return k;
 }
@@ -1557,11 +1582,11 @@ function rWOD(){
     <button class="btn bo bs" onclick="closeSess()">◀ Back</button>
     <div style="flex:1;"><div style="font-size:1rem;font-weight:800;text-transform:uppercase;">${s.name}</div>
     <div style="font-size:.7rem;color:var(--tx3);font-family:'IBM Plex Mono',monospace;">${s.date} · WOD</div></div></div>`;
-  // Force tracking — same per-set logging + rest timers as strength sessions
-  if(s.forceEx&&s.forceEx.length){
+  // Force + Extra tracking — same per-set logging + rest timers as strength sessions
+  function _initSec(list,suf){
     if(!s.ex)s.ex={};
-    s.forceEx.forEach((ex,i)=>{
-      const ek=ex._ek||(ex.id+'_f'+i);const adj=(s.setAdj||{})[ek]||0;
+    list.forEach((ex,i)=>{
+      const ek=ex._ek||(ex.id+'_'+suf+i);const adj=(s.setAdj||{})[ek]||0;
       const total=ex.topSet?Math.max(1,(ex.topSet.s||1)+(ex.s||0)+adj):Math.max(1,(ex.s||3)+adj);
       if(!s.ex[ek]){
         const rows=[];
@@ -1571,6 +1596,9 @@ function rWOD(){
       while(s.ex[ek].length<total)s.ex[ek].push({w:'',r:ex.r||'',p:'',d:false});
       if(s.ex[ek].length>total)s.ex[ek]=s.ex[ek].slice(0,total);
     });
+  }
+  if(s.forceEx&&s.forceEx.length){
+    _initSec(s.forceEx,'f');
     h+=`<div class="sec" style="display:flex;align-items:center;">Force<button class="btn bo" style="margin-left:auto;padding:2px 10px;font-size:.68rem;" onclick="addForceEx('${k}')">＋ Add</button></div>`;
     s.forceEx.forEach((ex,i)=>{h+=mkEx(ex,ex._ek||(ex.id+'_f'+i),i,s.forceEx.length,s.rpe||7,false,k);});
     h+=`<div class="sec" style="margin-top:14px;">Wod</div>`;
@@ -1579,7 +1607,15 @@ function rWOD(){
     h+=`<div style="margin-bottom:10px;"><button class="btn bo bs" onclick="addForceEx('${k}')">＋ Add strength work</button></div>`;
   }
   const _wv={...w};if(s.forceEx&&s.forceEx.length)delete _wv.force; // tracked blocks replace the text line
+  if(s.extraEx&&s.extraEx.length)_wv.extra=null; // tracked Extra section replaces preview lines
   h+=_wodCardHTML(_wv,'sess:'+k);
+  if(s.extraEx&&s.extraEx.length){
+    _initSec(s.extraEx,'x');
+    h+=`<div class="sec" style="margin-top:14px;display:flex;align-items:center;">Extra <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx3);margin-left:6px;font-size:.68rem;">optional · hypertrophy & skill</span><button class="btn bo" style="margin-left:auto;padding:2px 10px;font-size:.68rem;" onclick="addExtraEx('${k}')">＋ Add</button></div>`;
+    s.extraEx.forEach((ex,i)=>{h+=mkEx(ex,ex._ek||(ex.id+'_x'+i),i,s.extraEx.length,s.rpe||7,false,k);});
+  }else{
+    h+=`<div style="margin-top:12px;"><button class="btn bo bs" onclick="addExtraEx('${k}')">＋ Add Extra work</button></div>`;
+  }
   // Simple WOD stopwatch
   h+=`<div class="cd" style="margin-top:12px;display:flex;align-items:center;gap:12px;">
     <div style="font-family:'IBM Plex Mono',monospace;font-size:1.6rem;font-weight:800;flex:1;" id="wodSw">${_swFmt(_sw.acc+(_sw.on?Date.now()-_sw.t0:0))}</div>
@@ -1758,8 +1794,8 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const ctrl=completed?'':ex._force?`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button>
-    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="editForceEx('${k}',${ei})">✎ Edit</button>
-    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--gn,#c66);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="removeForceEx('${k}',${ei})">✕</button></div>`:`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="editForceEx('${k}',${ei},'${(/_x\d|^cx_/.test(ek)?'extraEx':'forceEx')}')">✎ Edit</button>
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--gn,#c66);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="removeForceEx('${k}',${ei},'${(/_x\d|^cx_/.test(ek)?'extraEx':'forceEx')}')">✕</button></div>`:`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button>
     ${upB}${dnB}<div style="flex:1;"></div>
