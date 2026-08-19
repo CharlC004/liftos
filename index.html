@@ -1437,8 +1437,8 @@ function openSwap(ctx,idx){
     ['Bodyweight & Skill',_take(m=>true)]
   ];
   let h=`<h2>${idx<0?'Add movement':'Swap movement'}</h2>`;
-  h+=`<div style="font-size:.74rem;color:var(--tx2);margin-bottom:6px;">Replacing <strong style="color:var(--pp);">${_mvLine(cur)}</strong></div>`;
-  h+=`<div class="rmrow" style="cursor:pointer;" onclick="applySwapRandom('${ctx}',${idx})"><span style="flex:1;font-weight:700;color:var(--pp);">🎲 Surprise me · same type</span></div>`;
+  if(cur)h+=`<div style="font-size:.74rem;color:var(--tx2);margin-bottom:6px;">Replacing <strong style="color:var(--pp);">${_mvLine(cur)}</strong></div>`;
+  h+=`<div class="rmrow" style="cursor:pointer;" onclick="applySwapRandom('${ctx}',${idx})"><span style="flex:1;font-weight:700;color:var(--pp);">🎲 Surprise me${cur?' · same type':''}</span></div>`;
   groups.forEach(g=>{const lbl=g[0],arr=g[1];if(!arr.length)return;
     h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin:13px 0 5px;">${lbl}</div>`;
     arr.forEach(m=>{const hint=m.wt?` <span style="color:var(--tx3);font-size:.72rem;">${m.hand==='2'?'2×':''}${m.wt.join('/')} lb</span>`:'';
@@ -1489,6 +1489,14 @@ function removeWodMove(ctx,idx){
 }
 function applySwapRandom(ctx,idx){
   const w=_wodCtxObj(ctx);if(!w)return;
+  if(idx<0){ // add mode — any eligible movement
+    const elig=_swapEligible(w);if(!elig.length)return;
+    w.moves.push(_instForFormat(_wrp(elig),w));
+    _emomSchemeSync(w);
+    if(ctx.indexOf('sess:')===0)sv();
+    cM();_wodCtxRerender(ctx);
+    return;
+  }
   const cur=w.moves[idx],cb=WOD_MOVES.find(m=>m.n===cur.n);
   const elig=_swapEligible(w);
   let cls;
