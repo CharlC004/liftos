@@ -1257,6 +1257,8 @@ function _wodCardHTML(w,ctx){
     const right=(w.format==='emom'?`<span class="mvr">min ${i+1}</span>`:'')
       +(editable?`<button class="wod-swap" onclick="editMove('${ctx}',${i})" title="Edit reps / weight">✎</button>`:'')
       +(ctx?`<button class="wod-swap" onclick="openSwap('${ctx}',${i})" title="Swap movement">⇄</button>`:'')
+      +(ctx&&w.moves.length>1&&i>0?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},-1)" title="Move up">↑</button>`:'')
+      +(ctx&&w.moves.length>1&&i<w.moves.length-1?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},1)" title="Move down">↓</button>`:'')
       +(ctx&&w.moves.length>1?`<button class="wod-swap" onclick="removeWodMove('${ctx}',${i})" title="Remove movement">✕</button>`:'');
     h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span><span class="mv-right">${right}</span></div>`;
   });
@@ -1304,6 +1306,7 @@ function editForceEx(k,i,sec){
     <div class="fld" style="flex:1;"><label>Reps</label><input class="inp" id="feReps" type="number" inputmode="numeric" value="${ex.r||''}"></div>
     <div class="fld" style="flex:1;"><label>Rest (s)</label><input class="inp" id="feRest" type="number" inputmode="numeric" value="${ex.rest||120}"></div>
   </div>
+  <div class="fld"><label>Circuit — same letter chains exercises back-to-back; rest fires after the last one (blank = none)</label><input class="inp" id="feCirc" maxlength="2" placeholder="e.g. A" value="${ex.circuit||''}"></div>
   <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="feDef"> Save as my default ${DOW_NAMES[_sessDow(k)]} ${sec==='extraEx'?'Extra':'Force'}</label>
   <div style="display:flex;gap:8px;">
     <button class="btn bp bs" style="flex:1;" onclick="applyForceEdit('${k}',${i},'${sec}')">Save</button>
@@ -1323,6 +1326,8 @@ function applyForceEdit(k,i,sec){
   const sets=parseInt((g('feSets')||{}).value);if(!isNaN(sets)&&sets>=0)ex.s=sets;
   const reps=parseInt((g('feReps')||{}).value);if(!isNaN(reps)&&reps>0)ex.r=reps;
   const rest=parseInt((g('feRest')||{}).value);if(!isNaN(rest)&&rest>0)ex.rest=rest;
+  const circ=((g('feCirc')||{}).value||'').trim().toUpperCase();
+  if(circ)ex.circuit=circ;else delete ex.circuit;
   const ek=ex._ek||(ex.id+'_f'+i);
   const adj=(s.setAdj||{})[ek]||0;
   const total=ex.topSet?Math.max(1,(ex.topSet.s||1)+(ex.s||0)+adj):Math.max(1,(ex.s||0)+adj||1);
@@ -1332,6 +1337,13 @@ function applyForceEdit(k,i,sec){
   }
   if((g('feDef')||{}).checked)_saveSecDefault(k,sec);
   sv();cM();rWOD();
+}
+function moveSecEx(k,i,dir,sec){
+  sec=sec||'forceEx';
+  const s=D.sessions[k];const a=s&&s[sec];if(!a)return;
+  const j=i+dir;if(j<0||j>=a.length)return;
+  const t=a[i];a[i]=a[j];a[j]=t; // stable _ek keys travel with the objects — logged sets follow
+  sv();rWOD();
 }
 function removeForceEx(k,i,sec){
   sec=sec||'forceEx';
@@ -1352,6 +1364,7 @@ function addForceEx(k,sec){
     <div class="fld" style="flex:1;"><label>Reps</label><input class="inp" id="faReps" type="number" inputmode="numeric" value="10"></div>
     <div class="fld" style="flex:1;"><label>Rest (s)</label><input class="inp" id="faRest" type="number" inputmode="numeric" value="120"></div>
   </div>
+  <div class="fld"><label>Circuit — same letter chains exercises back-to-back (blank = none)</label><input class="inp" id="faCirc" maxlength="2" placeholder="e.g. A" value=""></div>
   <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--tx2);margin:8px 0 12px;"><input type="checkbox" id="faDef"> Save as my default ${DOW_NAMES[_sessDow(k)]} ${sec==='extraEx'?'Extra':'Force'}</label>
   <div style="display:flex;gap:8px;">
     <button class="btn bp bs" style="flex:1;" onclick="applyForceAdd('${k}','${sec}')">Add</button>
@@ -1372,6 +1385,8 @@ function applyForceAdd(k,sec){
     rest:Math.max(15,parseInt((g('faRest')||{}).value)||120)};
   const top=parseInt((g('faTop')||{}).value);
   if(!isNaN(top)&&top>0)ex.topSet={s:1,r:top};
+  const circ=((g('faCirc')||{}).value||'').trim().toUpperCase();
+  if(circ)ex.circuit=circ;
   if(!s[sec])s[sec]=[];
   if(!s.ex)s.ex={};if(!s.setAdj)s.setAdj={};
   s[sec].push(ex);
@@ -1480,6 +1495,13 @@ function applySwap(ctx,idx,baseId){
   if(ctx.indexOf('sess:')===0)sv();
   _wodCtxRerender(ctx);
 }
+function moveWodMove(ctx,idx,dir){
+  const w=_wodCtxObj(ctx);if(!w)return;
+  const j=idx+dir;if(j<0||j>=w.moves.length)return;
+  const t=w.moves[idx];w.moves[idx]=w.moves[j];w.moves[j]=t;
+  if(ctx.indexOf('sess:')===0)sv();
+  _wodCtxRerender(ctx);
+}
 function removeWodMove(ctx,idx){
   const w=_wodCtxObj(ctx);if(!w||w.moves.length<=1)return; // keep at least one movement
   w.moves.splice(idx,1);
@@ -1581,6 +1603,17 @@ function wodSwToggle(btn){
 }
 function wodSwReset(){_sw.acc=0;_sw.t0=Date.now();_swTick();}
 function openWOD(k){activeSessKey=k;rWOD();}
+// Consecutive exercises sharing a circuit letter chain back-to-back;
+// rest fires only after the last member of the chain.
+function _tagCircuits(list){
+  list.forEach((ex,i)=>{
+    const lbl=(ex.circuit||'').trim().toUpperCase();
+    if(!lbl){delete ex._circ;return;}
+    const next=list[i+1];
+    const nlbl=next?(next.circuit||'').trim().toUpperCase():'';
+    ex._circ={label:lbl,isLast:nlbl!==lbl};
+  });
+}
 function rWOD(){
   { // defensive normalization — sessions created by older builds may lack new fields
     const _s=D.sessions[activeSessKey];
@@ -1619,6 +1652,7 @@ function rWOD(){
   if(s.forceEx&&s.forceEx.length){
     _initSec(s.forceEx,'f');
     h+=`<div class="sec" style="display:flex;align-items:center;">Force<button class="btn bo" style="margin-left:auto;padding:2px 10px;font-size:.68rem;" onclick="addForceEx('${k}')">＋ Add</button></div>`;
+    _tagCircuits(s.forceEx);
     s.forceEx.forEach((ex,i)=>{h+=mkEx(ex,ex._ek||(ex.id+'_f'+i),i,s.forceEx.length,s.rpe||7,false,k);});
     h+=`<div class="sec" style="margin-top:14px;">Wod</div>`;
   }
@@ -1631,6 +1665,7 @@ function rWOD(){
   if(s.extraEx&&s.extraEx.length){
     _initSec(s.extraEx,'x');
     h+=`<div class="sec" style="margin-top:14px;display:flex;align-items:center;">Extra <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx3);margin-left:6px;font-size:.68rem;">optional · hypertrophy & skill</span><button class="btn bo" style="margin-left:auto;padding:2px 10px;font-size:.68rem;" onclick="addExtraEx('${k}')">＋ Add</button></div>`;
+    _tagCircuits(s.extraEx);
     s.extraEx.forEach((ex,i)=>{h+=mkEx(ex,ex._ek||(ex.id+'_x'+i),i,s.extraEx.length,s.rpe||7,false,k);});
   }else{
     h+=`<div style="margin-top:12px;"><button class="btn bo bs" onclick="addExtraEx('${k}')">＋ Add Extra work</button></div>`;
@@ -1792,7 +1827,9 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const totalSets=hasTopSet?Math.max(1,topSetCount+boSets+adj):Math.max(1,(ex.s||3)+adj);
   const reps=hasTopSet?topSetReps:ex.r;const isOpen=reps===0;
   const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
-  const restSec=ex.rest||75;const completed=s.completed;
+  const _circ=ex._circ||null; // {label,isLast} tagged by the render loop
+  const restSec=_circ&&!_circ.isLast?0:(ex.rest||75);
+  const completed=s.completed;
   // Weight suggestions
   const topSw=rm>0&&eRpe>0&&topSetReps>0?cWt(rm,topSetReps,eRpe,D.round):null;
   const boRpe=ex.backoffRpe||7;// back-offs RPE 7 unless overridden
@@ -1821,6 +1858,8 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const ctrl=completed?'':ex._force?`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button>
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="moveSecEx('${k}',${ei},-1,'${(/_x\d|^cx_/.test(ek)?'extraEx':'forceEx')}')">↑</button>
+    <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="moveSecEx('${k}',${ei},1,'${(/_x\d|^cx_/.test(ek)?'extraEx':'forceEx')}')">↓</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="editForceEx('${k}',${ei},'${(/_x\d|^cx_/.test(ek)?'extraEx':'forceEx')}')">✎ Edit</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--gn,#c66);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="removeForceEx('${k}',${ei},'${(/_x\d|^cx_/.test(ek)?'extraEx':'forceEx')}')">✕</button></div>`:`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
@@ -1873,7 +1912,8 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
     });
   }
 
-  return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}${ex.note?` <span style="font-size:.64rem;color:var(--tx3);font-weight:400;">(${ex.note})</span>`:''}</div></div>
+  const circChip=_circ?`<span style="font-size:.56rem;font-weight:700;letter-spacing:1px;color:var(--ac);border:1px solid var(--ac);border-radius:8px;padding:1px 6px;margin-left:7px;vertical-align:middle;white-space:nowrap;">⛓ ${_circ.label}${_circ.isLast?' · rest '+(ex.rest||90)+'s':' · → next'}</span>`:'';
+  return`<div class="exb"><div class="exh"><div><div class="exn">${ex.name}${circChip}${ex.note?` <span style="font-size:.64rem;color:var(--tx3);font-weight:400;">(${ex.note})</span>`:''}</div></div>
     <div style="text-align:right;">${ex.type!=='iso'&&eRpe>0?`<span class="rb ${rc}">RPE ${eRpe}</span>`:''}<div class="exm" style="margin-top:3px">${repDisp}${topSw?' · '+topSw+' '+D.unit:(sw?' · '+sw+' '+D.unit:'')}</div></div></div>
     ${colBtns}${lastH}${noteH}
     <div class="exs"><div class="shdr"><span style="min-width:18px"></span><span style="flex:1">Target</span><span style="width:50px;text-align:center">Wt</span><span style="width:50px;text-align:center">Reps</span><span style="width:50px;text-align:center">RPE</span><span style="width:42px;text-align:center">e1RM</span><span style="width:28px"></span></div>
@@ -1908,7 +1948,7 @@ function getExHist(exId,curKey){
 
 // ===== SET OPERATIONS =====
 function uSL(k,ek,si,f,v){const n=parseFloat(v);const s=D.sessions[k];if(s?.ex[ek]){s.ex[ek][si][f]=isNaN(n)?'':n;const st=s.ex[ek][si];const el=document.getElementById('e1_'+ek+'_'+si);if(el)el.textContent=(st.w>0&&st.r>0&&st.p>0)?cE1(st.w,st.r,st.p):'';sv();}}
-function tglSet(k,ek,si,restSec,btn){const s=D.sessions[k];if(s?.ex[ek]){const was=s.ex[ek][si].d;s.ex[ek][si].d=!was;btn.classList.toggle('chk');sv();if(!was){startTimer(restSec);startSessTimer();}}}
+function tglSet(k,ek,si,restSec,btn){const s=D.sessions[k];if(s?.ex[ek]){const was=s.ex[ek][si].d;s.ex[ek][si].d=!was;btn.classList.toggle('chk');sv();if(!was){if(restSec>0)startTimer(restSec);startSessTimer();}}}
 function rerenderSess(){const s=D.sessions[activeSessKey];if(s&&s.isWOD)rWOD();else rSess();}
 function adjSet(k,ek,d){const s=D.sessions[k];if(!s.setAdj)s.setAdj={};s.setAdj[ek]=(s.setAdj[ek]||0)+d;sv();rerenderSess();}
 function removeEx(k,ek){
