@@ -983,38 +983,44 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat day',plan:'open',
+  1:{label:'Mon · back squat — hard metcon',plan:'hard',
      force:'Back Squat — top set of 5 · 2 back-off sets of 8',
      forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     extraEx:[{id:'heelsquat',name:'Heel-Elevated Back Squat (quads · moderate load)',_force:true,type:'sec',s:3,r:12,rest:150}]},
-  2:{label:'Tue · snatch / clean — alternates weekly',plan:'open',
-     force:'Snatch or Clean (alternating weekly) — build, then 3×3 working sets',
-     forceEx:[{id:'snatch',name:'Snatch',_force:true,type:'pri',s:3,r:3,rest:180}], // swapped to Clean on odd weeks at session creation
-     extraEx:[{id:'calfstand',name:'Standing Calf Raises (slow eccentric)',_force:true,type:'acc',s:4,r:15,rest:75}]},
-  3:{label:'Wed · weighted pull-up day',plan:'open',
-     force:'Weighted Pull-ups — 4×5',
-     forceEx:[{id:'wpullup',name:'Weighted Pull-ups',_force:true,type:'pri',s:4,r:5,rest:180}],
-     extraEx:[]},
-  4:{label:'Thu · bodybuilding — no WOD',plan:'extras',
-     force:null,
+     spare:['hinge'],foci:['grind','engine'],legBias:false, // flip to true when the knee is cleared
+     extraEx:[{id:'bss',name:'Single-Leg Work (Bulgarian split squat / step-up)',_force:true,type:'sec',s:3,r:10,rest:120}]},
+  2:{label:'Tue · strict press — engine metcon, spares push',plan:'open',
+     force:'Strict Press — 4×8',
+     forceEx:[{id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:180}],
+     spare:['push'],foci:['engine','sprint'],
      extraEx:[
-       {id:'dbflat',name:'Flat DB Bench Press',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150},
-       {id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150},
-       {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:4,r:10,rest:120},
-       {id:'bbcurl',name:'Barbell Curls',_force:true,type:'acc',s:3,r:10,rest:75},
-       {id:'ohtriext',name:'Overhead Triceps Extensions',_force:true,type:'acc',s:3,r:12,rest:60},
        {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:12,rest:60},
-       {id:'calfr',name:'Calf Raises',_force:true,type:'acc',s:5,r:20,rest:60}]},
-  5:{label:'Fri · front squat day',plan:'open',
-     force:'Front Squat — 3RM top set · 3 back-off sets of 5',
-     forceEx:[{id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:3},s:3,r:5,rest:240}],
-     extraEx:[{id:'calfseat',name:'Seated Calf Raises',_force:true,type:'acc',s:4,r:20,rest:60}]},
-  6:{label:'Sat · RDL — open WOD day',plan:'open',
+       {id:'facepull',name:'Face Pulls (cable)',_force:true,type:'acc',s:3,r:15,rest:60}]},
+  3:{label:'Wed · rope climb / MU work — gymnastics metcon, spares pull',plan:'open',
+     force:'Legless rope climb + ring muscle-up progression',
+     forceEx:[
+       {id:'ropeclimb',name:'Legless Rope Climb Progression (seated → standing)',_force:true,type:'pri',s:4,r:2,rest:150},
+       {id:'mutrans',name:'Ring MU Transitions (false grip · low rings)',_force:true,type:'pri',s:4,r:3,rest:120}],
+     spare:['pull'],foci:['gymn'],
+     extraEx:[{id:'dbcurl',name:'DB Biceps Curls',_force:true,type:'acc',s:3,r:12,rest:60}]},
+  4:{label:'Thu · bench day — no WOD',plan:'extras',
+     force:'Flat DB Bench Press — 3 × max reps',
+     forceEx:[{id:'dbflat',name:'Flat DB Bench Press',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150}],
+     spare:[],
+     extraEx:[]},
+  5:{label:'Fri · off',plan:'off',
+     force:null,
+     spare:[],
+     extraEx:[]},
+  6:{label:'Sat · RDL — hard metcon, spares heavy hinge',plan:'hard',
      force:'Romanian Deadlift — 3×6-8',
      forceEx:[{id:'rdl',name:'Romanian Deadlift',_force:true,type:'pri',s:3,r:8,rest:180}],
-     extraEx:[]},
+     spare:['hinge'],foci:['power','grind'],
+     extraEx:[
+       {id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:120},
+       {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:4,r:10,rest:120}]},
   0:{label:'Sun · recovery',plan:'recovery',
      force:null,
+     spare:[],
      extraEx:[]}
 };
 function weeksSinceDeload(){
@@ -1188,8 +1194,12 @@ function _genRecovery(){
     stimulus:'This session is the training. Leaving fresher than you arrived is the score.'};
 }
 function _genExtrasOnly(){
-  return{format:'rest',focus:'Extras Only',title:'Extras — In & Out',
-    scheme:'No metcon today. Run the Extra work below and done — shortest day of the week.',
+  const prof=_dayProfile();
+  const hasWork=(prof&&((prof.forceEx&&prof.forceEx.length)||(_extraExFor().length)));
+  if(!hasWork)return{format:'rest',focus:'Off',title:'Off Day',scheme:'Nothing scheduled. Rest is part of the program.',
+    moves:[],ladder:null,resultType:'check',est:0,noTeam:true,noTopup:true,stimulus:null};
+  return{format:'rest',focus:'Extras Only',title:prof&&prof.plan==='extras'&&prof.force?'Force + Extras — no metcon':'Extras — In & Out',
+    scheme:'No metcon today. Run the strength work below and done.',
     moves:[],ladder:null,resultType:'check',est:20,noTeam:true,noTopup:true,stimulus:null};
 }
 function generateWOD(type){
@@ -1552,7 +1562,7 @@ function applySwapRandom(ctx,idx){
   if(ctx.indexOf('sess:')===0)sv();
   _wodCtxRerender(ctx);
 }
-const DAY_PLAN_TYPE={hard:'classic',cardio:'cardio',recovery:'recovery',extras:'extras',open:'classic'};
+const DAY_PLAN_TYPE={hard:'classic',cardio:'cardio',recovery:'recovery',extras:'extras',open:'classic',off:'extras'};
 function showWODModal(date){
   _wodDate=date;
   if(!_pendingWOD){
@@ -1587,9 +1597,9 @@ function _createWODSession(date){
   const _pd=_wodDate;_wodDate=date;const prof=_dayProfile();_wodDate=_pd;
   const _dow=new Date(date+'T12:00:00').getDay();
   let _fx=(D.dayForceOverrides&&D.dayForceOverrides[_dow]&&D.dayForceOverrides[_dow].length)?D.dayForceOverrides[_dow]:(prof&&prof.forceEx);
-  if(_dow===2&&_fx&&_fx.length&&['snatch','clean'].includes(_fx[0].id)){
-    // alternate the Olympic lift week to week (anchor: week of 2026-08-17 = Snatch)
-    const wk=Math.floor((new Date(date+'T12:00:00')-new Date('2026-08-17T12:00:00'))/(7*864e5));
+  if(_dow===3&&_fx&&_fx.length&&['snatch','clean'].includes(_fx[0].id)){
+    // alternate the Olympic lift week to week (anchor: week of 2026-08-31 = Snatch)
+    const wk=Math.floor((new Date(date+'T12:00:00')-new Date('2026-08-31T12:00:00'))/(7*864e5));
     const lift=((wk%2)+2)%2===0?{id:'snatch',name:'Snatch'}:{id:'clean',name:'Clean'};
     _fx=[Object.assign({},_fx[0],lift)];
   }
