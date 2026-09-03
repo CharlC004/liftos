@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.46b</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.45f</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -192,9 +192,35 @@ const IN_SEASON=[
   ]}
 ];
 
+// 6-week CrossFit on-ramp prep. Squat-led, no-drop barbell (hang/push variants),
+// quad-biased for long femurs. Strict pull-up + dip + overhead frequency = the
+// gymnastics base (HSPU, ring dips, pull-ups) the box converts later.
+// Fixed set/rep; weekly intensity comes from CF_RPE_WAVE (auto-scales weight).
+const CROSSFIT_PREP=[
+  {id:'cf_a',name:'A · Squat + Strict Press',exercises:[
+    {id:'squat',name:'Back Squat (high-bar)',s:4,r:5,type:'pri',rest:240,note:'Heels elevated, full depth. Knee travels forward — quad bias for long femurs.'},
+    {id:'ohp',name:'Strict Overhead Press',s:4,r:5,type:'pri',rest:180,note:'No leg drive — your HSPU feeder.'},
+    {id:'dips',name:'Weighted Dips',s:4,r:6,type:'pri',rest:150,note:'Add load when 4×6 clean. Ring-dip / HSPU base.'},
+    {id:'lunge',name:'Walking Lunge',s:3,r:10,type:'acc',rest:90,note:'Per leg. Controlled, no momentum.'}
+  ]},
+  {id:'cf_b',name:'B · Power + Pull',exercises:[
+    {id:'hangpowerclean',name:'Hang Power Clean',s:5,r:3,type:'pri',rest:150,note:'~60–70% of grind. Speed is the governor — stop when bar slows or catch drops. Controlled lower, no drop.'},
+    {id:'frontsquat',name:'Front Squat',s:4,r:5,type:'pri',rest:240,note:'Heels elevated — most upright squat, max quad demand.'},
+    {id:'pullup',name:'Weighted Pull-ups',s:4,r:5,type:'pri',rest:180,note:'Strict. Add load when 4×5 clean.'},
+    {id:'csrow',name:'Chest-Supported Row',s:4,r:10,type:'acc',rest:90,note:'Horizontal pull — balances the week\u2019s vertical pressing.'}
+  ]},
+  {id:'cf_c',name:'C · Push Press + Squat Volume',exercises:[
+    {id:'pushpress',name:'Push Press',s:5,r:3,type:'pri',rest:150,note:'Fast, leg drive. Cap the load — bar speed is the governor, not weight.'},
+    {id:'tempo_squat',name:'Tempo Back Squat',s:3,r:8,type:'pri',rest:180,note:'3-sec eccentric, controlled. Quad time-under-tension.'},
+    {id:'dips',name:'Dips (volume)',s:3,r:10,type:'sec',rest:90,note:'Submax — stop 2–3 reps short of failure. Reps climb week to week.'},
+    {id:'pullup',name:'Pull-ups (volume)',s:3,r:8,type:'sec',rest:90,note:'Bodyweight, submax — stop 2–3 short. This grows the strict number.'}
+  ]}
+];
+// W1–2 groove @7 · W3–4 accumulate @8 · W5 peak @8.75 · W6 taper @6.5 into your first box week
+const CF_RPE_WAVE=[7,7,8,8,8.75,6.5];
 
 function getTemplates(){
-  const base=D.mode==='in'?IN_SEASON:OFF_SEASON;
+  const base=D.mode==='cf'?CROSSFIT_PREP:(D.mode==='in'?IN_SEASON:OFF_SEASON);
   const archived=D.archivedTemplates||[];
   const active=base.filter(t=>!archived.includes(t.id));
   const user=(D.userTemplates||[]).filter(t=>!archived.includes(t.id));
@@ -203,7 +229,7 @@ function getTemplates(){
 function getAllTemplates(){
   // All templates including archived, for history lookups
   const user=D.userTemplates||[];
-  return[...IN_SEASON,...OFF_SEASON,...user];
+  return[...IN_SEASON,...OFF_SEASON,...CROSSFIT_PREP,...user];
 }
 function findTemplate(tid){
   // Check user templates first (they may override defaults)
@@ -212,7 +238,7 @@ function findTemplate(tid){
     if(D.customTemplates?.[tid])return{...user,exercises:D.customTemplates[tid]};
     return user;
   }
-  const base=IN_SEASON.concat(OFF_SEASON).find(t=>t.id===tid);
+  const base=IN_SEASON.concat(OFF_SEASON).concat(CROSSFIT_PREP).find(t=>t.id===tid);
   if(!base)return null;
   if(D.customTemplates?.[tid]){return{...base,exercises:D.customTemplates[tid]};}
   return base;
@@ -260,9 +286,7 @@ function ensureD(){
   if(D.wodEquip.mb===undefined)D.wodEquip.mb=true; // med ball added
   if(D.wodEquip.crope===undefined){D.wodEquip.crope=true;D.wodEquip.para=true;D.wodEquip.vest=true;} // climbing rope, parallettes, weight vest
   if(D.wodEquip.ghd===undefined)D.wodEquip.ghd=true; // GHD (improvised or real)
-  if(D.wodEquip.row===undefined){D.wodEquip.row=false;D.wodEquip.ski=false;} // Airdyne is the sole default machine — row/ski stay opt-in toggles
-  if(!D._v446){D.wodEquip.row=false;D.wodEquip.ski=false;if(D.mode==='cf')D.mode='off';D._v446=true;} // v4.46 one-time: CF Prep removed · Airdyne-only machine default
-  if(!D._v446b){D.dayExtraOverridesV2={};D.dayForceOverrides={};D._v446b=true;} // v4.46b one-time: clear stale per-day Force/Extra overrides so the new 5-day profiles take effect (the override mechanism itself is unchanged)
+  if(D.wodEquip.row===undefined){D.wodEquip.row=true;D.wodEquip.ski=true;} // rower/skierg as programmable modalities — swap or sub Airdyne on the day
 }
 let lastSvTime=0;
 function sv(){localStorage.setItem(SK,JSON.stringify(D));lastSvTime=Date.now();if(dbRef&&syncReady){clearTimeout(svTimer);svTimer=setTimeout(()=>dbRef.set(D).catch(e=>console.error(e)),600);}}
@@ -281,7 +305,10 @@ function refreshView(){const c=document.querySelector('.vw.a');if(c){const id=c.
 // ===== RPE SUGGESTION =====
 function suggestRpe(templateId){
   // Count completed strength sessions (non-cardio) since last deload to determine wave position
+  const isCf=D.mode==='cf';
   let allStrength=Object.values(D.sessions).filter(s=>s.completed&&!s.isCardio);
+  // In CF prep, track only the prep block itself so the 6-week wave is self-contained
+  if(isCf)allStrength=allStrength.filter(s=>(s.templateId||'').startsWith('cf_'));
   allStrength.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   // Find sessions since last deload
   let sinceDeload=0;
@@ -289,11 +316,12 @@ function suggestRpe(templateId){
     if(allStrength[i].rpe<=5){break;}
     sinceDeload++;
   }
-  // Determine which week we're in (5 strength sessions/wk: Mon/Tue/Wed/Thu/Sat)
-  const perWeek=5;
+  // Determine which week we're in (CF = 3 sessions/wk, otherwise 4)
+  const perWeek=isCf?3:4;
+  const wave=isCf?CF_RPE_WAVE:RPE_WAVE;
   const weekNum=Math.floor(sinceDeload/perWeek);
-  if(weekNum>=RPE_WAVE.length)return 7;// past block end
-  return RPE_WAVE[weekNum];
+  if(weekNum>=wave.length)return isCf?6.5:7;// past block end
+  return wave[weekNum];
 }
 
 // ===== MOBILITY TRACKER =====
@@ -337,7 +365,7 @@ function rMobility(){
 // ===== CALENDAR =====
 function rTrain(){
   const today=todayStr();
-  document.getElementById('hb').textContent=D.mode==='in'?'IN-SZN':'OFF-SZN';
+  document.getElementById('hb').textContent=D.mode==='cf'?'CF-PREP':(D.mode==='in'?'IN-SZN':'OFF-SZN');
 
   // Calendar
   const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -694,8 +722,8 @@ function deleteCardio(k){
 }
 
 // ===== WOD — RANDOM WORKOUT GENERATOR =====
-// Garage edition. Machine: Airdyne only by default — no rower, no running inside
-// WODs (running lives in Thursday's structured cardio presets). Jumps are in:
+// Garage edition (1 Suzor-Côté). Machine: Airdyne only — no rower, no running
+// inside WODs (running gets its own dedicated weekly session). Jumps are back:
 // box jumps, double-unders, jumping lunges. Rig work: pull-up bar + rings.
 // DB set 35/50/70 lb. Barbell + plates. Bench.
 // equip: 'bw' always available · bike(=Airdyne) rope bar rings box db bench bb
@@ -725,16 +753,18 @@ const WOD_MOVES=[
   {id:'airsquat', n:'Air Squats',           unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[15,20,25,30],w:2},
   {id:'rlunge',   n:'Reverse Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24],w:1},
   {id:'jlunge',   n:'Jumping Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24],w:1},
-  {id:'strpull',  n:'Strict Pull-ups',      unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8],w:3},
+  {id:'pullup',   n:'Pull-ups',             unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[8,10,12],w:3},
+  {id:'strpull',  n:'Strict Pull-ups',      unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8],w:1.5},
   {id:'chinup',   n:'Chin-ups (strict)',    unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8],w:.5},
   {id:'dip',      n:'Dips',                 unit:'',   equip:'bar', cat:'gym', pat:'push', rep:[8,10,12],w:1.5},
   {id:'invrow',   n:'Inverted Rows',        unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[10,12,15],w:.5},
   {id:'ringrow',  n:'Ring Rows',            unit:'',   equip:'rings',cat:'gym',pat:'pull', rep:[10,12,15],w:1},
-  {id:'ringpull', n:'Ring Pull-ups (strict)',unit:'',  equip:'rings',cat:'gym',pat:'pull', rep:[4,6,8],w:2},
+  {id:'ringpull', n:'Ring Pull-ups',        unit:'',   equip:'rings',cat:'gym',pat:'pull', rep:[6,8,10],w:2},
   {id:'ringpu',   n:'Ring Push-ups',        unit:'',   equip:'rings',cat:'gym',pat:'push', rep:[8,10,12],w:1},
   {id:'ringdip',  n:'Ring Dips',            unit:'',   equip:'rings',cat:'gym',pat:'push', rep:[6,8,10],w:2},
   // --- GHD (improvised: mat on plyo box for now; real GHD coming) ---
   {id:'ghdsit',   n:'GHD Sit-ups',          unit:'',   equip:'ghd', cat:'core',pat:'core', rep:[10,12,15],w:1.5},
+  {id:'nordiccurl',n:'Glute-Ham Raises (GHD)',unit:'',  equip:'ghd', cat:'gym', pat:'hinge',rep:[5,6,8],w:1.2},
   {id:'hipext',   n:'Hip Extensions',       unit:'',   equip:'ghd', cat:'gym', pat:'hinge',rep:[12,15,20],w:1},
   // --- Climbing rope (10-ft ceiling → seated variations) + parallettes ---
   {id:'ropeclimb',n:'Seated Rope Climbs',   unit:'',   equip:'crope',cat:'gym',pat:'pull', rep:[3,4,5],nx:true},
@@ -743,11 +773,19 @@ const WOD_MOVES=[
   {id:'defhspu',  n:'Deficit HSPU (parallettes)',unit:'',equip:'para',cat:'gym',pat:'push',rep:[3,5,8],w:.6},
   {id:'wallwalk', n:'Wall Walks',           unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[3,5,8],w:1.5},
   {id:'pistol',   n:'Pistols (alt)',        unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[10,12,16],w:1},
+  {id:'c2b',      n:'Chest-to-Bar Pull-ups',unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[6,8,10],w:1.5},
+  {id:'hswalk',   n:'Handstand Walk',       unit:'m',  equip:'bw',  cat:'gym', pat:'push', rep:[10,15,20],nx:true},
+  {id:'fgripring',n:'False-Grip Ring Hang',  unit:'s',  equip:'rings',cat:'gym',pat:'pull', rep:[15,20,30],nx:true},
+  {id:'ringsupport',n:'Ring Support Hold',   unit:'s',  equip:'rings',cat:'gym',pat:'push', rep:[15,20,30],nx:true},
+  {id:'ringlsit', n:'Ring L-Sit Hold',       unit:'s',  equip:'rings',cat:'core',pat:'core', rep:[10,15,20],nx:true},
+  {id:'ringmu',   n:'Ring Muscle-ups',      unit:'',   equip:'rings',cat:'gym',pat:'pull', rep:[3,4,5],w:1.2},
+  {id:'barmu',    n:'Bar Muscle-ups',       unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[3,4,5],w:.6},
   // --- Midline (mod G) — first-class citizens, not leftovers ---
   {id:'t2b',      n:'Toes-to-Bar',          unit:'',   equip:'bar', cat:'core',pat:'core',  rep:[8,10,12],w:3},
   {id:'situp',    n:'Sit-ups',              unit:'',   equip:'bw',  cat:'core',pat:'core',  rep:[15,20,25],w:2},
   {id:'vup',      n:'V-ups',                unit:'',   equip:'bw',  cat:'core',pat:'core',  rep:[10,12,15],w:1.5},
   {id:'hkr',      n:'Hanging Knee Raises',  unit:'',   equip:'bar', cat:'core',pat:'core',  rep:[10,12,15],w:.6},
+  {id:'copenhagen',n:'Copenhagen Plank',    unit:'s',  equip:'bench',cat:'core',pat:'core', rep:[20,30,45],nx:true},
   {id:'hollow',   n:'Hollow Hold',          unit:'s',  equip:'bw',  cat:'core',pat:'core',  rep:[30,40,45],nx:true},
   {id:'plank',    n:'Plank',                unit:'s',  equip:'bw',  cat:'core',pat:'core',  rep:[30,45,60],nx:true},
   {id:'superman', n:'Superman Holds',       unit:'',   equip:'bw',  cat:'core',pat:'hinge', rep:[12,15,20],nx:true},
@@ -838,7 +876,7 @@ function _mvLine(m){
 // skill    = technical efficiency — low-rep quality EMOM on skill movements
 // bench    = classic benchmark ("Girls") adapted to available equipment
 // core     = quick core burner to tack on after the main session
-const SKILL_IDS=['hspu','pike','strpull','dip','ringdip','ringpu','t2b','pclean','hpclean','psnatch','ohs','dbsnatch','hollow','ropeclimb','lsit','shootthr','defhspu'];
+const SKILL_IDS=['hspu','pike','pullup','strpull','dip','ringdip','ringpu','t2b','pclean','hpclean','psnatch','ohs','dbsnatch','hollow','ropeclimb','lsit','shootthr','hswalk','ringmu','barmu','fgripring','ringsupport','ringlsit'];
 function _genSkill(){
   let pool=_wodPool().filter(m=>SKILL_IDS.includes(m.id));
   const total=_rp([12,15,18]);
@@ -934,39 +972,44 @@ function _genBenchmark(){
     moves,ladder:b.ladder||null,resultType:b.resultType||'time',est:b.est,
     stimulus:b.stim+' Log the score — this one is a repeatable fitness test.'};
 }
-// ── Day profiles — 5-day week (v4.46) ──────────────────────────────────────────
-// Strength anchors: Mon back squat · Tue strict press · Wed weighted pull-up ·
-// Thu bench + structured cardio (no metcon) · Sat deadlift. Fri = golf. Sun = rest.
-// Wod bias (Classic type, when _wodBias is on): spared patterns are filtered out
-// of generation so conditioning never competes with that day's strength work.
-// spare rule: 'push'/'pull' exclude the pattern entirely; 'hinge'/'legs' exclude
-// only weighted variants — bodyweight stays available. foci pins the day's focus
-// roll so the weekly time-domain spread is deterministic:
-// Mon sprint/power · Tue engine · Wed gymn/power · Sat grind.
+// ── Day profiles — Mayhem-style weekly structure ───────────────────────────────
+// Strength anchors: Mon back squat · Tue press · Wed pull · Fri front squat.
+// Wod bias (Classic type only, when _wodBias is on): spared patterns are
+// filtered out of generation so conditioning never competes with that day's
+// (or tomorrow's) strength work. Force + Extra render on every type.
+// spare rule: pattern excluded entirely, except 'hinge' which only excludes
+// weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat day',plan:'open',spare:['legs'],foci:['sprint','power'],
+  1:{label:'Mon · back squat day',plan:'open',
      force:'Back Squat — top set of 5 · 2 back-off sets of 8',
      forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     extraEx:[{id:'rfess',name:'Rear-Foot-Elevated Split Squat',_force:true,type:'sec',s:3,r:10,rest:120,note:'Per leg, 8-10 reps. Depth to parallel — stop short of end-range knee flexion. Progress load, not range, while the knee settles.'}]},
-  2:{label:'Tue · vertical press day',plan:'open',spare:['push'],foci:['engine'],
-     force:'Strict Press — top set of 5 · 2 back-off sets of 8',
-     forceEx:[{id:'ohp',name:'Strict Overhead Press',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:210,note:'No leg drive on the top set. Push press allowed on back-offs at the peak of the wave.'}],
+     extraEx:[{id:'heelsquat',name:'Heel-Elevated Back Squat (quads · moderate load)',_force:true,type:'sec',s:3,r:12,rest:150}]},
+  2:{label:'Tue · snatch / clean — alternates weekly',plan:'open',
+     force:'Snatch or Clean (alternating weekly) — build, then 3×3 working sets',
+     forceEx:[{id:'snatch',name:'Snatch',_force:true,type:'pri',s:3,r:3,rest:180}], // swapped to Clean on odd weeks at session creation
      extraEx:[{id:'calfstand',name:'Standing Calf Raises (slow eccentric)',_force:true,type:'acc',s:4,r:15,rest:75}]},
-  3:{label:'Wed · weighted pull-up day',plan:'open',spare:['pull'],foci:['gymn','power'],
+  3:{label:'Wed · weighted pull-up day',plan:'open',
      force:'Weighted Pull-ups — 4×5',
      forceEx:[{id:'wpullup',name:'Weighted Pull-ups',_force:true,type:'pri',s:4,r:5,rest:180}],
-     extraEx:[{id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:3,r:8,rest:120,note:'Hamstring insurance — the week\u2019s one heavy hinge day is Saturday.'}]},
-  4:{label:'Thu · bench + cardio — no metcon',plan:'cardio',
-     force:'Bench Press — top set of 5 · 2 back-off sets of 8',
-     forceEx:[{id:'bench',name:'Bench Press',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     extraEx:[{id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'sec',s:3,r:10,rest:120,note:'The week\u2019s horizontal pull — balances two press days plus Wod pushing.'}]},
-  5:{label:'Fri · golf',plan:'recovery',
-     force:null,
      extraEx:[]},
-  6:{label:'Sat · deadlift — grind day',plan:'open',spare:['hinge','pull'],foci:['grind'],
-     force:'Deadlift — build to a top set of 6-10 · back-offs: Romanian Deadlift 2×8 @ ~60-65%',
-     forceEx:[{id:'deadlift',name:'Deadlift (top set) + RDL back-offs',_force:true,type:'pri',topSet:{s:1,r:8},s:2,r:8,rest:300,note:'One top set of 6-10 — reps wave with the block (10s early, 6-8 at peak). The 2 back-off rows are Romanian Deadlifts ×8 @ ~60-65% of the top set.'}],
+  4:{label:'Thu · bodybuilding — no WOD',plan:'extras',
+     force:null,
+     extraEx:[
+       {id:'dbflat',name:'Flat DB Bench Press',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150},
+       {id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150},
+       {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:4,r:10,rest:120},
+       {id:'bbcurl',name:'Barbell Curls',_force:true,type:'acc',s:3,r:10,rest:75},
+       {id:'ohtriext',name:'Overhead Triceps Extensions',_force:true,type:'acc',s:3,r:12,rest:60},
+       {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:12,rest:60},
+       {id:'calfr',name:'Calf Raises',_force:true,type:'acc',s:5,r:20,rest:60}]},
+  5:{label:'Fri · front squat day',plan:'open',
+     force:'Front Squat — 3RM top set · 3 back-off sets of 5',
+     forceEx:[{id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:3},s:3,r:5,rest:240}],
+     extraEx:[{id:'calfseat',name:'Seated Calf Raises',_force:true,type:'acc',s:4,r:20,rest:60}]},
+  6:{label:'Sat · RDL — open WOD day',plan:'open',
+     force:'Romanian Deadlift — 3×6-8',
+     forceEx:[{id:'rdl',name:'Romanian Deadlift',_force:true,type:'pri',s:3,r:8,rest:180}],
      extraEx:[]},
   0:{label:'Sun · recovery',plan:'recovery',
      force:null,
@@ -992,10 +1035,12 @@ function _dayProfile(){
 function _wodPoolBiased(prof){
   let pool=_wodPool();
   if(!prof)return pool;
+  if(prof.light)pool=pool.filter(m=>!m.weighted);
+  if(prof.legBias)pool=pool.filter(m=>!(m.pat==='legs'&&!m.weighted)); // heavy leg volume, not bodyweight volume
   if(prof.spare&&prof.spare.length){
     const f=pool.filter(m=>{
       if(!prof.spare.includes(m.pat))return true;
-      if(m.pat==='hinge'||m.pat==='legs')return !m.weighted; // heavy variants spared — bodyweight stays available
+      if(m.pat==='hinge')return !m.weighted; // only heavy hinge is spared
       return false;
     });
     if(f.length>=6)pool=f; // keep the bias only if the pool stays workable
@@ -1021,6 +1066,25 @@ function _teamify(w){
   if(w.format==='rft'||w.format==='ladder')w.est=Math.round(w.est*1.8);
   return w;
 }
+function _ensureLegVolume(w){
+  const isLoadedLeg=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.pat==='legs'&&b.weighted;};
+  if(w.moves.some(isLoadedLeg)){
+    // already there — push it to the heavy end of its load options
+    const mv=w.moves.find(isLoadedLeg);const b=WOD_MOVES.find(x=>x.n===mv.n);
+    if(b&&b.wt&&b.wt.length)mv.wt=b.wt[b.wt.length-1];
+    return;
+  }
+  const cand=WOD_MOVES.filter(m=>m.pat==='legs'&&m.weighted&&!m.nx&&_wodEnabled(m.equip));
+  if(!cand.length)return;
+  const pick=_wrp(cand);
+  const inst={n:pick.n,unit:pick.unit,cat:pick.cat,
+    reps:(w.moves[0]&&w.moves[0].reps==null)?null:_rp(pick.rep)};
+  if(pick.wt&&pick.wt.length){inst.wt=pick.wt[pick.wt.length-1];inst.hand=pick.hand||'1';} // heavy option
+  // replace a non-cardio slot when possible, else the last movement
+  let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
+  if(idx<0)idx=w.moves.length-1;
+  w.moves[idx]=inst;
+}
 function _extraExFor(){
   let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
   const dow=d.getDay();
@@ -1030,6 +1094,8 @@ function _extraExFor(){
   return (prof&&prof.extraEx)||[];
 }
 function _attachDay(w,allowVest){
+  const _p=_dayProfile();
+  if(_wodBias&&_p.legBias&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length)_ensureLegVolume(w);
   _teamify(w);
   if(allowVest===undefined)allowVest=true;
   const prof=_dayProfile();
@@ -1041,13 +1107,6 @@ function _attachDay(w,allowVest){
   // Cardio lives only in the Wod now — no top-up appends.
   const _xEx=_extraExFor();
   w.extra=_xEx.map(e=>`${e.name} — ${e.topSet?('top '+e.topSet.r+' + '):''}${e.s}×${e.r}`);
-  // CrossFit abs rule: if the Wod carries no midline stimulus, a core finisher is appended.
-  const _skipCore=['recovery','rest','oly'].includes(w.format)||['Core','Technical','Olympic Lifting'].includes(w.focus);
-  const _hasCore=(w.moves||[]).some(m=>{const b=WOD_MOVES.find(x=>x.n===m.n);return b&&b.cat==='core';});
-  if(!_skipCore&&!_hasCore){
-    const cf=_genFinisher();
-    if(cf&&cf.moves&&cf.moves.length)w.coreAdd=`${cf.title} — ${cf.scheme}: `+cf.moves.map(_mvLine).join(' · ');
-  }
   return w;
 }
 // ── CrossFit construction — weighted pick across W/G/M modality templates ──────
@@ -1070,9 +1129,9 @@ function _cfTmpl(focus,minN,maxN){
 // Open-canon signature couplets — rolled as a bias (~35%) on couplet-friendly formats.
 // Both members must survive the day's sparing filter and equipment toggles.
 const SIG_COUPLETS=[
-  ['bbthr','strpull'],['bbthr','bfb'],
+  ['bbthr','c2b'],['bbthr','pullup'],['bbthr','bfb'],
   ['psnatch','du'],['wallball','bfb'],['hpclean','boxjump'],
-  ['deadlift','hspu'],
+  ['deadlift','hspu'],['wallball','ringmu'],
   ['pclean','bfb'],['dbsnatch','burpdb']
 ];
 function _sigCouplet(pool){
@@ -1098,18 +1157,21 @@ function _cfPick(pool,tmpl,bbBias){
   }
   return chosen;
 }
-// Cardio type = one structured session from the preset engine (Thursday's slot).
-// suggestCardio scores recent history (variety > weakness > polarized balance);
-// anything longer than 45 min is swapped down so Bench + row + cardio stays ≤90.
+// Fri cardio-specific pool — exactly the favored movements, Airdyne as sole machine
+const CARDIO_WOD_IDS=['airdyne','du','wallball','burpee','airsquat','pushup'];
 function _genCardio(){
-  let p=suggestCardio(_wodDate||todayStr());
-  if(p.duration>45){const alt=CARDIO_PRESETS.find(x=>x.id==='z2_45');if(alt)p={...alt,_reason:p._reason};}
-  const _fmtT=t=>t>=60?(t%60===0?(t/60)+' min':Math.round(t/60*10)/10+' min'):t+'s';
-  let sch=p.desc;
-  if(p.rounds&&p.work)sch+=` · ${p.rounds} × ${_fmtT(p.work)} work / ${_fmtT(p.rest_int)} rest`;
-  return{format:'cardio',focus:'Cardio',title:p.name,scheme:sch,
-    moves:[],ladder:null,resultType:'check',est:p.duration,noTeam:true,noTopup:true,
-    stimulus:(p._reason?p._reason+' ':'')+'Airdyne by default — take it to a run or the road when it fits. One structured piece, then done.'};
+  const pool=WOD_MOVES.filter(m=>CARDIO_WOD_IDS.includes(m.id)&&_wodEnabled(m.equip));
+  const moves=_samp(pool,Math.min(_rp([3,4]),pool.length)).map(_withReps);
+  if(Math.random()<0.55){
+    const dur=_rp([15,18,20]);
+    return{format:'amrap',focus:'Cardio',title:`AMRAP ${dur}`,scheme:`As many rounds as possible in ${dur} min — smooth, cyclical engine pace`,
+      moves,ladder:null,resultType:'rounds',est:dur,
+      stimulus:'Pure aerobic stimulus — nothing heavy, nothing grindy. Breathe and cycle.'};
+  }
+  const rounds=_rp([4,5,6]);
+  return{format:'rft',focus:'Cardio',title:`${rounds} Rounds — Steady Engine`,scheme:`${rounds} rounds at an even pace — the clock is a witness, not a whip`,
+    moves,ladder:null,resultType:'time',est:Math.round(rounds*3.5),
+    stimulus:'Negative-split it: each round the same or slightly faster than the last.'};
 }
 const RECOVERY_CARDS=[
   {title:'Active Recovery — Easy Spin',scheme:'Airdyne 20-25 min Zone 1-2 · nasal breathing · conversation pace',est:25},
@@ -1133,7 +1195,7 @@ function generateWOD(type){
   if(type==='skill'){const f=_genSkill();f.noTeam=true;return _attachDay(f,false);}
   if(type==='core'){const f=_genFinisher();f.noTopup=true;f.noTeam=true;return _attachDay(f,false);}
   if(type==='oly'){const f=_genOly();f.noTeam=true;return _attachDay(f,false);}
-  if(type==='cardio')return _attachDay(_genCardio(),false);
+  if(type==='cardio')return _attachDay(_genCardio(),true);
   if(type==='recovery')return _attachDay(_genRecovery(),false);
   if(type==='extras')return _attachDay(_genExtrasOnly(),false);
   if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
@@ -1208,7 +1270,6 @@ function _wodCardHTML(w,ctx){
   if(ctx&&w.moves&&w.moves.length&&w.format!=='recovery'&&w.format!=='rest')h+=`<div style="margin-top:8px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodMove('${ctx}')">＋ Add movement</button></div>`;
   if(w.stimulus)h+=`<div style="font-size:.7rem;color:var(--tx3);margin-top:12px;font-style:italic;">${w.stimulus}</div>`;
   h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:6px;font-family:'IBM Plex Mono',monospace;">~${w.est} min</div>`;
-  if(w.coreAdd)h+=`<div style="font-size:.78rem;color:var(--tx2);margin-top:12px;line-height:1.5;"><strong style="color:var(--tx);text-transform:uppercase;font-size:.68rem;letter-spacing:1.5px;">⚡ Core</strong><br>${w.coreAdd}</div>`;
   if(w.extra&&w.extra.length){
     h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);margin-top:14px;">Extra <span style="font-weight:400;color:var(--tx3);text-transform:none;letter-spacing:0;">· optional</span></div>`;
     w.extra.forEach(x=>{h+=`<div style="font-size:.78rem;color:var(--tx2);margin-top:5px;line-height:1.5;">${x}</div>`;});
@@ -1524,6 +1585,12 @@ function _createWODSession(date){
   const _pd=_wodDate;_wodDate=date;const prof=_dayProfile();_wodDate=_pd;
   const _dow=new Date(date+'T12:00:00').getDay();
   let _fx=(D.dayForceOverrides&&D.dayForceOverrides[_dow]&&D.dayForceOverrides[_dow].length)?D.dayForceOverrides[_dow]:(prof&&prof.forceEx);
+  if(_dow===2&&_fx&&_fx.length&&['snatch','clean'].includes(_fx[0].id)){
+    // alternate the Olympic lift week to week (anchor: week of 2026-08-17 = Snatch)
+    const wk=Math.floor((new Date(date+'T12:00:00')-new Date('2026-08-17T12:00:00'))/(7*864e5));
+    const lift=((wk%2)+2)%2===0?{id:'snatch',name:'Snatch'}:{id:'clean',name:'Clean'};
+    _fx=[Object.assign({},_fx[0],lift)];
+  }
   if(_fx&&_fx.length){
     D.sessions[k].forceEx=JSON.parse(JSON.stringify(_fx));
     D.sessions[k].forceEx.forEach((e,i)=>{if(!e._ek)e._ek=(e.id||'custom')+'_f'+i;});
@@ -2048,12 +2115,12 @@ function rSetup(){
   document.getElementById('uSel').value=D.unit;document.getElementById('rSel').value=D.round;
   const mains=[{id:'squat',n:'Back Squat'},{id:'bench',n:'Bench Press'},{id:'deadlift',n:'Deadlift'},{id:'ohp',n:'OHP'},{id:'frontsquat',n:'Front Squat'},{id:'pullup',n:'Pull-ups'}];
   document.getElementById('rmIn').innerHTML=mains.map(m=>`<div class="rmrow"><span style="flex:1;font-weight:600;font-size:.9rem;">${m.n}</span><input class="si" style="width:80px" type="number" value="${D.rm[m.id]||''}" placeholder="0" onchange="D.rm['${m.id}']=+this.value;sv();"><span style="font-size:.72rem;color:var(--tx3);">${D.unit}</span></div>`).join('');
-  document.getElementById('modeToggle').innerHTML=`<button class="${D.mode==='off'?'act':''}" onclick="D.mode='off';sv();rSetup();rTrain();">Off-Season</button><button class="${D.mode==='in'?'act':''}" onclick="D.mode='in';sv();rSetup();rTrain();">In-Season</button>`;
-  document.getElementById('modeDesc').textContent=D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy';
+  document.getElementById('modeToggle').innerHTML=`<button class="${D.mode==='off'?'act':''}" onclick="D.mode='off';sv();rSetup();rTrain();">Off-Season</button><button class="${D.mode==='in'?'act':''}" onclick="D.mode='in';sv();rSetup();rTrain();">In-Season</button><button class="${D.mode==='cf'?'act':''}" onclick="D.mode='cf';sv();rSetup();rTrain();">CF Prep</button>`;
+  document.getElementById('modeDesc').textContent=D.mode==='cf'?'6-week CrossFit on-ramp — 3-day squat-led prep. Accumulate → peak wk5 → taper wk6 into your first box week. Run/airdyne on off days.':(D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy');
   // Template list
   const tmpls=getTemplates();
   const archived=D.archivedTemplates||[];
-  const archivedTmpls=IN_SEASON.concat(OFF_SEASON).concat(D.userTemplates||[]).filter(t=>archived.includes(t.id));
+  const archivedTmpls=IN_SEASON.concat(OFF_SEASON).concat(CROSSFIT_PREP).concat(D.userTemplates||[]).filter(t=>archived.includes(t.id));
 
   let tmplHtml=`<button class="btn bp bf" style="margin-bottom:14px;" onclick="createTemplateModal()">+ New Template</button>`;
 
