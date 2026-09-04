@@ -746,21 +746,21 @@ const WOD_MOVES=[
   {id:'inchworm', n:'Inchworm Walkouts',    unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[8,10,12],nx:true},
   {id:'boxjump',  n:'Box Jumps',            unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[10,12,15],w:2.5},
   {id:'bjover',   n:'Box Jump-Overs',       unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[10,12,15],w:1.5},
-  {id:'stepup',   n:'Step-ups',             unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[16,20,24],w:.6},
-  {id:'pushup',   n:'Push-ups',             unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[10,12,15,20],w:2},
+  {id:'stepup',   n:'Step-ups',             unit:'',   equip:'box', cat:'gym', pat:'legs', rep:[16,20,24],w:.6,uni:true},
+  {id:'pushup',   n:'Push-ups',             unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[10,12,15,20],w:2,easy:true},
   {id:'pike',     n:'Pike Push-ups',        unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[8,10,12],w:.8},
-  {id:'hspu',     n:'Handstand Push-ups',   unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[5,8,10],w:2.5},
+  {id:'hspu',     n:'Handstand Push-ups',   unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[5,8,10],w:2.5,hspuFam:true},
   {id:'airsquat', n:'Air Squats',           unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[15,20,25,30],w:2},
-  {id:'rlunge',   n:'Reverse Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24],w:1},
-  {id:'jlunge',   n:'Jumping Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24],w:1},
+  {id:'rlunge',   n:'Reverse Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24],w:1,uni:true},
+  {id:'jlunge',   n:'Jumping Lunges',       unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[16,20,24],w:1,uni:true,kneeHeavy:true},
   {id:'pullup',   n:'Pull-ups',             unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[8,10,12],w:3},
   {id:'strpull',  n:'Strict Pull-ups',      unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8],w:1.5},
   {id:'chinup',   n:'Chin-ups (strict)',    unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[5,6,8],w:.5},
   {id:'dip',      n:'Dips',                 unit:'',   equip:'bar', cat:'gym', pat:'push', rep:[8,10,12],w:1.5},
-  {id:'invrow',   n:'Inverted Rows',        unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[10,12,15],w:.5},
-  {id:'ringrow',  n:'Ring Rows',            unit:'',   equip:'rings',cat:'gym',pat:'pull', rep:[10,12,15],w:1},
+  {id:'invrow',   n:'Inverted Rows',        unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[10,12,15],w:.5,easy:true},
+  {id:'ringrow',  n:'Ring Rows',            unit:'',   equip:'rings',cat:'gym',pat:'pull', rep:[10,12,15],w:1,easy:true},
   {id:'ringpull', n:'Ring Pull-ups',        unit:'',   equip:'rings',cat:'gym',pat:'pull', rep:[6,8,10],w:2},
-  {id:'ringpu',   n:'Ring Push-ups',        unit:'',   equip:'rings',cat:'gym',pat:'push', rep:[8,10,12],w:1},
+  {id:'ringpu',   n:'Ring Push-ups',        unit:'',   equip:'rings',cat:'gym',pat:'push', rep:[8,10,12],w:1,easy:true},
   {id:'ringdip',  n:'Ring Dips',            unit:'',   equip:'rings',cat:'gym',pat:'push', rep:[6,8,10],w:2},
   // --- GHD (improvised: mat on plyo box for now; real GHD coming) ---
   {id:'ghdsit',   n:'GHD Sit-ups',          unit:'',   equip:'ghd', cat:'core',pat:'core', rep:[10,12,15],w:1.5},
@@ -772,9 +772,9 @@ const WOD_MOVES=[
 
   {id:'shootthr', n:'Parallette Shoot-Throughs',unit:'',equip:'para',cat:'gym',pat:'push', rep:[8,10,12],w:1},
   {id:'lsit',     n:'L-Sit Hold (parallettes)',unit:'s',equip:'para',cat:'core',pat:'core',rep:[15,20,30],w:.6},
-  {id:'defhspu',  n:'Deficit HSPU (parallettes)',unit:'',equip:'para',cat:'gym',pat:'push',rep:[3,5,8],w:.6},
-  {id:'wallwalk', n:'Wall Walks',           unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[3,5,8],w:1.5},
-  {id:'pistol',   n:'Pistols (alt)',        unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[10,12,16],w:1},
+  {id:'defhspu',  n:'Deficit HSPU (parallettes)',unit:'',equip:'para',cat:'gym',pat:'push',rep:[3,5,8],w:.6,hspuFam:true},
+  {id:'wallwalk', n:'Wall Walks',           unit:'',   equip:'bw',  cat:'gym', pat:'push', rep:[3,5,8],w:1.5,hspuFam:true},
+  {id:'pistol',   n:'Pistols (alt)',        unit:'',   equip:'bw',  cat:'gym', pat:'legs', rep:[10,12,16],w:1,uni:true,kneeHeavy:true},
   {id:'c2b',      n:'Chest-to-Bar Pull-ups',unit:'',   equip:'bar', cat:'gym', pat:'pull', rep:[6,8,10],w:1.5},
   {id:'hswalk',   n:'Handstand Walk',       unit:'m',  equip:'bw',  cat:'gym', pat:'push', rep:[10,15,20],nx:true},
   {id:'fgripring',n:'False-Grip Ring Hang',  unit:'s',  equip:'rings',cat:'gym',pat:'pull', rep:[15,20,30],nx:true},
@@ -807,7 +807,7 @@ const WOD_MOVES=[
   {id:'sqclean',  n:'Squat Cleans',         unit:'',   equip:'bb',  cat:'load',pat:'legs', rep:[6,8,10],  wt:[95,115,135],w:1.2},
   {id:'cj',       n:'Clean & Jerks',        unit:'',   equip:'bb',  cat:'load',pat:'full', rep:[6,8,10],  wt:[95,115,135],w:1.5},
   {id:'sqsnatch', n:'Squat Snatch',         unit:'',   equip:'bb',  cat:'load',pat:'legs', rep:[5,6,8],   wt:[75,95],w:.8},
-  {id:'dbstepover',n:'DB Box Step-Overs',   unit:'',   equip:'box', cat:'load',pat:'legs', rep:[10,12,16],hand:'2',wt:[35,50],w:1.5},
+  {id:'dbstepover',n:'DB Box Step-Overs',   unit:'',   equip:'box', cat:'load',pat:'legs', rep:[10,12,16],hand:'2',wt:[35,50],w:1.5,uni:true},
   {id:'bbpp',     n:'Push Press',           unit:'',   equip:'bb',  cat:'load',pat:'push', rep:[8,10,12], wt:[95,115],w:1.5},
   // --- Weightlifting · dumbbell (mod W) — 35/50/70 set ---
   {id:'dbsnatch', n:'DB Snatch (alt)',      unit:'',   equip:'db',  cat:'load',pat:'full', rep:[10,12,16],hand:'1',wt:[50,70],w:2.5},
@@ -815,8 +815,8 @@ const WOD_MOVES=[
   {id:'devil',    n:'Devil Press',          unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50],w:2},
   {id:'dbthrust', n:'DB Thrusters',         unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,15],hand:'2',wt:[35,50],w:2},
   {id:'dbclean',  n:'DB Cleans',            unit:'',   equip:'db',  cat:'load',pat:'full', rep:[8,10,12], hand:'2',wt:[35,50],w:1.5},
-  {id:'ohlunge',  n:'DB Overhead Lunges (1-arm)',unit:'',equip:'db',cat:'load',pat:'legs',rep:[12,16,20],hand:'1',wt:[35,50],w:1.2},
-  {id:'frlunge',  n:'Front-Rack Lunges',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,16,20],hand:'2',wt:[35,50],w:1.2},
+  {id:'ohlunge',  n:'DB Overhead Lunges (1-arm)',unit:'',equip:'db',cat:'load',pat:'legs',rep:[12,16,20],hand:'1',wt:[35,50],w:1.2,uni:true},
+  {id:'frlunge',  n:'Front-Rack Lunges',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,16,20],hand:'2',wt:[35,50],w:1.2,uni:true},
   {id:'dbpp',     n:'DB Push Press',        unit:'',   equip:'db',  cat:'load',pat:'push', rep:[10,12,15],hand:'2',wt:[35,50],w:1.5},
   {id:'goblet',   n:'Goblet Squats',        unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[12,15,20],hand:'1',wt:[50,70],w:1},
   {id:'dbohp',    n:'DB Shoulder Press (strict)',unit:'',equip:'db',cat:'load',pat:'push', rep:[8,10,12], hand:'2',wt:[35,50],w:.6},
@@ -826,14 +826,14 @@ const WOD_MOVES=[
   {id:'carry',    n:'Farmer Carry (laps)',  unit:'',   equip:'db',  cat:'load',pat:'full', rep:[1,2],     hand:'2',wt:[50,70],w:.8},
   // --- Swap-only accessories (nx) — reachable via ⇄ and the Extra block, never generated ---
   {id:'dbfsq',    n:'DB Front Squats',      unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,15],hand:'2',wt:[35,50],w:1.2},
-  {id:'cossack',  n:'DB Cossack Squats',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,16],hand:'1',wt:[35,50],w:1},
-  {id:'slrdl',    n:'DB Single-Leg RDL',    unit:'',   equip:'db',  cat:'load',pat:'hinge',rep:[10,12,16],hand:'1',wt:[50,70],nx:true},
+  {id:'cossack',  n:'DB Cossack Squats',    unit:'',   equip:'db',  cat:'load',pat:'legs', rep:[10,12,16],hand:'1',wt:[35,50],w:1,uni:true},
+  {id:'slrdl',    n:'DB Single-Leg RDL',    unit:'',   equip:'db',  cat:'load',pat:'hinge',rep:[10,12,16],hand:'1',wt:[50,70],nx:true,uni:true},
   {id:'arnold',   n:'Arnold Press',         unit:'',   equip:'db',  cat:'load',pat:'push', rep:[8,10,12], hand:'2',wt:[35,50],nx:true},
   {id:'dbfloor',  n:'DB Floor Press',       unit:'',   equip:'db',  cat:'load',pat:'push', rep:[10,12,15],hand:'2',wt:[50,70],nx:true},
   {id:'dbbench',  n:'DB Bench Press',       unit:'',   equip:'bench',cat:'load',pat:'push',rep:[10,12,15],hand:'2',wt:[50,70],nx:true},
   {id:'dbincl',   n:'DB Incline Press',     unit:'',   equip:'bench',cat:'load',pat:'push',rep:[10,12,15],hand:'2',wt:[35,50],nx:true},
   {id:'bsupr',    n:'Chest-Supported DB Rows',unit:'', equip:'bench',cat:'load',pat:'pull',rep:[10,12,15],hand:'2',wt:[50,70],nx:true},
-  {id:'bss',      n:'DB Bulgarian Split Squats',unit:'',equip:'bench',cat:'load',pat:'legs',rep:[8,10,12],hand:'2',wt:[35,50],w:1.5},
+  {id:'bss',      n:'DB Bulgarian Split Squats',unit:'',equip:'bench',cat:'load',pat:'legs',rep:[8,10,12],hand:'2',wt:[35,50],w:1.5,uni:true},
   {id:'hipthr',   n:'DB Hip Thrusts',       unit:'',   equip:'bench',cat:'load',pat:'hinge',rep:[12,15,20],hand:'1',wt:[50,70],nx:true}
 ];
 WOD_MOVES.forEach(m=>{
@@ -859,8 +859,10 @@ const WOD_FOCI=[
 ];
 
 let _pendingWOD=null,_wodDate=null,_wodType='classic',_wodBias=true,_wodTeam=false;
+// ── Knee status: flip to true when cleared (re-enables pistols / jumping lunges everywhere) ──
+const KNEE_CLEARED=false;
 function _wodEnabled(id){return id==='bw'||!!(D.wodEquip&&D.wodEquip[id]);}
-function _wodPool(){return WOD_MOVES.filter(m=>_wodEnabled(m.equip));}
+function _wodPool(){return WOD_MOVES.filter(m=>_wodEnabled(m.equip)&&(KNEE_CLEARED||!m.kneeHeavy));} // knee-heavy moves sit out until cleared (still swappable)
 function _rp(a){return a[Math.floor(Math.random()*a.length)];}
 function _samp(arr,n){const a=arr.slice(),o=[];while(a.length&&o.length<n)o.push(a.splice(Math.floor(Math.random()*a.length),1)[0]);return o;}
 function _inst(m,reps){const o={n:m.n,unit:m.unit,cat:m.cat,reps:reps};if(m.wt&&m.wt.length){o.wt=_rp(m.wt);o.hand=m.hand||'1';}return o;}
@@ -983,24 +985,24 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat — hard metcon',plan:'hard',
+  1:{label:'Mon · back squat — grind metcon',plan:'hard',
      force:'Back Squat — top set of 5 · 2 back-off sets of 8',
      forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     spare:['hinge'],foci:['grind','engine'],legBias:false, // flip to true when the knee is cleared
+     spare:['hinge'],foci:['grind','engine'],legBias:false,
+     parts:[{obj:'Grind',foci:['grind','engine']}],
      extraEx:[{id:'bss',name:'Single-Leg Work (Bulgarian split squat / step-up)',_force:true,type:'sec',s:3,r:10,rest:120}]},
-  2:{label:'Tue · strict press — engine metcon, spares push',plan:'open',
+  2:{label:'Tue · strict press — engine + capacity',plan:'hard',
      force:'Strict Press — 4×8',
      forceEx:[{id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:180}],
-     spare:['push'],foci:['engine','sprint'],
+     spare:['push','pull'],allowEasy:true,foci:['engine','sprint'],
+     parts:[{obj:'Engine',foci:['engine']},{obj:'Capacity',kind:'easyDensity'}],
      extraEx:[
        {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:12,rest:60},
        {id:'facepull',name:'Face Pulls (cable)',_force:true,type:'acc',s:3,r:15,rest:60}]},
-  3:{label:'Wed · rope climb / MU work — gymnastics metcon, spares pull',plan:'open',
-     force:'Legless rope climb + ring muscle-up progression',
-     forceEx:[
-       {id:'ropeclimb',name:'Legless Rope Climb Progression (seated → standing)',_force:true,type:'pri',s:4,r:2,rest:150},
-       {id:'mutrans',name:'Ring MU Transitions (false grip · low rings)',_force:true,type:'pri',s:4,r:3,rest:120}],
-     spare:['pull'],foci:['gymn'],
+  3:{label:'Wed · gymnastics density + sprint — spares pull (skill work on your own)',plan:'hard',
+     force:null,
+     spare:['pull'],foci:['gymn','sprint'],hspuGuard:true,
+     parts:[{obj:'Gymnastics Density',foci:['gymn']},{obj:'Sprint',foci:['sprint'],maxMoves:2}],
      extraEx:[{id:'dbcurl',name:'DB Biceps Curls',_force:true,type:'acc',s:3,r:12,rest:60}]},
   4:{label:'Thu · bench day — no WOD',plan:'extras',
      force:'Flat DB Bench Press — 3 × max reps',
@@ -1011,10 +1013,11 @@ const DAY_PROFILES={
      force:null,
      spare:[],
      extraEx:[]},
-  6:{label:'Sat · RDL — hard metcon, spares heavy hinge',plan:'hard',
-     force:'Romanian Deadlift — 3×6-8',
-     forceEx:[{id:'rdl',name:'Romanian Deadlift',_force:true,type:'pri',s:3,r:8,rest:180}],
-     spare:['hinge'],foci:['power','grind'],
+  6:{label:'Sat · deadlift — barbell cycling + hard metcon',plan:'hard',
+     force:'Deadlift — 6RM top set · 2 back-off sets of 8',
+     forceEx:[{id:'deadlift',name:'Deadlift',_force:true,type:'pri',topSet:{s:1,r:6},s:2,r:8,rest:240}],
+     spare:['hinge'],foci:['power','grind'],uniGuard:true,uniGuardPart:1,
+     parts:[{obj:'Barbell Cycling',kind:'cycling'},{obj:'Hard',foci:['power','grind']}],
      extraEx:[
        {id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:120},
        {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:4,r:10,rest:120}]},
@@ -1049,6 +1052,7 @@ function _wodPoolBiased(prof){
     const f=pool.filter(m=>{
       if(!prof.spare.includes(m.pat))return true;
       if(m.pat==='hinge')return !m.weighted; // only heavy hinge is spared
+      if(prof.allowEasy&&m.easy)return true;   // high-rep, low-tax variants stay in (ring rows, push-ups…)
       return false;
     });
     if(f.length>=6)pool=f; // keep the bias only if the pool stays workable
@@ -1101,8 +1105,74 @@ function _extraExFor(){
   const prof=DAY_PROFILES[dow];
   return (prof&&prof.extraEx)||[];
 }
+// Weekly floating single-leg guarantee: if no unilateral leg movement has appeared in a
+// WOD session this week (Mon→today), the week's last WOD day (Sat) injects one.
+function _weekHas(flag){
+  let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
+  const dow=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-((dow+6)%7));
+  const ws=mon.toISOString().slice(0,10),de=d.toISOString().slice(0,10);
+  for(const x of Object.values(D.sessions||{})){
+    if(!x.isWOD||!x.date||x.date<ws||x.date>de||!x.wodData||!Array.isArray(x.wodData.moves))continue;
+    const all=x.wodData.moves.concat(...((x.wodData.parts||[]).map(p=>p.moves||[])));
+    if(all.some(mv=>{const b=WOD_MOVES.find(y=>y.n===mv.n);return b&&b[flag];}))return true;
+  }
+  return false;
+}
+function _ensureHspu(w){
+  const isH=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.hspuFam;};
+  if(w.moves.some(isH))return;
+  const cand=WOD_MOVES.filter(m=>m.hspuFam&&!m.nx&&_wodEnabled(m.equip));
+  if(!cand.length)return;
+  const pick=_wrp(cand);
+  const inst={n:pick.n,unit:pick.unit,cat:pick.cat,reps:(w.moves[0]&&w.moves[0].reps==null)?null:_rp(pick.rep)};
+  // replace a non-cardio, non-core slot (prefer another push/gym move), else the last movement
+  let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='gym'&&b.pat!=='core';});
+  if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
+  if(idx<0)idx=w.moves.length-1;
+  w.moves[idx]=inst;w.hspuInjected=true;
+}
+function _weekHasUni(){return _weekHas('uni');}
+function _weekHasUniLegacy(){
+  let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
+  const dow=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-((dow+6)%7));
+  const ws=mon.toISOString().slice(0,10),de=d.toISOString().slice(0,10);
+  for(const x of Object.values(D.sessions||{})){
+    if(!x.isWOD||!x.date||x.date<ws||x.date>de||!x.wodData||!Array.isArray(x.wodData.moves))continue;
+    if(x.wodData.moves.some(mv=>{const b=WOD_MOVES.find(y=>y.n===mv.n);return b&&b.uni;}))return true;
+  }
+  return false;
+}
+function _ensureUniLeg(w){
+  const isUni=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.uni;};
+  if(w.moves.some(isUni))return;
+  const cand=WOD_MOVES.filter(m=>m.uni&&!m.nx&&m.pat==='legs'&&_wodEnabled(m.equip)&&(KNEE_CLEARED||!m.kneeHeavy));
+  if(!cand.length)return;
+  const pick=_wrp(cand);
+  const inst={n:pick.n,unit:pick.unit,cat:pick.cat,reps:(w.moves[0]&&w.moves[0].reps==null)?null:_rp(pick.rep)};
+  if(pick.wt&&pick.wt.length){inst.wt=_rp(pick.wt);inst.hand=pick.hand||'1';}
+  // replace a bodyweight/gym slot first, else the last movement
+  let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='gym'&&b.pat!=='core';});
+  if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
+  if(idx<0)idx=w.moves.length-1;
+  w.moves[idx]=inst;w.uniInjected=true;
+}
+function _needsCoreFinisher(w){
+  if(!w.moves||!w.moves.length)return false;
+  const all=w.moves.concat(...((w.parts||[]).map(p=>p.moves||[])));
+  return !all.some(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&(b.pat==='core'||b.cat==='core');});
+}
 function _attachDay(w,allowVest){
   const _p=_dayProfile();
+  const _target=(idx)=>(idx&&w.parts&&w.parts[idx-1])?w.parts[idx-1]:w;
+  if(_wodBias&&_p.uniGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length&&!_weekHasUni()){const t=_target(_p.uniGuardPart);if(t.moves&&t.moves.length)_ensureUniLeg(t);}
+  if(_wodBias&&_p.hspuGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length&&!_weekHas('hspuFam')){const t=_target(_p.hspuGuardPart);if(t.moves&&t.moves.length)_ensureHspu(t);}
+  // guards may have injected a movement already used elsewhere in the session — dedupe once more
+  if(Array.isArray(w.parts)&&w.parts.length){const prof=_wodBias?_p:null;w.parts.forEach((p,i)=>_dedupeAgainst(p,[w].concat(w.parts.slice(0,i)),prof));}
+  if(w.autoFinisher!==false&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&_needsCoreFinisher(w)){
+    const f=_genFinisher();
+    w.finisher={title:f.title.replace('Core Finisher \u2014 ',''),scheme:f.scheme,moves:f.moves};
+    w.est=(w.est||0)+(f.est||6);
+  }
   if(_wodBias&&_p.legBias&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length)_ensureLegVolume(w);
   _teamify(w);
   if(allowVest===undefined)allowVest=true;
@@ -1202,6 +1272,91 @@ function _genExtrasOnly(){
     scheme:'No metcon today. Run the strength work below and done.',
     moves:[],ladder:null,resultType:'check',est:20,noTeam:true,noTopup:true,stimulus:null};
 }
+// Part generators ─────────────────────────────────────────────────────────
+const CYCLING_IDS=['bbthr','pclean','hpclean','psnatch','hpsnatch','pjerk','cj','bbpp','ohs','bbfsq','sqclean','deadlift'];
+function _genCycling(prof){
+  let pool=WOD_MOVES.filter(m=>CYCLING_IDS.includes(m.id)&&_wodEnabled(m.equip));
+  if(prof&&prof.spare&&prof.spare.includes('hinge'))pool=pool.filter(m=>m.pat!=='hinge');
+  if(!pool.length)return _genClassic(prof,['power'],{});
+  const m=_wrp(pool);const wt=m.wt?m.wt[Math.min(1,m.wt.length-1)]:undefined; // moderate option
+  const inst=r=>({n:m.n,unit:'',cat:m.cat,reps:r,...(wt?{wt}:{})});
+  const roll=_rp(['emom','rounds','grace','ladder']);
+  if(roll==='emom'){const t=_rp([8,10]);return{format:'emom',focus:'Barbell Cycling',title:`EMOM ${t} — ${m.n}`,scheme:`Every minute: 5 touch-and-go ${m.n}, same load across`,moves:[inst(5)],ladder:null,resultType:'check',est:t,stimulus:'Cycling practice: smooth turnover, no drops. Load should let the bar keep moving.'};}
+  if(roll==='rounds'){const r=_rp([3,4]);return{format:'rft',focus:'Barbell Cycling',title:`${r} Rounds — Unbroken`,scheme:`${r} sets of ${_rp([10,12])} unbroken ${m.n} · rest 90s between · same load`,moves:[inst(12)],ladder:null,resultType:'check',est:r*2+3,stimulus:'Grip and rhythm. If a set breaks, the load was too heavy — drop it, do not rest longer.'};}
+  if(roll==='grace'){return{format:'chipper',focus:'Barbell Cycling',title:`30 ${m.n} For Time`,scheme:`30 reps for time · light-moderate (~60-65%)`,moves:[inst(30)],ladder:null,resultType:'time',est:6,stimulus:'Fast singles or small quick sets — whichever keeps the bar moving.'};}
+  return{format:'ladder',focus:'Barbell Cycling',title:`3-5-7-5-3 — ${m.n}`,scheme:'Ascending-descending ladder · bar speed governs the load · rest as needed',moves:[inst(null)],ladder:[3,5,7,5,3],resultType:'time',est:8,stimulus:'Every rep identical. Add load only if the 7 was crisp.'};
+}
+function _genEasyDensity(prof){
+  const pool=WOD_MOVES.filter(m=>(m.easy||m.cat==='core')&&!m.nx&&_wodEnabled(m.equip)&&m.unit!=='s');
+  const moves=_samp(pool,Math.min(3,pool.length)).map(_withReps);
+  const dur=_rp([8,10]);
+  return{format:'amrap',focus:'Capacity',title:`AMRAP ${dur}`,scheme:`As many rounds as possible in ${dur} min — high-rep, low-tax movements, keep moving`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:'Density work: big sets, short transitions. Nothing here should be a limiter.'};
+}
+// Replace any movement in `p` that already appears in earlier parts with an unused
+// movement of the same modality (W/G/M), so a day never repeats a movement across parts.
+function _dedupeAgainst(p,earlier,prof){
+  const used=new Set(earlier.flatMap(x=>(x.moves||[]).map(m=>m.n)));
+  const pool=_wodPoolBiased(prof).filter(m=>!m.nx);
+  p.moves=(p.moves||[]).map(mv=>{
+    if(!used.has(mv.n))return mv;
+    const b=WOD_MOVES.find(x=>x.n===mv.n);
+    const mine=new Set(p.moves.map(m=>m.n));
+    const cand=pool.filter(m=>!used.has(m.n)&&!mine.has(m.n)&&(!b||m.mod===b.mod));
+    if(!cand.length)return mv;
+    const alt=_wrp(cand);
+    const inst={n:alt.n,unit:alt.unit,cat:alt.cat,reps:mv.reps==null?null:_rp(alt.rep)};
+    if(alt.wt&&alt.wt.length){inst.wt=_rp(alt.wt);inst.hand=alt.hand||'1';}
+    return inst;
+  });
+}
+function _genClassic(prof,fociOverride,opts){
+  opts=opts||{};
+  const pool=_wodPoolBiased(prof);
+
+  let foci=WOD_FOCI.filter(f=>!f.need||_wodEnabled(f.need));
+  const want=fociOverride||(prof&&prof.foci);
+  if(want){const r=foci.filter(f=>want.includes(f.id));if(r.length)foci=r;}
+  const focus=_rp(foci);
+  const fmt=_rp(focus.fmts);
+  const bbBias=focus.id==='power'?.9:.65;
+  const pick=(minN,maxN)=>_cfPick(pool,_cfTmpl(focus,minN,opts.maxMoves?Math.min(maxN,opts.maxMoves):maxN),bbBias);
+  const stim=()=>_rp(focus.stim||WOD_STIM);
+  if(fmt==='amrap'){
+    const dur=_rp(focus.dur||[10,12,15,18,20]);
+    let _sig=Math.random()<0.35?_sigCouplet(pool):null;
+    const moves=(_sig||pick(2,dur<=10?3:4)).map(_withReps);
+    return ({format:'amrap',focus:focus.n,title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:stim()});
+  }
+  if(fmt==='rft'){
+    const rounds=_rp(focus.id==='sprint'?[3,4]:[3,4,5]);
+    let _sig=Math.random()<0.35?_sigCouplet(pool):null;
+    const moves=(_sig||pick(2,4)).map(_withReps);
+    return ({format:'rft',focus:focus.n,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()});
+  }
+  if(fmt==='ladder'){
+    const ladder=_rp([[21,15,9],[15,12,9],[21,18,15,12,9],[10,8,6,4,2],[27,21,15,9]]);
+    // ladder reps apply per movement; eligible = reps or cals (not s)
+    const lpool=pool.filter(m=>m.unit===''||m.unit==='cal');
+    let _sig=Math.random()<0.35?_sigCouplet(lpool):null;
+    const moves=(_sig||_cfPick(lpool,_cfTmpl(focus,2,opts.maxMoves?Math.min(3,opts.maxMoves):3),bbBias)).map(m=>_inst(m,null));
+    return ({format:'ladder',focus:focus.n,title:`${ladder.join('-')} For Time`,scheme:`${ladder.join('-')} reps of each movement, descending, for time`,moves,ladder,resultType:'time',est:Math.ceil(ladder.reduce((a,b)=>a+b,0)/8),stimulus:stim()});
+  }
+  if(fmt==='emom'){
+    const moves=pick(3,4).map(_withReps);
+    const total=moves.length===3?_rp([12,15,18,21]):_rp([12,16,20,24]); // total must divide evenly by the rotation
+    return ({format:'emom',focus:focus.n,title:`EMOM ${total}`,scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements`,moves,ladder:null,resultType:'check',est:total,stimulus:'Each set inside the minute; the rest of the minute is your rest.'});
+  }
+  if(fmt==='chipper'){
+    const moves=_cfPick(pool,_rp(FOCUS_TMPLS.grind),bbBias).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
+    return ({format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:stim()});
+  }
+  // intervals
+  const rounds=_rp([5,6,8]),work=_rp([30,40,45]),rest=_rp([15,20,30]);
+  const moves=pick(3,4).map(m=>_inst(m,null));
+  const est=Math.ceil(rounds*moves.length*(work+rest)/60);
+  return ({format:'intervals',focus:focus.n,title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'});
+}
+
 function generateWOD(type){
   type=type||_wodType||'classic';
   if(type==='skill'){const f=_genSkill();f.noTeam=true;return _attachDay(f,false);}
@@ -1212,48 +1367,51 @@ function generateWOD(type){
   if(type==='extras')return _attachDay(_genExtrasOnly(),false);
   if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
   const prof=_wodBias?_dayProfile():null;
-  const pool=_wodPoolBiased(prof);
-  let foci=WOD_FOCI.filter(f=>!f.need||_wodEnabled(f.need));
-  if(prof&&prof.foci){const r=foci.filter(f=>prof.foci.includes(f.id));if(r.length)foci=r;}
-  const focus=_rp(foci);
-  const fmt=_rp(focus.fmts);
-  const bbBias=focus.id==='power'?.9:.65;
-  const pick=(minN,maxN)=>_cfPick(pool,_cfTmpl(focus,minN,maxN),bbBias);
-  const stim=()=>_rp(focus.stim||WOD_STIM);
-  if(fmt==='amrap'){
-    const dur=_rp(focus.dur||[10,12,15,18,20]);
-    let _sig=Math.random()<0.35?_sigCouplet(pool):null;
-    const moves=(_sig||pick(2,dur<=10?3:4)).map(_withReps);
-    return _attachDay({format:'amrap',focus:focus.n,title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:stim()});
+  const specs=(prof&&prof.parts&&prof.parts.length)?prof.parts:[{}];
+  const build=(spec)=>{
+    if(spec.kind==='cycling')return _genCycling(prof);
+    if(spec.kind==='easyDensity')return _genEasyDensity(prof);
+    const w=_genClassic(prof,spec.foci||null,{maxMoves:spec.maxMoves});
+    return w;
+  };
+  const main=build(specs[0]);
+  if(specs[0].obj)main.objective=specs[0].obj;
+  main.parts=[];
+  for(let i=1;i<specs.length;i++){
+    const p=build(specs[i]);if(specs[i].obj)p.objective=specs[i].obj;
+    _dedupeAgainst(p,[main].concat(main.parts),prof);
+    _teamify(p);main.parts.push(p);
   }
-  if(fmt==='rft'){
-    const rounds=_rp(focus.id==='sprint'?[3,4]:[3,4,5]);
-    let _sig=Math.random()<0.35?_sigCouplet(pool):null;
-    const moves=(_sig||pick(2,4)).map(_withReps);
-    return _attachDay({format:'rft',focus:focus.n,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()});
-  }
-  if(fmt==='ladder'){
-    const ladder=_rp([[21,15,9],[15,12,9],[21,18,15,12,9],[10,8,6,4,2],[27,21,15,9]]);
-    // ladder reps apply per movement; eligible = reps or cals (not s)
-    const lpool=pool.filter(m=>m.unit===''||m.unit==='cal');
-    let _sig=Math.random()<0.35?_sigCouplet(lpool):null;
-    const moves=(_sig||_cfPick(lpool,_cfTmpl(focus,2,3),bbBias)).map(m=>_inst(m,null));
-    return _attachDay({format:'ladder',focus:focus.n,title:`${ladder.join('-')} For Time`,scheme:`${ladder.join('-')} reps of each movement, descending, for time`,moves,ladder,resultType:'time',est:Math.ceil(ladder.reduce((a,b)=>a+b,0)/8),stimulus:stim()});
-  }
-  if(fmt==='emom'){
-    const moves=pick(3,4).map(_withReps);
-    const total=moves.length===3?_rp([12,15,18,21]):_rp([12,16,20,24]); // total must divide evenly by the rotation
-    return _attachDay({format:'emom',focus:focus.n,title:`EMOM ${total}`,scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements`,moves,ladder:null,resultType:'check',est:total,stimulus:'Each set inside the minute; the rest of the minute is your rest.'});
-  }
-  if(fmt==='chipper'){
-    const moves=_cfPick(pool,_rp(FOCUS_TMPLS.grind),bbBias).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
-    return _attachDay({format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:stim()});
-  }
-  // intervals
-  const rounds=_rp([5,6,8]),work=_rp([30,40,45]),rest=_rp([15,20,30]);
-  const moves=pick(3,4).map(m=>_inst(m,null));
-  const est=Math.ceil(rounds*moves.length*(work+rest)/60);
-  return _attachDay({format:'intervals',focus:focus.n,title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'});
+  return _attachDay(main);
+}
+function _partHTML(p,ctx,label,removable){
+  let h='';
+  h+=`<div style="display:flex;align-items:center;margin-top:${label?'14px':'0'};">
+    <div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);">${label||'Wod'}${p.objective?` <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--tx3);">· ${p.objective}</span>`:''}</div>
+    ${removable&&ctx?`<button class="wod-swap" style="margin-left:auto;" onclick="removeWodPart('${ctx}')" title="Remove this part">✕</button>`:''}</div>`;
+  h+=`<div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--pp);margin-top:2px;">${p.title}</div>`;
+  if(p.focus)h+=`<div style="display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);border:1px solid var(--bdr);border-radius:10px;padding:2px 8px;margin-top:5px;">🎯 ${p.focus}</div>`;
+  if(p.team)h+=`<div style="font-size:.68rem;font-weight:700;color:var(--ac);margin-top:6px;">👥 TEAM — scale each partner independently: loads, reps, movements per person (✎ / ⇄ edit the shared Rx)</div>`;
+  h+=`<div style="font-size:.72rem;color:var(--tx2);margin:5px 0 12px;line-height:1.5;">${p.scheme||''}</div>`;
+  if(p.vest)h+=`<div style="font-size:.7rem;color:#c9a227;font-weight:700;margin-bottom:8px;">Weight vest optional — wear it for Rx+</div>`;
+  if(p.ladder)h+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:700;color:var(--tx);margin-bottom:10px;letter-spacing:1px;">${p.ladder.join('  –  ')}</div>`;
+  (p.moves||[]).forEach((m,i)=>{
+    const editable=ctx&&(m.reps!=null||m.wt);
+    const right=(p.format==='emom'?`<span class="mvr">min ${i+1}</span>`:'')
+      +(editable?`<button class="wod-swap" onclick="editMove('${ctx}',${i})" title="Edit reps / weight">✎</button>`:'')
+      +(ctx?`<button class="wod-swap" onclick="openSwap('${ctx}',${i})" title="Swap movement">⇄</button>`:'')
+      +(ctx&&p.moves.length>1&&i>0?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},-1)" title="Move up">↑</button>`:'')
+      +(ctx&&p.moves.length>1&&i<p.moves.length-1?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},1)" title="Move down">↓</button>`:'')
+      +(ctx&&p.moves.length>1?`<button class="wod-swap" onclick="removeWodMove('${ctx}',${i})" title="Remove movement">✕</button>`:'');
+    h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span><span class="mv-right">${right}</span></div>`;
+  });
+  if(ctx&&p.moves&&p.moves.length&&p.format!=='recovery'&&p.format!=='rest')h+=`<div style="margin-top:8px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodMove('${ctx}')">＋ Add movement</button></div>`;
+  if(p.uniInjected)h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:8px;">Single-leg slot added — none rolled in a Wod this week.</div>`;
+  if(p.hspuInjected)h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:8px;">HSPU-family slot added — none rolled in a Wod this week.</div>`;
+  if(p.stimulus)h+=`<div style="font-size:.7rem;color:var(--tx3);margin-top:12px;font-style:italic;">${p.stimulus}</div>`;
+  h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:6px;font-family:'IBM Plex Mono',monospace;">~${p.est||0} min</div>`;
+  if(ctx&&ctx.indexOf('sess:')===0&&ctx.indexOf('#')>0)h+=`<div style="margin-top:8px;"><input class="inp" placeholder="Result for this part" value="${(p.result||'').replace(/"/g,'&quot;')}" oninput="setPartResult('${ctx}',this.value)"></div>`;
+  return h;
 }
 function _wodCardHTML(w,ctx){
   let h=`<div class="cd" style="border-left:3px solid var(--pp);padding-left:15px;margin-bottom:0;">`;
@@ -1262,26 +1420,20 @@ function _wodCardHTML(w,ctx){
   const _wsd=weeksSinceDeload();
   if(_wsd!=null)h+=`<div style="font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin:-6px 0 10px;">Week ${_wsd+1} since deload</div>`;
   if(w.force)h+=`<div style="font-size:.82rem;margin-bottom:12px;line-height:1.5;"><strong style="color:var(--tx);text-transform:uppercase;font-size:.68rem;letter-spacing:1.5px;">Force</strong><br>${w.force}</div>`;
-  h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);">Wod</div>`;
-  h+=`<div style="font-size:1.05rem;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--pp);margin-top:2px;">${w.title}</div>`;
-  if(w.focus)h+=`<div style="display:inline-block;font-size:.58rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);border:1px solid var(--bdr);border-radius:10px;padding:2px 8px;margin-top:5px;">🎯 ${w.focus}</div>`;
-  if(w.team)h+=`<div style="font-size:.68rem;font-weight:700;color:var(--ac);margin-top:6px;">👥 TEAM WOD — scale each partner independently: loads, reps, movements per person (✎ / ⇄ edit the shared Rx)</div>`;
-  h+=`<div style="font-size:.72rem;color:var(--tx2);margin:5px 0 12px;line-height:1.5;">${w.scheme}</div>`;
-  if(w.vest)h+=`<div style="font-size:.7rem;color:#c9a227;font-weight:700;margin-bottom:8px;">Weight vest optional — wear it for Rx+</div>`;
-  if(w.ladder)h+=`<div style="font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:700;color:var(--tx);margin-bottom:10px;letter-spacing:1px;">${w.ladder.join('  –  ')}</div>`;
-  w.moves.forEach((m,i)=>{
-    const editable=ctx&&(m.reps!=null||m.wt);
-    const right=(w.format==='emom'?`<span class="mvr">min ${i+1}</span>`:'')
-      +(editable?`<button class="wod-swap" onclick="editMove('${ctx}',${i})" title="Edit reps / weight">✎</button>`:'')
-      +(ctx?`<button class="wod-swap" onclick="openSwap('${ctx}',${i})" title="Swap movement">⇄</button>`:'')
-      +(ctx&&w.moves.length>1&&i>0?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},-1)" title="Move up">↑</button>`:'')
-      +(ctx&&w.moves.length>1&&i<w.moves.length-1?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},1)" title="Move down">↓</button>`:'')
-      +(ctx&&w.moves.length>1?`<button class="wod-swap" onclick="removeWodMove('${ctx}',${i})" title="Remove movement">✕</button>`:'');
-    h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span><span class="mv-right">${right}</span></div>`;
-  });
-  if(ctx&&w.moves&&w.moves.length&&w.format!=='recovery'&&w.format!=='rest')h+=`<div style="margin-top:8px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodMove('${ctx}')">＋ Add movement</button></div>`;
-  if(w.stimulus)h+=`<div style="font-size:.7rem;color:var(--tx3);margin-top:12px;font-style:italic;">${w.stimulus}</div>`;
-  h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:6px;font-family:'IBM Plex Mono',monospace;">~${w.est} min</div>`;
+  const parts=Array.isArray(w.parts)?w.parts:[];
+  const multi=parts.length>0;
+  h+=_partHTML(w,ctx,multi?'Part A':'Wod',false);
+  parts.forEach((p,i)=>{h+=`<div style="margin-top:10px;padding-top:6px;border-top:1px solid var(--bdr);"></div>`;h+=_partHTML(p,ctx?ctx+'#'+(i+1):null,'Part '+String.fromCharCode(66+i),true);});
+  if(ctx&&w.format!=='recovery'&&w.format!=='rest'&&parts.length<2)h+=`<div style="margin-top:10px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodPart('${ctx}')">＋ Add part</button></div>`;
+  if(w.finisher&&w.finisher.moves&&w.finisher.moves.length){
+    h+=`<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--bdr);">
+      <div style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;">Core finisher <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px;">· no midline in the Wod, so it’s tacked on</span>${ctx?`<button class="wod-swap" style="margin-left:auto;" onclick="dropFinisher('${ctx}')" title="Remove finisher">✕</button>`:''}</div>
+      <div style="font-size:.9rem;font-weight:800;color:var(--pp);margin-top:4px;">${w.finisher.title}</div>
+      <div style="font-size:.7rem;color:var(--tx2);margin:2px 0 6px;">${w.finisher.scheme}</div>`;
+    w.finisher.moves.forEach(m=>{h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span></div>`;});
+    h+=`</div>`;
+  }
+  if(multi)h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:10px;font-family:'IBM Plex Mono',monospace;">Session total ~${(w.est||0)+parts.reduce((a,p)=>a+(p.est||0),0)} min</div>`;
   if(w.extra&&w.extra.length){
     h+=`<div style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx);margin-top:14px;">Extra <span style="font-weight:400;color:var(--tx3);text-transform:none;letter-spacing:0;">· optional</span></div>`;
     w.extra.forEach(x=>{h+=`<div style="font-size:.78rem;color:var(--tx2);margin-top:5px;line-height:1.5;">${x}</div>`;});
@@ -1290,12 +1442,20 @@ function _wodCardHTML(w,ctx){
   return h;
 }
 // ── Per-movement swap ──────────────────────────────────────────────────────────
+function _wodCtxRoot(ctx){
+  const base=ctx.split('#')[0];
+  if(base.indexOf('sess:')===0){const sx=D.sessions[base.slice(5)];return sx&&sx.wodData;}
+  return _pendingWOD;
+}
 function _wodCtxObj(ctx){
-  if(ctx==='pending')return _pendingWOD;
-  if(ctx&&ctx.indexOf('sess:')===0){const s=D.sessions[ctx.slice(5)];return s&&s.wodData;}
-  return null;
+  const root=_wodCtxRoot(ctx);if(!root)return null;
+  const hash=ctx.indexOf('#');
+  if(hash<0)return root;
+  const i=parseInt(ctx.slice(hash+1))-1;
+  return (root.parts&&root.parts[i])||null;
 }
 function _wodCtxRerender(ctx){
+  ctx=ctx.split('#')[0];
   if(ctx==='pending'){showWODModal(_wodDate);return;}
   if(ctx&&ctx.indexOf('sess:')===0){cM();activeSessKey=ctx.slice(5);rWOD();}
 }
@@ -1530,6 +1690,32 @@ function moveWodMove(ctx,idx,dir){
   const w=_wodCtxObj(ctx);if(!w)return;
   const j=idx+dir;if(j<0||j>=w.moves.length)return;
   const t=w.moves[idx];w.moves[idx]=w.moves[j];w.moves[j]=t;
+  if(ctx.indexOf('sess:')===0)sv();
+  _wodCtxRerender(ctx);
+}
+function addWodPart(ctx){
+  const root=_wodCtxRoot(ctx);if(!root)return;
+  if(!Array.isArray(root.parts))root.parts=[];
+  if(root.parts.length>=2)return;
+  const prof=_wodBias?_dayProfile():null;
+  const p=_genClassic(prof,null,{});p.objective='Extra part';
+  _dedupeAgainst(p,[root].concat(root.parts),prof);_teamify(p);
+  root.parts.push(p);
+  if(ctx.indexOf('sess:')===0)sv();
+  _wodCtxRerender(ctx);
+}
+function removeWodPart(ctx){
+  const root=_wodCtxRoot(ctx);if(!root||!root.parts)return;
+  const hash=ctx.indexOf('#');if(hash<0)return;
+  const i=parseInt(ctx.slice(hash+1))-1;
+  root.parts.splice(i,1);
+  if(ctx.indexOf('sess:')===0)sv();
+  _wodCtxRerender(ctx);
+}
+function setPartResult(ctx,val){const p=_wodCtxObj(ctx);if(!p)return;p.result=val;sv();}
+function dropFinisher(ctx){
+  const w=_wodCtxObj(ctx);if(!w)return;
+  delete w.finisher;w.autoFinisher=false;
   if(ctx.indexOf('sess:')===0)sv();
   _wodCtxRerender(ctx);
 }
