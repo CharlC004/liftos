@@ -846,15 +846,15 @@ const WOD_STIM=['Steady circuit pace — keep moving, short breaths between move
 // Session focus — suggests the day's intent, biases format + movement mix.
 // wf = target weighted fraction of movements. need = required equipment toggle.
 const WOD_FOCI=[
-  {id:'engine',n:'Engine',      fmts:['amrap','intervals'],wf:.33,dur:[15,18,20],
+  {id:'engine',n:'Engine',      fmts:['amrap','intervals','e2mom','buyin','tabata'],wf:.33,dur:[15,18,20],
    stim:['Sustainable pace from minute one — this is an aerobic session, not a sprint.','Nose-breathing pace early; the last third is where you push.']},
-  {id:'sprint',n:'Sprint',      fmts:['rft','ladder'],     wf:.5,
+  {id:'sprint',n:'Sprint',      fmts:['rft','ladder','repamrap','deathby','tabata'],     wf:.5,
    stim:['Short and hot — go out fast and hold on.','Redline effort; rest as little as your form allows.']},
-  {id:'grind', n:'Grind',       fmts:['chipper','amrap'],  wf:.5,dur:[18,20],
+  {id:'grind', n:'Grind',       fmts:['chipper','amrap','buyin','ascladder'],  wf:.5,dur:[18,20],
    stim:['One gear, no stopping — chip away at a pace you can hold to the end.','Long and steady; the win is never putting your hands on your knees.']},
-  {id:'power', n:'Barbell Power',fmts:['emom','rft'],      wf:.8,need:'bb',
+  {id:'power', n:'Barbell Power',fmts:['emom','rft','repamrap','e2mom','deathby','maxrep'],      wf:.8,need:'bb',
    stim:['Loads should feel crisp, not grindy — this is barbell conditioning, not a max-out.','Every rep with intent; drop the bar before the technique drops.']},
-  {id:'gymn',  n:'Gymnastics Density',fmts:['emom','amrap'],wf:.2,dur:[10,12,16],
+  {id:'gymn',  n:'Gymnastics Density',fmts:['emom','amrap','ascladder','e2mom','maxrep','tabata'],wf:.2,dur:[10,12,16],
    stim:['Quality positions under fatigue — break sets before failure.','Accumulate clean reps; sloppy reps do not count today.']}
 ];
 
@@ -985,42 +985,51 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat — grind metcon',plan:'hard',
+  1:{label:'Mon · back squat — loaded single-leg in the Wod',plan:'hard',
      force:'Back Squat — top set of 5 · 2 back-off sets of 8',
      forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     spare:['hinge'],foci:['grind','engine'],legBias:false,
+     spare:['hinge'],foci:['grind','engine'],
+     uniGuard:true,uniAlways:true,uniHeavy:true,cardioAddon:true,
      parts:[{obj:'Grind',foci:['grind','engine']}],
-     extraEx:[{id:'bss',name:'Single-Leg Work (Bulgarian split squat / step-up)',_force:true,type:'sec',s:3,r:10,rest:120}]},
-  2:{label:'Tue · strict press — engine + capacity',plan:'hard',
-     force:'Strict Press — 4×8',
-     forceEx:[{id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:180}],
-     spare:['push','pull'],allowEasy:true,foci:['engine','sprint'],
-     parts:[{obj:'Engine',foci:['engine']},{obj:'Capacity',kind:'easyDensity'}],
-     extraEx:[
-       {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:12,rest:60},
-       {id:'facepull',name:'Face Pulls (cable)',_force:true,type:'acc',s:3,r:15,rest:60}]},
-  3:{label:'Wed · gymnastics density + sprint — spares pull (skill work on your own)',plan:'hard',
-     force:null,
-     spare:['pull'],foci:['gymn','sprint'],hspuGuard:true,
+     extraEx:[]},
+  2:{label:'Tue · press cluster — O-lifts in the Wod, no hanging pull work',plan:'hard',
+     force:'Strict Press 4×8 · DB Overhead Press 3×10 · Triceps Pushdowns 3×12',
+     forceEx:[
+       {id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:180},
+       {id:'dbohp',name:'DB Overhead Press',_force:true,type:'sec',s:3,r:10,rest:120},
+       {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:12,rest:60}],
+     spare:[],spareIds:['pullup','c2b','strpull','chinup','ringpull','ringmu','barmu','burppull','ropeclimb','ropepull'],
+     foci:['power','engine','sprint'],olyGuard:true,cardioAddon:true,
+     parts:[{obj:'Olympic + Engine',foci:['power','engine']}],
+     extraEx:[]},
+  3:{label:'Wed · gymnastics day — 20 min MU practice, then the Wod',plan:'hard',
+     force:'20 min Muscle-up work — your own practice (transitions, false grip, negatives, attempts)',
+     spare:[],foci:['gymn','sprint'],hspuGuard:true,cardioAddon:true,
      parts:[{obj:'Gymnastics Density',foci:['gymn']},{obj:'Sprint',foci:['sprint'],maxMoves:2}],
-     extraEx:[{id:'dbcurl',name:'DB Biceps Curls',_force:true,type:'acc',s:3,r:12,rest:60}]},
-  4:{label:'Thu · bench day — no WOD',plan:'extras',
-     force:'Flat DB Bench Press — 3 × max reps',
-     forceEx:[{id:'dbflat',name:'Flat DB Bench Press',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150}],
+     extraEx:[]},
+  4:{label:'Thu · bench day — no Wod · Zone 2',plan:'extras',
+     force:'Bench Press · DB Press · Chest-Supported Rows · DB Curls · Zone 2',
+     forceEx:[
+       {id:'bench',name:'Bench Press',_force:true,type:'pri',s:4,r:8,rest:180},
+       {id:'dbflat',name:'Flat DB Bench Press',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150},
+       {id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:120},
+       {id:'dbcurl',name:'DB Biceps Curls (35s)',_force:true,type:'acc',s:3,r:0,repRange:'max reps',rest:75},
+       {id:'z2',name:'Airdyne Zone 2 (reps = minutes)',_force:true,type:'acc',s:1,r:30,rest:0}],
      spare:[],
      extraEx:[]},
   5:{label:'Fri · off',plan:'off',
      force:null,
      spare:[],
      extraEx:[]},
-  6:{label:'Sat · deadlift — barbell cycling + hard metcon',plan:'hard',
-     force:'Deadlift — 6RM top set · 2 back-off sets of 8',
-     forceEx:[{id:'deadlift',name:'Deadlift',_force:true,type:'pri',topSet:{s:1,r:6},s:2,r:8,rest:240}],
-     spare:['hinge'],foci:['power','grind'],uniGuard:true,uniGuardPart:1,
+  6:{label:'Sat · deadlift cluster — barbell cycling + hard metcon',plan:'hard',
+     force:'Deadlift 6RM · 2×8 back-offs · RDL 3×8 · GHD work',
+     forceEx:[
+       {id:'deadlift',name:'Deadlift',_force:true,type:'pri',topSet:{s:1,r:6},s:2,r:8,rest:240},
+       {id:'rdl',name:'Romanian Deadlift',_force:true,type:'sec',s:3,r:8,rest:150},
+       {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:4,r:10,rest:120}],
+     spare:['hinge'],foci:['power','grind'],cardioAddon:true,
      parts:[{obj:'Barbell Cycling',kind:'cycling'},{obj:'Hard',foci:['power','grind']}],
-     extraEx:[
-       {id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:120},
-       {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:4,r:10,rest:120}]},
+     extraEx:[]},
   0:{label:'Sun · recovery',plan:'recovery',
      force:null,
      spare:[],
@@ -1048,6 +1057,10 @@ function _wodPoolBiased(prof){
   if(!prof)return pool;
   if(prof.light)pool=pool.filter(m=>!m.weighted);
   if(prof.legBias)pool=pool.filter(m=>!(m.pat==='legs'&&!m.weighted)); // heavy leg volume, not bodyweight volume
+  if(prof.spareIds&&prof.spareIds.length){
+    const f=pool.filter(m=>!prof.spareIds.includes(m.id));
+    if(f.length>=6)pool=f;
+  }
   if(prof.spare&&prof.spare.length){
     const f=pool.filter(m=>{
       if(!prof.spare.includes(m.pat))return true;
@@ -1119,6 +1132,7 @@ function _weekHas(flag){
   return false;
 }
 function _ensureHspu(w){
+  if(!_guardable(w))return;
   const isH=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.hspuFam;};
   if(w.moves.some(isH))return;
   const cand=WOD_MOVES.filter(m=>m.hspuFam&&!m.nx&&_wodEnabled(m.equip));
@@ -1142,10 +1156,13 @@ function _weekHasUniLegacy(){
   }
   return false;
 }
-function _ensureUniLeg(w){
-  const isUni=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.uni;};
+const SOLO_FMTS=['deathby','maxrep'];
+function _guardable(w){return !SOLO_FMTS.includes(w.format);}
+function _ensureUniLeg(w,heavy){
+  if(!_guardable(w))return;
+  const isUni=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.uni&&(!heavy||b.weighted);};
   if(w.moves.some(isUni))return;
-  const cand=WOD_MOVES.filter(m=>m.uni&&!m.nx&&m.pat==='legs'&&_wodEnabled(m.equip)&&(KNEE_CLEARED||!m.kneeHeavy));
+  const cand=WOD_MOVES.filter(m=>m.uni&&!m.nx&&m.pat==='legs'&&_wodEnabled(m.equip)&&(KNEE_CLEARED||!m.kneeHeavy)&&(!heavy||m.weighted));
   if(!cand.length)return;
   const pick=_wrp(cand);
   const inst={n:pick.n,unit:pick.unit,cat:pick.cat,reps:(w.moves[0]&&w.moves[0].reps==null)?null:_rp(pick.rep)};
@@ -1156,6 +1173,29 @@ function _ensureUniLeg(w){
   if(idx<0)idx=w.moves.length-1;
   w.moves[idx]=inst;w.uniInjected=true;
 }
+const OLIFT_IDS=['psnatch','hpsnatch','sqsnatch','pclean','hpclean','sqclean','cj','pjerk','bbthr','ohs'];
+function _ensureOlift(w){
+  if(!_guardable(w))return;
+  const isO=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&OLIFT_IDS.includes(b.id);};
+  if(w.moves.some(isO))return;
+  const cand=WOD_MOVES.filter(m=>OLIFT_IDS.includes(m.id)&&!m.nx&&_wodEnabled(m.equip));
+  if(!cand.length)return;
+  const pick=_wrp(cand);
+  const inst={n:pick.n,unit:pick.unit,cat:pick.cat,reps:(w.moves[0]&&w.moves[0].reps==null)?null:_rp(pick.rep)};
+  if(pick.wt&&pick.wt.length){inst.wt=_rp(pick.wt);inst.hand=pick.hand||'1';}
+  let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='load';});
+  if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
+  if(idx<0)idx=w.moves.length-1;
+  w.moves[idx]=inst;w.olyInjected=true;
+}
+// ── Cardio add-on: short conditioning days get a dedicated interval block ──
+const CARDIO_ADDONS=[
+  {t:'Airdyne intervals — 10× 30s hard / 30s easy',e:10},
+  {t:'Airdyne intervals — 5× 2 min hard / 1 min easy',e:15},
+  {t:'Airdyne intervals — 8× 45s hard / 75s easy',e:16},
+  {t:'Airdyne intervals — 6× 90s hard / 90s easy',e:18},
+  {t:'Row/Ski intervals — 8× 250m hard, 1 min rest (Airdyne 8× 60s if no machine)',e:16}
+];
 function _needsCoreFinisher(w){
   if(!w.moves||!w.moves.length)return false;
   const all=w.moves.concat(...((w.parts||[]).map(p=>p.moves||[])));
@@ -1163,8 +1203,13 @@ function _needsCoreFinisher(w){
 }
 function _attachDay(w,allowVest){
   const _p=_dayProfile();
-  const _target=(idx)=>(idx&&w.parts&&w.parts[idx-1])?w.parts[idx-1]:w;
-  if(_wodBias&&_p.uniGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length&&!_weekHasUni()){const t=_target(_p.uniGuardPart);if(t.moves&&t.moves.length)_ensureUniLeg(t);}
+  const _target=(idx)=>{
+    const first=(idx&&w.parts&&w.parts[idx-1])?w.parts[idx-1]:w;
+    if(_guardable(first))return first;
+    return [w].concat(w.parts||[]).find(_guardable)||first; // solo-format parts can't absorb an injection
+  };
+  if(_wodBias&&_p.olyGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length){const t=_target(_p.olyGuardPart);if(t.moves&&t.moves.length)_ensureOlift(t);}
+  if(_wodBias&&_p.uniGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length&&(_p.uniAlways||!_weekHasUni())){const t=_target(_p.uniGuardPart);if(t.moves&&t.moves.length)_ensureUniLeg(t,!!_p.uniHeavy);}
   if(_wodBias&&_p.hspuGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length&&!_weekHas('hspuFam')){const t=_target(_p.hspuGuardPart);if(t.moves&&t.moves.length)_ensureHspu(t);}
   // guards may have injected a movement already used elsewhere in the session — dedupe once more
   if(Array.isArray(w.parts)&&w.parts.length){const prof=_wodBias?_p:null;w.parts.forEach((p,i)=>_dedupeAgainst(p,[w].concat(w.parts.slice(0,i)),prof));}
@@ -1172,6 +1217,10 @@ function _attachDay(w,allowVest){
     const f=_genFinisher();
     w.finisher={title:f.title.replace('Core Finisher \u2014 ',''),scheme:f.scheme,moves:f.moves};
     w.est=(w.est||0)+(f.est||6);
+  }
+  if(_wodBias&&_p.cardioAddon&&!w.noTeam&&w.focus!=='Recovery'&&w.moves&&w.moves.length&&w.cardio!==false){
+    const total=(w.est||0)+((w.parts||[]).reduce((a,p)=>a+(p.est||0),0)); // w.est already includes the finisher if one was added
+    if(total<20){const c=_rp(CARDIO_ADDONS);w.cardioAddon={title:'Cardio add-on',scheme:c.t,est:c.e};}
   }
   if(_wodBias&&_p.legBias&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length)_ensureLegVolume(w);
   _teamify(w);
@@ -1308,6 +1357,9 @@ function _dedupeAgainst(p,earlier,prof){
     if(alt.wt&&alt.wt.length){inst.wt=_rp(alt.wt);inst.hand=alt.hand||'1';}
     return inst;
   });
+  // single-movement formats name their movement in the title/scheme — keep them in sync after a swap
+  if(p.format==='deathby'&&p.moves[0])p.title='Death By — '+p.moves[0].n;
+  if(p.format==='maxrep'&&p.moves[0])p.scheme=p.scheme.replace(/as many .+ as possible/,'as many '+p.moves[0].n+' as possible');
 }
 function _genClassic(prof,fociOverride,opts){
   opts=opts||{};
@@ -1349,6 +1401,82 @@ function _genClassic(prof,fociOverride,opts){
   if(fmt==='chipper'){
     const moves=_cfPick(pool,_rp(FOCUS_TMPLS.grind),bbBias).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
     return ({format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:stim()});
+  }
+  if(fmt==='repamrap'){
+    // Repeating AMRAP intervals — fixed reps then an open "max reps" slot, rest between sets
+    const sets=_rp([4,5]),win=_rp([2,3]),rst=_rp([2,3]);
+    const mv=pick(2,3).slice(0,3).map(_withReps);
+    if(mv.length>1)mv[mv.length-1]=_inst(WOD_MOVES.find(x=>x.n===mv[mv.length-1].n)||{n:mv[mv.length-1].n,unit:'',cat:'gym'},null);
+    const last=mv[mv.length-1];
+    return ({format:'repamrap',focus:focus.n,title:`${sets} × ${win} min AMRAP`,
+      scheme:`${sets} sets · ${win} min AMRAP each · rest ${rst} min between — complete the fixed reps, then max ${last?last.n:'reps'} until the buzzer`,
+      moves:mv,ladder:null,resultType:'rounds',est:sets*(win+rst),
+      stimulus:'Score is total reps of the last movement. Sprint the fixed work, then hold a rate you can repeat every set.'});
+  }
+  if(fmt==='e2mom'){
+    const every=_rp([2,3]),total=_rp([12,16,18]);
+    const mv=pick(2,3).slice(0,3).map(_withReps);
+    return ({format:'e2mom',focus:focus.n,title:`E${every}MOM ${total}`,
+      scheme:`Every ${every} min for ${total} min (${Math.floor(total/every)} rounds): complete all movements — the rest is whatever time is left`,
+      moves:mv,ladder:null,resultType:'check',est:total,
+      stimulus:'Pick a round size that leaves 30-45s of rest. If you finish with no rest, the load or reps are too high.'});
+  }
+  if(fmt==='ascladder'){
+    const dur=_rp([10,12,15]),step=_rp([3,5]);
+    const mv=pick(2,2).slice(0,2).map(m=>_inst(m,null));
+    return ({format:'ascladder',focus:focus.n,title:`AMRAP ${dur} — Ascending Ladder`,
+      scheme:`In ${dur} min: ${step}-${step*2}-${step*3}-${step*4}… of each movement, adding ${step} reps per round — go as far as you can`,
+      moves:mv,ladder:null,resultType:'rounds',est:dur,
+      stimulus:'Early rounds are free — do not treat them that way. Set a pace you can still hold when the sets get long.'});
+  }
+  if(fmt==='buyin'){
+    const dur=_rp([10,12,15]);
+    const cardio=_wodPoolBiased(prof).filter(m=>m.mod==='M'&&!m.nx);
+    const bi=cardio.length?_wrp(cardio):null;
+    const biReps=bi?(bi.unit==='m'?_rp([400,600,800]):bi.unit==='cal'?_rp([20,25,30]):_rp([50,75,100])):null;
+    const mv=pick(2,3).map(_withReps);
+    let coPool=_wodPoolBiased(prof).filter(m=>!m.nx&&m.mod==='G'&&m.unit===''&&m.pat!=='core');
+    if(!coPool.length)coPool=_wodPoolBiased(prof).filter(m=>!m.nx&&m.mod!=='M'&&m.unit==='');
+    const co=coPool.length?_wrp(coPool):null;
+    const coReps=co?Math.min(75,Math.round(_rp(co.rep)*2.5)):null;
+    return ({format:'buyin',focus:focus.n,title:`Buy-in / AMRAP ${dur} / Cash-out`,
+      scheme:`Buy-in: ${bi?_mvLine({n:bi.n,unit:bi.unit,reps:biReps}):'—'} · then AMRAP ${dur} · Cash-out: ${co?coReps+' '+co.n:'—'} — one running clock`,
+      moves:mv,ladder:null,resultType:'time',est:dur+8,
+      stimulus:'The buy-in sets the tone and the cash-out punishes an over-eager AMRAP. Pace the middle.'});
+  }
+  if(fmt==='deathby'){
+    // Death by — ascending reps each minute until you can't complete the round
+    const cand=pool.filter(m=>!m.nx&&m.unit===''&&m.pat!=='core');
+    if(cand.length){
+      const m=_wrp(cand);
+      const inst={n:m.n,unit:'',cat:m.cat,reps:null};
+      if(m.wt&&m.wt.length){inst.wt=m.wt[0];inst.hand=m.hand||'1';} // lightest option — the format supplies the difficulty
+      return ({format:'deathby',focus:focus.n,title:`Death By — ${m.n}`,
+        scheme:'Minute 1: 1 rep · minute 2: 2 reps · add one rep every minute until you cannot complete the round',
+        moves:[inst],ladder:null,resultType:'rounds',est:14,
+        stimulus:'Score is the last completed minute. Stop when the round no longer fits — or cap it yourself at an honest effort.'});
+    }
+  }
+  if(fmt==='tabata'){
+    const mv=pick(1,2).slice(0,2).map(m=>_inst(m,null));
+    const each=mv.length>1?' per movement, alternating':'';
+    return ({format:'tabata',focus:focus.n,title:'Tabata',
+      scheme:`8 rounds of 20s work / 10s rest${each} · score is the lowest round`,
+      moves:mv,ladder:null,resultType:'check',est:mv.length*4+2,
+      stimulus:'Pick a rate you can hold for all eight. The lowest round is the score, so a heroic first round costs you.'});
+  }
+  if(fmt==='maxrep'){
+    const dur=_rp([4,5,6]);
+    const cand=pool.filter(m=>!m.nx&&m.unit===''&&m.mod!=='M');
+    const m=cand.length?_wrp(cand):null;
+    if(m){
+      const inst={n:m.n,unit:'',cat:m.cat,reps:null};
+      if(m.wt&&m.wt.length){inst.wt=_rp(m.wt);inst.hand=m.hand||'1';}
+      return ({format:'maxrep',focus:focus.n,title:`${dur} min — Max Reps`,
+        scheme:`${dur} minutes to accumulate as many ${m.n} as possible · break the sets however you like`,
+        moves:[inst],ladder:null,resultType:'rounds',est:dur,
+        stimulus:'Accumulation, not a sprint — plan the set sizes before the clock starts.'});
+    }
   }
   // intervals
   const rounds=_rp([5,6,8]),work=_rp([30,40,45]),rest=_rp([15,20,30]);
@@ -1406,6 +1534,7 @@ function _partHTML(p,ctx,label,removable){
     h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span><span class="mv-right">${right}</span></div>`;
   });
   if(ctx&&p.moves&&p.moves.length&&p.format!=='recovery'&&p.format!=='rest')h+=`<div style="margin-top:8px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodMove('${ctx}')">＋ Add movement</button></div>`;
+  if(p.olyInjected)h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:8px;">Olympic-lift slot added — Tuesday features the barbell.</div>`;
   if(p.uniInjected)h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:8px;">Single-leg slot added — none rolled in a Wod this week.</div>`;
   if(p.hspuInjected)h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:8px;">HSPU-family slot added — none rolled in a Wod this week.</div>`;
   if(p.stimulus)h+=`<div style="font-size:.7rem;color:var(--tx3);margin-top:12px;font-style:italic;">${p.stimulus}</div>`;
@@ -1425,6 +1554,12 @@ function _wodCardHTML(w,ctx){
   h+=_partHTML(w,ctx,multi?'Part A':'Wod',false);
   parts.forEach((p,i)=>{h+=`<div style="margin-top:10px;padding-top:6px;border-top:1px solid var(--bdr);"></div>`;h+=_partHTML(p,ctx?ctx+'#'+(i+1):null,'Part '+String.fromCharCode(66+i),true);});
   if(ctx&&w.format!=='recovery'&&w.format!=='rest'&&parts.length<2)h+=`<div style="margin-top:10px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodPart('${ctx}')">＋ Add part</button></div>`;
+  if(w.cardioAddon){
+    h+=`<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--bdr);">
+      <div style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;">Cardio add-on <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px;">· short conditioning today</span>${ctx?`<button class="wod-swap" style="margin-left:auto;" onclick="dropCardioAddon('${ctx}')" title="Remove">✕</button>`:''}</div>
+      <div style="font-size:.82rem;color:var(--tx2);margin-top:5px;line-height:1.5;">${w.cardioAddon.scheme}</div>
+      <div style="font-size:.62rem;color:var(--tx3);margin-top:4px;font-family:'IBM Plex Mono',monospace;">~${w.cardioAddon.est} min</div></div>`;
+  }
   if(w.finisher&&w.finisher.moves&&w.finisher.moves.length){
     h+=`<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--bdr);">
       <div style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;">Core finisher <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px;">· no midline in the Wod, so it’s tacked on</span>${ctx?`<button class="wod-swap" style="margin-left:auto;" onclick="dropFinisher('${ctx}')" title="Remove finisher">✕</button>`:''}</div>
@@ -1460,13 +1595,13 @@ function _wodCtxRerender(ctx){
   if(ctx&&ctx.indexOf('sess:')===0){cM();activeSessKey=ctx.slice(5);rWOD();}
 }
 function _instForFormat(base,w){
-  if(w.format==='ladder'||w.format==='intervals')return _inst(base,null);
+  if(['ladder','intervals','ascladder','tabata','deathby','maxrep'].includes(w.format))return _inst(base,null);
   if(w.format==='chipper'){const r=_rp(base.rep);return _inst(base,base.unit==='cal'||base.unit===''?Math.round(r*1.4):r);}
   return _withReps(base); // amrap / rft / emom
 }
 function _swapEligible(w){
   let pool=_wodPool().filter(m=>m.unit!=='m');
-  if(w.format==='ladder')pool=pool.filter(m=>m.unit!=='s'); // holds don't fit a rep ladder
+  if(['ladder','ascladder','deathby','maxrep'].includes(w.format))pool=pool.filter(m=>m.unit!=='s'); // holds don't fit rep-based formats
   const used=new Set(w.moves.map(mm=>mm.n));
   return pool.filter(m=>!used.has(m.n));
 }
@@ -1713,6 +1848,12 @@ function removeWodPart(ctx){
   _wodCtxRerender(ctx);
 }
 function setPartResult(ctx,val){const p=_wodCtxObj(ctx);if(!p)return;p.result=val;sv();}
+function dropCardioAddon(ctx){
+  const root=_wodCtxRoot(ctx);if(!root)return;
+  delete root.cardioAddon;root.cardio=false;
+  if(ctx.indexOf('sess:')===0)sv();
+  _wodCtxRerender(ctx);
+}
 function dropFinisher(ctx){
   const w=_wodCtxObj(ctx);if(!w)return;
   delete w.finisher;w.autoFinisher=false;
