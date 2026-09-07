@@ -869,7 +869,13 @@ function _wodPool(){return WOD_MOVES.filter(m=>_wodEnabled(m.equip)&&(KNEE_CLEAR
 function _rp(a){return a[Math.floor(Math.random()*a.length)];}
 function _rpDur(a){return _scaled()?Math.min(a[0],12):_rp(a);} // scaled: shortest option, capped at 12
 function _samp(arr,n){const a=arr.slice(),o=[];while(a.length&&o.length<n)o.push(a.splice(Math.floor(Math.random()*a.length),1)[0]);return o;}
-function _inst(m,reps){const o={n:m.n,unit:m.unit,cat:m.cat,reps:reps};if(m.wt&&m.wt.length){o.wt=_scaled()?m.wt[0]:_rp(m.wt);o.hand=m.hand||'1';}return o;}
+function _wtPick(a){ // favour the lighter options — metcons complement the lifting, they don't compete with it
+  if(_scaled()||a.length===1)return a[0];
+  const r=Math.random();
+  if(a.length===2)return r<0.75?a[0]:a[1];
+  return r<0.55?a[0]:(r<0.92?a[1]:a[2]);
+}
+function _inst(m,reps){const o={n:m.n,unit:m.unit,cat:m.cat,reps:reps};if(m.wt&&m.wt.length){o.wt=_wtPick(m.wt);o.hand=m.hand||'1';}return o;}
 function _withReps(m){return _inst(m,_scaled()?m.rep[0]:_rp(m.rep));}
 function _mvLine(m){
   const w=m.wt?` (${m.hand==='2'?'2×':''}${m.wt} lb)`:'';
@@ -989,39 +995,40 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat — AMRAP intervals',plan:'hard',
+  1:{label:'Mon · back squat — mixed metcon',plan:'hard',
      force:'Back Squat — top set of 5 · 2 back-off sets of 8',
      forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     spare:['hinge'],foci:['grind','engine','power'],
+     spare:['hinge'],foci:['grind','engine','gymn'],
      uniGuard:true,uniAlways:true,uniHeavy:true,cardioAddon:true,
-     parts:[{obj:'AMRAP Intervals',fmt:'repamrap',foci:['sprint','power']}],
+     parts:[{obj:'Metcon'}],
      extraEx:[]},
-  2:{label:'Tue · press cluster — no hanging pull work',plan:'hard',
+  2:{label:'Tue · press cluster — short metcon + cardio intervals',plan:'hard',
      force:'Strict Press 5RM · 2×8 back-offs · Seated DB OH Press 3×max · Pushdowns',
      forceEx:[
        {id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:210},
        {id:'dbohp',name:'Seated DB OH Press (50s → 70s)',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:150},
        {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:12,rest:60}],
-     spare:['hinge'],spareIds:['pullup','c2b','strpull','chinup','ringpull','ringmu','barmu','burppull','ropeclimb','ropepull','leanaway'], // heavy hinge spared: deadlift day is tomorrow
-     foci:['engine','sprint','grind'],cardioAddon:true,
-     parts:[{obj:'Conditioning'}],
+     spare:['hinge'],spareIds:['pullup','c2b','strpull','chinup','ringpull','ringmu','barmu','burppull','ropeclimb','ropepull','leanaway'],
+     foci:['engine','sprint'],cardioAddon:true,cardioAlways:true,
+     parts:[{obj:'Short Metcon',short:true}],
      extraEx:[]},
-  3:{label:'Wed · deadlift day',plan:'hard',
+  3:{label:'Wed · deadlift — gymnastics-leaning metcon',plan:'hard',
      force:'Deadlift 6RM · 2×8 back-offs · DB Curls to finish',
      forceEx:[
        {id:'deadlift',name:'Deadlift',_force:true,type:'pri',topSet:{s:1,r:6},s:2,r:8,rest:240},
        {id:'dbcurl',name:'DB Biceps Curls',_force:true,type:'acc',s:3,r:12,rest:60}],
-     spare:['hinge'],foci:['gymn','sprint','engine'],pullGuard:true,cardioAddon:true,
-     parts:[{obj:'Conditioning'}],
+     spare:['hinge'],foci:['gymn','engine','sprint'],pullGuard:true,cardioAddon:true,
+     parts:[{obj:'Metcon'}],
      extraEx:[]},
   4:{label:'Thu · full rest',plan:'off',
      force:null,spare:[],extraEx:[]},
-  5:{label:'Fri · bench day — no Wod',plan:'extras',
-     force:'Bench Press 4×8 · Flat DB Press 3×max · Ring Dips 3×max',
+  5:{label:'Fri · bench day — Zone 2 to finish',plan:'extras',
+     force:'Bench Press 4×8 · Flat DB Press 3×max · Ring Dips 3×max · Zone 2 30 min',
      forceEx:[
        {id:'bench',name:'Bench Press',_force:true,type:'pri',s:4,r:8,rest:180},
        {id:'dbflat',name:'Flat DB Bench Press',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150},
-       {id:'ringdip',name:'Ring Dips',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:120}],
+       {id:'ringdip',name:'Ring Dips',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:120},
+       {id:'z2',name:'Airdyne Zone 2 (reps = minutes)',_force:true,type:'acc',s:1,r:30,rest:0}],
      spare:[],
      extraEx:[]},
   6:{label:'Sat · lean-away pull-ups + GHR — AMRAP intervals',plan:'hard',
@@ -1295,7 +1302,7 @@ function _attachDay(w,allowVest){
   }
   if(_wodBias&&_p.cardioAddon&&!w.noTeam&&w.focus!=='Recovery'&&w.moves&&w.moves.length&&w.cardio!==false){
     const total=(w.est||0)+((w.parts||[]).reduce((a,p)=>a+(p.est||0),0)); // w.est already includes the finisher if one was added
-    if(total<20){const c=_rp(CARDIO_ADDONS);w.cardioAddon={title:'Cardio add-on',scheme:c.t,est:c.e};}
+    if(_p.cardioAlways||total<16){const c=_rp(CARDIO_ADDONS);w.cardioAddon={title:'Cardio add-on',scheme:c.t,est:c.e};}
   }
   if(_wodBias&&_p.legBias&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length)_ensureLegVolume(w);
   _teamify(w);
@@ -1443,9 +1450,13 @@ function _genClassic(prof,fociOverride,opts){
   let foci=WOD_FOCI.filter(f=>!f.need||_wodEnabled(f.need));
   const want=fociOverride||(prof&&prof.foci);
   if(want){const r=foci.filter(f=>want.includes(f.id));if(r.length)foci=r;}
-  const focus=_rp(foci);
+  let focus=_rp(foci);
+  if(opts.short){ // short piece by design — the cardio block carries the rest of the day
+    focus={...focus,dur:[8,10,12],fmts:['amrap','rft','ladder']};
+    opts={...opts,maxMoves:3};
+  }
   const fmt=opts.fmt||_rp(focus.fmts);
-  const bbBias=focus.id==='power'?.9:.65;
+  const bbBias=focus.id==='power'?.8:.45; // lighter, more gymnastic mix
   const _cap=(n)=>{let x=opts.maxMoves?Math.min(n,opts.maxMoves):n;return _scaled()?Math.min(x,3):x;};
   const pick=(minN,maxN)=>_cfPick(pool,_cfTmpl(focus,minN,_cap(maxN)),bbBias).slice(0,_cap(maxN));
   const stim=()=>_rp(focus.stim||WOD_STIM);
@@ -1480,7 +1491,8 @@ function _genClassic(prof,fociOverride,opts){
   }
   if(fmt==='repamrap'){
     // Repeating AMRAP intervals — fixed reps then an open "max reps" slot, rest between sets
-    const sets=_rpDur([4,5]),win=_rpDur([2,3]),rst=_rpDur([2,3]);
+    const sets=_rpDur([4,5]),win=_rpDur([2,3,4]);
+    const rst=Math.min(2,Math.max(1,win-1)); // rest always shorter than work, hard-capped at 2 min
     const mv=pick(2,3).slice(0,3).map(_withReps);
     if(mv.length>1)mv[mv.length-1]=_inst(WOD_MOVES.find(x=>x.n===mv[mv.length-1].n)||{n:mv[mv.length-1].n,unit:'',cat:'gym'},null);
     const last=mv[mv.length-1];
@@ -1575,7 +1587,7 @@ function generateWOD(type){
   const build=(spec)=>{
     if(spec.kind==='cycling')return _scaled()?_genClassic(prof,['engine'],{}):_genCycling(prof);
     if(spec.kind==='easyDensity')return _genEasyDensity(prof);
-    const w=_genClassic(prof,spec.foci||null,{maxMoves:spec.maxMoves,fmt:spec.fmt});
+    const w=_genClassic(prof,spec.foci||null,{maxMoves:spec.maxMoves,fmt:spec.fmt,short:spec.short});
     return w;
   };
   const main=build(specs[0]);
