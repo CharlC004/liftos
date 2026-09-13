@@ -2068,7 +2068,17 @@ function showWODModal(date){
   let h=`<h2>🔥 WOD</h2>`;
   const types=[['classic','🎲 Classic'],['cardio','🫀 Cardio'],['recovery','🧘 Recovery'],['extras','📋 Extras'],['skill','🎯 Technical'],['oly','🏋️ Oly'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher']];
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Session type</div>`;
-  h+=`<div class="wod-chips" style="margin-bottom:12px;">`+types.map(([id,lbl])=>`<div class="wod-chip ${_wodType===id?'on':''}" onclick="setWodType('${id}')">${lbl}</div>`).join('')+`<div class="wod-chip ${_wodBias?'on':''}" onclick="toggleWodBias()" title="Bias the Wod around the weekly strength split">📅 Day bias</div><div class="wod-chip ${_wodTeam?'on':''}" onclick="toggleWodTeam()" title="Convert the metcon to a partner format">👥 Team</div><div class="wod-chip ${_scaled()?'on':''}" onclick="toggleScaled()" title="Scaled mode: beginner-friendly movements, lighter loads, shorter pieces">⚖ Scaled</div><div class="wod-chip ${_knee()?'on':''}" onclick="toggleKnee()" title="Knee mode: no knee-flexion loading, GPP/cardio phase week">Knee · rehab</div></div>`;
+  h+=`<div class="wod-chips" style="margin-bottom:10px;">`+types.map(([id,lbl])=>`<div class="wod-chip ${_wodType===id?'on':''}" onclick="setWodType('${id}')">${lbl}</div>`).join('')+`</div>`;
+  h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Modes</div>`;
+  h+=`<div class="wod-chips" style="margin-bottom:12px;">
+    <div class="wod-chip ${_wodBias?'on':''}" onclick="toggleWodBias()" title="Bias the Wod around the weekly split">📅 Day bias</div>
+    <div class="wod-chip ${_wodTeam?'on':''}" onclick="toggleWodTeam()" title="Convert the metcon to a partner format">👥 Team</div>
+    <div class="wod-chip ${_scaled()?'on':''}" onclick="toggleScaled()" title="Scaled: beginner-friendly movements, lighter loads, shorter pieces">⚖️ Scaled</div>
+    <div class="wod-chip ${_knee()?'on':''}" onclick="toggleKnee()" title="Knee rehab: no knee-flexion loading, GPP/cardio week">🩹 Knee rehab</div>
+  </div>`;
+  if(_knee())h+=`<div style="font-size:.66rem;color:var(--ac);font-weight:700;margin:-6px 0 10px;">🩹 Knee rehab active — GPP/cardio phase, no knee-flexion loading</div>`;
+  if(_scaled())h+=`<div style="font-size:.66rem;color:var(--ac);font-weight:700;margin:-6px 0 10px;">⚖️ Scaled active</div>`;
+
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:8px;">Equipment on hand · bodyweight always in · sub Airdyne for row/ski/run on the day as needed</div>`;
   h+=`<div class="wod-chips">`+chips.map(([id,lbl])=>`<div class="wod-chip ${e[id]?'on':''}" onclick="toggleWodEquip('${id}')">${lbl}</div>`).join('')+`</div>`;
   h+=_wodCardHTML(_pendingWOD,'pending');
