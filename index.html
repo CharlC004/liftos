@@ -863,12 +863,13 @@ const WOD_FOCI=[
 let _pendingWOD=null,_wodDate=null,_wodType='classic',_wodBias=true,_wodTeam=false;
 function _scaled(){return !!(D&&D.scaled);} // Scaled mode: beginner-friendly pool, loads and durations
 function _knee(){return !!(D&&D.kneeMode);} // Knee mode: no primary knee-flexion loading anywhere
-// Everything that loads a bent knee under load, speed or fatigue — squats, lunges, jumps,
-// step-ups, cleans/jerks (dip + catch), burpees, running, and the barbell deadlift.
+// Pure knee-flexion loading + the heaviest pulls: squats and squat-catch lifts, all lunges,
+// box work and step-ups, wall balls, pistols, and the barbell deadlift.
+// Kept in: burpees (hip-dominant with a wide stance), power cleans/snatches and DB variants,
+// jerks and push press, running — all tolerated per the athlete.
 const KNEE_BAN=['airsquat','rlunge','jlunge','frlunge','ohlunge','cossack','bss','stepup','dbstepover',
  'boxjump','bjover','bbjo','pistol','goblet','dbfsq','bbfsq','ohs','bbthr','dbthrust','sqclean','sqsnatch',
- 'wallball','pclean','hpclean','psnatch','hpsnatch','cj','pjerk','bbpp','dbpp','dbclean','dbsnatch',
- 'burpee','bfb','burpdb','burppull','devil','run','deadlift'];
+ 'wallball','deadlift'];
 // ── Knee status: flip to true when cleared (re-enables pistols / jumping lunges everywhere) ──
 const KNEE_CLEARED=false;
 function _wodEnabled(id){return id==='bw'||!!(D.wodEquip&&D.wodEquip[id]);}
