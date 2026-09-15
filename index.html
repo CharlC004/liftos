@@ -1003,53 +1003,37 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat — mixed metcon',plan:'hard',
+  1:{label:'Mon · back squat + metcon',plan:'hard',
      force:'Back Squat — top set of 5 · 2 back-off sets of 8',
      forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     spare:['hinge'],foci:['grind','engine','gymn'],
-     uniGuard:true,uniAlways:true,uniHeavy:true,cardioAddon:true,
+     spare:['hinge'],cardioAddon:true,
      parts:[{obj:'Metcon'}],
      extraEx:[]},
-  2:{label:'Tue · press cluster — short metcon + cardio intervals',plan:'hard',
-     force:'Strict Press 5RM · 2×8 back-offs · Seated DB OH Press 3×max · Pushdowns',
-     forceEx:[
-       {id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:210},
-       {id:'dbohp',name:'Seated DB OH Press (50s → 70s)',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:150},
-       {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:12,rest:60}],
-     spare:['hinge'],spareIds:['pullup','c2b','strpull','chinup','ringpull','ringmu','barmu','burppull','ropeclimb','ropepull','leanaway'],
-     foci:['engine','sprint'],cardioAddon:true,cardioAlways:true,
-     parts:[{obj:'Short Metcon',short:true}],
+  2:{label:'Tue · cardio intervals — Airdyne or run',plan:'hard',
+     force:null,spare:[],foci:['engine'],
+     parts:[{obj:'Cardio Intervals',kind:'cardioSession'}],
      extraEx:[]},
-  3:{label:'Wed · deadlift — gymnastics-leaning metcon',plan:'hard',
-     force:'Deadlift 6RM · 2×8 back-offs · DB Curls to finish',
-     forceEx:[
-       {id:'deadlift',name:'Deadlift',_force:true,type:'pri',topSet:{s:1,r:6},s:2,r:8,rest:240},
-       {id:'dbcurl',name:'DB Biceps Curls',_force:true,type:'acc',s:3,r:12,rest:60}],
-     spare:['hinge'],foci:['gymn','engine','sprint'],pullGuard:true,cardioAddon:true,
-     parts:[{obj:'Metcon'}],
-     extraEx:[]},
-  4:{label:'Thu · full rest',plan:'off',
-     force:null,spare:[],extraEx:[]},
-  5:{label:'Fri · bench day — Zone 2 to finish',plan:'extras',
-     force:'Bench Press 4×8 · Flat DB Press 3×max · Ring Dips 3×max · Zone 2 30 min',
+  3:{label:'Wed · bench + pull-ups — gymnastics metcon, lighter',plan:'hard',
+     force:'Bench Press 4×8 · Weighted/Strict Pull-ups 4×6 · Pushdowns · Face Pulls',
      forceEx:[
        {id:'bench',name:'Bench Press',_force:true,type:'pri',s:4,r:8,rest:180},
-       {id:'dbflat',name:'Flat DB Bench Press',_force:true,type:'pri',s:3,r:0,repRange:'max reps',rest:150},
-       {id:'ringdip',name:'Ring Dips',_force:true,type:'sec',s:3,r:0,repRange:'max reps',rest:120},
-       {id:'z2',name:'Airdyne Zone 2 (reps = minutes)',_force:true,type:'acc',s:1,r:30,rest:0}],
-     spare:[],
+       {id:'wpullup',name:'Weighted / Strict Pull-ups',_force:true,type:'pri',s:4,r:6,rest:150},
+       {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:15,rest:60},
+       {id:'facepull',name:'Face Pulls (cable)',_force:true,type:'acc',s:3,r:15,rest:60}],
+     spare:['push','pull'],allowEasy:true,noBarbell:true,foci:['gymn','engine','sprint'],cardioAddon:true,
+     parts:[{obj:'Gymnastics Metcon',short:true}],
      extraEx:[]},
-  6:{label:'Sat · lean-away pull-ups + GHR — AMRAP intervals',plan:'hard',
-     force:'Lean-Away Pull-ups 4×6 · Glute-Ham Raises 4×10',
+  4:{label:'Thu · off',plan:'off',force:null,spare:[],extraEx:[]},
+  5:{label:'Fri · off',plan:'off',force:null,spare:[],extraEx:[]},
+  6:{label:'Sat · front squat + OH press + metcon',plan:'hard',
+     force:'Front Squat — 3RM top set · 3×5 back-offs · Strict Press 4×8',
      forceEx:[
-       {id:'leanaway',name:'Lean-Away Pull-ups (rings)',_force:true,type:'pri',s:4,r:6,rest:150},
-       {id:'ghr',name:'Glute-Ham Raises (GHD)',_force:true,type:'sec',s:4,r:10,rest:120}],
-     spare:[],foci:['sprint','power','grind'],
-     muGuard:true,cardioAddon:true,
-     parts:[{obj:'AMRAP Intervals',fmt:'repamrap',foci:['sprint','power']}],
+       {id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:3},s:3,r:5,rest:240},
+       {id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:180}],
+     spare:['push'],cardioAddon:true,
+     parts:[{obj:'Metcon'}],
      extraEx:[]},
-  0:{label:'Sun · recovery',plan:'recovery',
-     force:null,spare:[],extraEx:[]}
+  0:{label:'Sun · recovery',plan:'recovery',force:null,spare:[],extraEx:[]}
 };
 function weeksSinceDeload(){
   let last='',first='';
@@ -1140,6 +1124,10 @@ function _wodPoolBiased(prof){
   if(prof.legBias)pool=pool.filter(m=>!(m.pat==='legs'&&!m.weighted)); // heavy leg volume, not bodyweight volume
   if(!_scaled()&&_weekDayCount(PULL_FAM)>=3){ // weekly pulling cap reached
     const f=pool.filter(m=>!PULL_FAM.includes(m.id));
+    if(f.length>=6)pool=f;
+  }
+  if(prof.noBarbell){ // gymnastics / bodyweight / DB day — no barbell movements
+    const f=pool.filter(m=>m.equip!=='bb');
     if(f.length>=6)pool=f;
   }
   if(prof.spareIds&&prof.spareIds.length){
