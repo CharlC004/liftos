@@ -1696,9 +1696,9 @@ function _wodCardHTML(w,ctx){
   if(w.force)h+=`<div style="font-size:.82rem;margin-bottom:12px;line-height:1.5;"><strong style="color:var(--tx);text-transform:uppercase;font-size:.68rem;letter-spacing:1.5px;">Force</strong><br>${w.force}</div>`;
   const parts=Array.isArray(w.parts)?w.parts:[];
   const multi=parts.length>0;
-  h+=_partHTML(w,ctx,multi?'Part A':'Wod',false);
+  h+=_partHTML(w,ctx,multi?'Part A':'Wod',!!ctx);
   parts.forEach((p,i)=>{h+=`<div style="margin-top:10px;padding-top:6px;border-top:1px solid var(--bdr);"></div>`;h+=_partHTML(p,ctx?ctx+'#'+(i+1):null,'Part '+String.fromCharCode(66+i),true);});
-  if(ctx&&w.format!=='recovery'&&w.format!=='rest'&&parts.length<3)h+=`<div style="margin-top:10px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodPart('${ctx}')">＋ Add part</button></div>`;
+  if(ctx&&w.format!=='recovery'&&parts.length<3)h+=`<div style="margin-top:10px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodPart('${ctx}')">＋ Add part</button></div>`;
   if(w.cardioAddon){
     h+=`<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--bdr);">
       <div style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;">Cardio add-on <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px;">· short conditioning today</span>${ctx?`<button class="wod-swap" style="margin-left:auto;" onclick="dropCardioAddon('${ctx}')" title="Remove">✕</button>`:''}</div>
@@ -1998,12 +1998,20 @@ function addWodPartOf(ctx,kind){
   if(ctx.indexOf('sess:')===0)sv();
   cM();_wodCtxRerender(ctx);
 }
+const PART_FIELDS=['format','focus','objective','title','scheme','moves','ladder','resultType','est','stimulus','team','vest','result','autoCore','autoFinisher','uniInjected','muInjected','pullInjected','olyInjected','hspuInjected'];
 function removeWodPart(ctx){
-  const root=_wodCtxRoot(ctx);if(!root||!root.parts)return;
-  const hash=ctx.indexOf('#');if(hash<0)return;
-  const i=parseInt(ctx.slice(hash+1))-1;
-  root.parts.splice(i,1);
-  if(ctx.indexOf('sess:')===0)sv();
+  const root=_wodCtxRoot(ctx);if(!root)return;
+  const hash=ctx.indexOf('#');
+  if(hash<0){ // removing Part A — promote the next part, or leave the day without a metcon
+    const next=(Array.isArray(root.parts)&&root.parts.length)?root.parts.shift():null;
+    PART_FIELDS.forEach(f=>{delete root[f];});
+    if(next){PART_FIELDS.forEach(f=>{if(next[f]!==undefined)root[f]=next[f];});}
+    else{root.format='rest';root.title='No metcon';root.scheme='Metcon removed — strength or skill work only today.';root.moves=[];root.resultType='check';root.est=0;root.autoFinisher=false;}
+  }else{
+    const i=parseInt(ctx.slice(hash+1))-1;
+    if(Array.isArray(root.parts))root.parts.splice(i,1);
+  }
+  if(ctx.split('#')[0].indexOf('sess:')===0)sv();
   _wodCtxRerender(ctx);
 }
 function setPartResult(ctx,val){const p=_wodCtxObj(ctx);if(!p)return;p.result=val;sv();}
