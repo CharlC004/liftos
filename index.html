@@ -1003,33 +1003,24 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat + metcon',plan:'hard',
-     force:'Back Squat — top set of 5 · 2 back-off sets of 8',
-     forceEx:[{id:'squat',name:'Back Squat',_force:true,type:'pri',topSet:{s:1,r:5},s:2,r:8,rest:240}],
-     spare:['hinge'],cardioAddon:true,
-     parts:[{obj:'Metcon'}],
-     extraEx:[]},
-  2:{label:'Tue · cardio intervals — Airdyne or run',plan:'hard',
+  1:{label:'Mon · cardio intervals — Airdyne or run',plan:'hard',
      force:null,spare:[],foci:['engine'],
      parts:[{obj:'Cardio Intervals',kind:'cardioSession'}],
      extraEx:[]},
+  2:{label:'Tue · back squat + metcon',plan:'hard',
+     force:'Back Squat',
+     spare:['hinge'],cardioAddon:true,
+     parts:[{obj:'Metcon'}],
+     extraEx:[]},
   3:{label:'Wed · bench + pull-ups — gymnastics metcon, lighter',plan:'hard',
-     force:'Bench Press 4×8 · Weighted/Strict Pull-ups 4×6 · Pushdowns · Face Pulls',
-     forceEx:[
-       {id:'bench',name:'Bench Press',_force:true,type:'pri',s:4,r:8,rest:180},
-       {id:'wpullup',name:'Weighted / Strict Pull-ups',_force:true,type:'pri',s:4,r:6,rest:150},
-       {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:15,rest:60},
-       {id:'facepull',name:'Face Pulls (cable)',_force:true,type:'acc',s:3,r:15,rest:60}],
+     force:'Bench Press · Pull-ups · Triceps · Face Pulls',
      spare:['push','pull'],allowEasy:true,noBarbell:true,foci:['gymn','engine','sprint'],cardioAddon:true,
      parts:[{obj:'Gymnastics Metcon',short:true}],
      extraEx:[]},
   4:{label:'Thu · off',plan:'off',force:null,spare:[],extraEx:[]},
   5:{label:'Fri · off',plan:'off',force:null,spare:[],extraEx:[]},
   6:{label:'Sat · front squat + OH press + metcon',plan:'hard',
-     force:'Front Squat — 3RM top set · 3×5 back-offs · Strict Press 4×8',
-     forceEx:[
-       {id:'frontsquat',name:'Front Squat',_force:true,type:'pri',topSet:{s:1,r:3},s:3,r:5,rest:240},
-       {id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:180}],
+     force:'Front Squat · Strict Press',
      spare:['push'],cardioAddon:true,
      parts:[{obj:'Metcon'}],
      extraEx:[]},
@@ -1331,9 +1322,9 @@ function _attachDay(w,allowVest){
   // guards may have injected a movement already used elsewhere in the session — dedupe once more
   if(Array.isArray(w.parts)&&w.parts.length){const prof=_wodBias?_p:null;w.parts.forEach((p,i)=>_dedupeAgainst(p,[w].concat(w.parts.slice(0,i)),prof));}
   if(w.autoFinisher!==false&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&_needsCoreFinisher(w)){
-    const f=_genFinisher();
-    w.finisher={title:f.title.replace('Core Finisher \u2014 ',''),scheme:f.scheme,moves:f.moves};
-    w.est=(w.est||0)+(f.est||6);
+    const f=_genCorePart();f.objective='Core';f.autoCore=true;
+    if(!Array.isArray(w.parts))w.parts=[];
+    w.parts.push(f);
   }
   if(_wodBias&&_p.cardioAddon&&!w.noTeam&&w.focus!=='Recovery'&&w.moves&&w.moves.length&&w.cardio!==false){
     const total=(w.est||0)+((w.parts||[]).reduce((a,p)=>a+(p.est||0),0)); // w.est already includes the finisher if one was added
@@ -1707,7 +1698,7 @@ function _wodCardHTML(w,ctx){
   const multi=parts.length>0;
   h+=_partHTML(w,ctx,multi?'Part A':'Wod',false);
   parts.forEach((p,i)=>{h+=`<div style="margin-top:10px;padding-top:6px;border-top:1px solid var(--bdr);"></div>`;h+=_partHTML(p,ctx?ctx+'#'+(i+1):null,'Part '+String.fromCharCode(66+i),true);});
-  if(ctx&&w.format!=='recovery'&&w.format!=='rest'&&parts.length<2)h+=`<div style="margin-top:10px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodPart('${ctx}')">＋ Add part</button></div>`;
+  if(ctx&&w.format!=='recovery'&&w.format!=='rest'&&parts.length<3)h+=`<div style="margin-top:10px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodPart('${ctx}')">＋ Add part</button></div>`;
   if(w.cardioAddon){
     h+=`<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--bdr);">
       <div style="font-size:.62rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);display:flex;align-items:center;">Cardio add-on <span style="font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px;">· short conditioning today</span>${ctx?`<button class="wod-swap" style="margin-left:auto;" onclick="dropCardioAddon('${ctx}')" title="Remove">✕</button>`:''}</div>
@@ -1985,13 +1976,27 @@ function moveWodMove(ctx,idx,dir){
 function addWodPart(ctx){
   const root=_wodCtxRoot(ctx);if(!root)return;
   if(!Array.isArray(root.parts))root.parts=[];
-  if(root.parts.length>=2)return;
+  if(root.parts.length>=3)return;
+  oM(`<h2>Add part</h2>
+    <div style="font-size:.72rem;color:var(--tx2);margin-bottom:10px;">What kind of piece?</div>
+    <button class="btn bo bf" style="margin-bottom:6px;" onclick="addWodPartOf('${ctx}','metcon')">🎲 Metcon — generated conditioning piece</button>
+    <button class="btn bo bf" style="margin-bottom:6px;" onclick="addWodPartOf('${ctx}','core')">⚡ Core — midline AMRAP</button>
+    <button class="btn bo bf" style="margin-bottom:6px;" onclick="addWodPartOf('${ctx}','cardio')">🚴 Cardio — interval / Zone 2 session</button>
+    <button class="btn bo bf" style="margin-bottom:6px;" onclick="addWodPartOf('${ctx}','blank')">✏️ Blank — build it yourself</button>
+    <button class="btn bo bf" style="margin-top:8px;" onclick="cM();_wodCtxRerender('${ctx}')">Cancel</button>`);
+}
+function addWodPartOf(ctx,kind){
+  const root=_wodCtxRoot(ctx);if(!root)return;
+  if(!Array.isArray(root.parts))root.parts=[];
   const prof=_wodBias?_dayProfile():null;
-  const p=_genClassic(prof,null,{});p.objective='Extra part';
-  _dedupeAgainst(p,[root].concat(root.parts),prof);_teamify(p);
+  let p;
+  if(kind==='core'){p=_genCorePart();p.objective='Core';}
+  else if(kind==='cardio'){p=_genCardioSession();p.objective='Cardio';}
+  else if(kind==='blank'){p={format:'amrap',focus:'',objective:'Custom',title:'Custom Piece',scheme:'Write your own — edit the movements below',moves:[{n:'Movement',unit:'',cat:'gym',reps:10}],ladder:null,resultType:'check',est:10,autoFinisher:false};}
+  else {p=_genClassic(prof,null,{});p.objective='Extra part';_dedupeAgainst(p,[root].concat(root.parts),prof);_teamify(p);}
   root.parts.push(p);
   if(ctx.indexOf('sess:')===0)sv();
-  _wodCtxRerender(ctx);
+  cM();_wodCtxRerender(ctx);
 }
 function removeWodPart(ctx){
   const root=_wodCtxRoot(ctx);if(!root||!root.parts)return;
