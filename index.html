@@ -854,15 +854,15 @@ const WOD_STIM=['Steady circuit pace — keep moving, short breaths between move
 // Session focus — suggests the day's intent, biases format + movement mix.
 // wf = target weighted fraction of movements. need = required equipment toggle.
 const WOD_FOCI=[
-  {id:'engine',n:'Engine',      fmts:['amrap','intervals','e2mom','buyin','tabata'],wf:.33,dur:[15,18,20],
+  {id:'engine',n:'Engine',      fmts:['amrap','intervals','e2mom','buyin','tabata','roundsrest','station'],wf:.33,dur:[15,18,20],
    stim:['Sustainable pace from minute one — this is an aerobic session, not a sprint.','Nose-breathing pace early; the last third is where you push.']},
-  {id:'sprint',n:'Sprint',      fmts:['rft','ladder','repamrap','deathby','tabata'],     wf:.5,
+  {id:'sprint',n:'Sprint',      fmts:['rft','ladder','repamrap','deathby','tabata','roundsrest','varyrounds'],     wf:.5,
    stim:['Short and hot — go out fast and hold on.','Redline effort; rest as little as your form allows.']},
-  {id:'grind', n:'Grind',       fmts:['chipper','amrap','buyin','ascladder'],  wf:.5,dur:[18,20],
+  {id:'grind', n:'Grind',       fmts:['chipper','amrap','buyin','ascladder','interference','station','varyrounds'],  wf:.5,dur:[18,20],
    stim:['One gear, no stopping — chip away at a pace you can hold to the end.','Long and steady; the win is never putting your hands on your knees.']},
-  {id:'power', n:'Barbell Power',fmts:['emom','rft','repamrap','e2mom','deathby','maxrep'],      wf:.8,need:'bb',
+  {id:'power', n:'Barbell Power',fmts:['emom','rft','repamrap','e2mom','deathby','maxrep','roundsrest','interference'],      wf:.8,need:'bb',
    stim:['Loads should feel crisp, not grindy — this is barbell conditioning, not a max-out.','Every rep with intent; drop the bar before the technique drops.']},
-  {id:'gymn',  n:'Gymnastics Density',fmts:['emom','amrap','ascladder','e2mom','maxrep','tabata'],wf:.2,dur:[10,12,16],
+  {id:'gymn',  n:'Gymnastics Density',fmts:['emom','amrap','ascladder','e2mom','maxrep','tabata','interference','varyrounds'],wf:.2,dur:[10,12,16],
    stim:['Quality positions under fatigue — break sets before failure.','Accumulate clean reps; sloppy reps do not count today.']}
 ];
 
@@ -890,7 +890,16 @@ function _wtPick(a){ // favour the lighter options — metcons complement the li
   if(a.length===2)return r<0.75?a[0]:a[1];
   return r<0.55?a[0]:(r<0.92?a[1]:a[2]);
 }
-function _inst(m,reps){const o={n:m.n,unit:m.unit,cat:m.cat,reps:reps};if(m.wt&&m.wt.length){o.wt=_wtPick(m.wt);o.hand=m.hand||'1';}return o;}
+// Affiliate coaches write round numbers — never 17 reps of anything.
+const CLEAN_REPS=[3,4,5,6,8,9,10,12,15,16,18,20,21,24,25,30,35,40,50,60,75,100];
+function _cleanRep(n){
+  if(n==null||isNaN(n))return n;
+  if(n<=3)return Math.max(1,Math.round(n));
+  let best=CLEAN_REPS[0];
+  for(const c of CLEAN_REPS)if(Math.abs(c-n)<Math.abs(best-n))best=c;
+  return best;
+}
+function _inst(m,reps){const o={n:m.n,unit:m.unit,cat:m.cat,reps:(m.unit==='s'||m.unit==='m')?reps:_cleanRep(reps)};if(m.wt&&m.wt.length){o.wt=_wtPick(m.wt);o.hand=m.hand||'1';}return o;}
 function _withReps(m,hi){return _inst(m,_scaled()?m.rep[0]:(hi?m.rep[m.rep.length-1]:_rp(m.rep)));}
 function _mvLine(m){
   const w=m.wt?` (${m.hand==='2'?'2×':''}${m.wt} lb)`:'';
@@ -1235,6 +1244,18 @@ function _ensureMU(w){
   if(idx<0)idx=w.moves.length-1;
   w.moves[idx]=inst;w.muInjected=true;
 }
+// Formats already used in logged sessions this week — a week shouldn't repeat one.
+function _weekFormats(){
+  let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
+  const dow=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-((dow+6)%7));
+  const ws=mon.toISOString().slice(0,10),de=d.toISOString().slice(0,10);
+  const out=new Set();
+  for(const x of Object.values(D.sessions||{})){
+    if(!x.isWOD||!x.date||x.date<ws||x.date>de||x.date===de||!x.wodData)continue;
+    [x.wodData].concat(x.wodData.parts||[]).forEach(p=>{if(p&&p.format)out.add(p.format);});
+  }
+  return out;
+}
 function _weekHas(flag){
   let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
   const dow=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-((dow+6)%7));
@@ -1316,6 +1337,34 @@ function _needsCoreFinisher(w){
   const all=w.moves.concat(...((w.parts||[]).map(p=>p.moves||[])));
   return !all.some(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&(b.pat==='core'||b.cat==='core');});
 }
+// For-time pieces get a target and a cap. Beating the target consistently is the
+// signal to add load, add reps, or move to the harder movement variant.
+function _capTarget(p){
+  if(!p||p.capped)return;
+  if(p.resultType!=='time')return;
+  const t=Math.max(4,Math.round(p.est||10));
+  p.target=t;p.cap=Math.ceil(t*1.5);p.capped=true;
+  p.scheme=(p.scheme||'')+` · target ~${t} min · cap ${p.cap} min`;
+}
+// Intent language — how the reps should be done, not just how many.
+const INTENT={
+  bbLight:['touch-and-go','unbroken','fast singles if it breaks'],
+  bbHeavy:['heavy — quality over speed','climbing across sets','same load across'],
+  gym:['unbroken if you can','break early, break small','strict — no kip'],
+  cardio:['hold a repeatable pace','sprint the last round']
+};
+function _addIntent(p){
+  if(!p||!p.moves||!p.moves.length||p.intentDone)return;
+  p.intentDone=true;
+  if(Math.random()<0.45)return; // not every piece needs a cue
+  const i=Math.floor(Math.random()*p.moves.length);
+  const mv=p.moves[i];const b=WOD_MOVES.find(x=>x.n===mv.n);
+  if(!b||mv.reps==null)return;
+  let bank=INTENT.gym;
+  if(b.equip==='bb'||b.equip==='kb')bank=(mv.wt&&b.wt&&mv.wt===b.wt[b.wt.length-1])?INTENT.bbHeavy:INTENT.bbLight;
+  else if(b.mod==='M')bank=INTENT.cardio;
+  mv.tag=_rp(bank);
+}
 function _attachDay(w,allowVest){
   const _p=_dayProfile();
   const _target=(idx)=>{
@@ -1340,6 +1389,8 @@ function _attachDay(w,allowVest){
     if(_p.cardioAlways||total<16){const c=_rp(CARDIO_ADDONS);w.cardioAddon={title:'Cardio add-on',scheme:c.t,est:c.e};}
   }
   if(_wodBias&&_p.legBias&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length)_ensureLegVolume(w);
+  _addIntent(w);(w.parts||[]).forEach(_addIntent);
+  _capTarget(w);(w.parts||[]).forEach(_capTarget);
   _teamify(w);
   if(allowVest===undefined)allowVest=true;
   const prof=_dayProfile();
@@ -1373,10 +1424,21 @@ function _cfTmpl(focus,minN,maxN){
 // Open-canon signature couplets — rolled as a bias (~35%) on couplet-friendly formats.
 // Both members must survive the day's sparing filter and equipment toggles.
 const SIG_COUPLETS=[
-  ['bbthr','c2b'],['bbthr','pullup'],['bbthr','bfb'],
-  ['psnatch','du'],['wallball','bfb'],['hpclean','boxjump'],
-  ['deadlift','hspu'],['wallball','ringmu'],
-  ['pclean','bfb'],['dbsnatch','burpdb']
+  // barbell + gymnastic pull (the Fran family)
+  ['bbthr','c2b'],['bbthr','pullup'],['bbthr','strpull'],
+  // push / pull — the classic CrossFit pairing: one pushes, one pulls, neither rests
+  ['hspu','pullup'],['hspu','strpull'],['bbpp','strpull'],['pjerk','pullup'],
+  ['ringdip','ringpull'],['ringdip','strpull'],['pushup','ringrow'],['dip','pullup'],
+  ['wringdip','leanaway'],['dbohp','dbrow'],
+  // hinge + midline
+  ['deadlift','hspu'],['kbswing','pullup'],['kbswing','t2b'],['dbswing','burpee'],
+  // squat + overhead
+  ['wallball','pullup'],['wallball','ringmu'],['bbfsq','t2b'],['ohs','t2b'],
+  // power + monostructural
+  ['pclean','bfb'],['pclean','row'],['psnatch','du'],['hpclean','du'],['dbsnatch','burpdb'],
+  ['cj','boxjump'],['kbcj','du'],
+  // gymnastic + machine
+  ['t2b','airdyne'],['wallwalk','row'],['strpull','ski'],['burpee','row']
 ];
 function _sigCouplet(pool){
   const ids=new Set(pool.map(m=>m.id));
@@ -1518,6 +1580,11 @@ function _genClassic(prof,fociOverride,opts){
     opts={...opts,maxMoves:3};
   }
   let _fpool=opts.fmtPool||focus.fmts;
+  if(!opts.fmt){ // avoid repeating a format already used this week
+    const used=_weekFormats();
+    const fresh=_fpool.filter(f=>!used.has(f));
+    if(fresh.length)_fpool=fresh;
+  }
   if(opts.noSolo)_fpool=_fpool.filter(f=>!SOLO_FMTS.includes(f))||_fpool; // a guard day needs a piece that can absorb an injection
   if(!_fpool||!_fpool.length)_fpool=focus.fmts;
   const fmt=opts.fmt||_rp(_fpool);
@@ -1538,7 +1605,8 @@ function _genClassic(prof,fociOverride,opts){
     return ({format:'rft',focus:focus.n,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()});
   }
   if(fmt==='ladder'){
-    const ladder=_rp([[21,15,9],[15,12,9],[21,18,15,12,9],[10,8,6,4,2],[27,21,15,9]]);
+    const ladder=_rp([[21,15,9],[15,12,9],[21,18,15,12,9],[10,8,6,4,2],[27,21,15,9],
+      [50,40,30,20,10],[5,10,15,20],[10,20,30],[3,6,9,12,15],[30,20,10],[9,15,21],[12,9,6,3],[5,10,15,20,25]]);
     // ladder reps apply per movement; eligible = reps or cals (not s)
     const lpool=pool.filter(m=>m.unit===''||m.unit==='cal');
     let _sig=Math.random()<0.35?_sigCouplet(lpool):null;
@@ -1551,8 +1619,21 @@ function _genClassic(prof,fociOverride,opts){
     return ({format:'emom',focus:focus.n,title:`EMOM ${total}`,scheme:`Every minute on the minute for ${total} min, rotating through ${moves.length} movements`,moves,ladder:null,resultType:'check',est:total,stimulus:'Each set inside the minute; the rest of the minute is your rest.'});
   }
   if(fmt==='chipper'){
-    const moves=_cfPick(pool,_rp(FOCUS_TMPLS.grind),bbBias).slice(0,_scaled()?3:6).map(m=>{const r=_rp(m.rep);return _inst(m,m.unit==='cal'||m.unit===''?Math.round(r*1.4):r);});
-    return ({format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',moves,ladder:null,resultType:'time',est:moves.length*2,stimulus:stim()});
+    // Real chippers: big round numbers marching down, one time through
+    const ladders=[[100,80,60,40,20],[75,60,45,30,15],[50,40,30,20,10],[60,50,40,30,20],[100,75,50,25]];
+    const vol=_rp(ladders);
+    const picked=_cfPick(pool.filter(m=>!m.nx&&m.unit!=='s'),_rp(FOCUS_TMPLS.grind),bbBias).slice(0,_scaled()?3:vol.length);
+    const moves=picked.map((m,i)=>{
+      let r=vol[Math.min(i,vol.length-1)];
+      if(m.unit==='cal')r=Math.max(10,Math.round(r*0.4));
+      if(m.unit==='m')r=_rp([200,400,600]);
+      if(m.equip==='bb'||m.equip==='kb')r=Math.max(10,Math.round(r*0.35));
+      if(m.equip==='rope')r=Math.round(r*1.6); // rope reps go fast — scale them up
+      if(m.id==='hspu'||m.id==='pike'||m.id==='defhspu')r=Math.max(10,Math.round(r*0.5));
+      return _inst(m,r);
+    });
+    return ({format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',
+      moves,ladder:null,resultType:'time',est:moves.length*3,stimulus:stim()});
   }
   if(fmt==='repamrap'){
     // Repeating AMRAP intervals — fixed reps then an open "max reps" slot, rest between sets
@@ -1597,6 +1678,48 @@ function _genClassic(prof,fociOverride,opts){
       scheme:`Buy-in: ${bi?_mvLine({n:bi.n,unit:bi.unit,reps:biReps}):'—'} · then AMRAP ${dur} · Cash-out: ${co?coReps+' '+co.n:'—'} — one running clock`,
       moves:mv,ladder:null,resultType:'time',est:dur+8,
       stimulus:'The buy-in sets the tone and the cash-out punishes an over-eager AMRAP. Pace the middle.'});
+  }
+  if(fmt==='interference'){
+    // A main task for time, interrupted on a clock — the interruption is the workout
+    const mainPool=pool.filter(m=>!m.nx&&m.unit===''&&m.pat!=='core');
+    const intPool=pool.filter(m=>!m.nx&&m.unit===''&&(m.mod==='G'||m.cat==='cardio'));
+    if(mainPool.length&&intPool.length){
+      const a=_wrp(mainPool),b2=_wrp(intPool.filter(x=>x.n!==a.n).length?intPool.filter(x=>x.n!==a.n):intPool);
+      const total=_rp([50,60,75,100]),every=_rp([2,3]),ir=_rp([5,8,10]);
+      const A=_inst(a,total),B=_inst(b2,ir);
+      return ({format:'interference',focus:focus.n,title:`${total} ${a.n} — For Time`,
+        scheme:`${total} ${a.n} for time · every ${every} min (starting at 0:00) stop and do ${ir} ${b2.n}`,
+        moves:[A,B],ladder:null,resultType:'time',est:Math.round(total/6)+4,
+        stimulus:'The interruption sets the pace. Get back on the main movement immediately — the clock does not care.'});
+    }
+  }
+  if(fmt==='roundsrest'){
+    const rounds=_rp([3,4,5]),rest=_rp([1,2]);
+    const moves=pick(2,3).map(_withReps);
+    return ({format:'roundsrest',focus:focus.n,title:`${rounds} Rounds · Rest ${rest} min`,
+      scheme:`${rounds} rounds for time · rest ${rest} min between rounds · score is total working time`,
+      moves,ladder:null,resultType:'time',est:rounds*3+rounds*rest,
+      stimulus:'The rest is paid for — each round should look the same as the first. If round 3 is slower, you opened too hard.'});
+  }
+  if(fmt==='station'){
+    const rounds=_rp([3,4]),mins=1;
+    const moves=_cfPick(pool.filter(m=>!m.nx&&m.unit!=='s'),['W','G','M','G','W'],bbBias).slice(0,5).map(m=>_inst(m,null));
+    return ({format:'station',focus:focus.n,title:`${rounds} Rounds · ${moves.length} Stations`,
+      scheme:`${rounds} rounds · ${mins} min at each station, max reps · ${mins} min rest after the last station · score is total reps`,
+      moves,ladder:null,resultType:'rounds',est:rounds*(moves.length+1),
+      stimulus:'Fight Gone Bad style — no transitions, no pacing breaks. Count everything.'});
+  }
+  if(fmt==='varyrounds'){
+    const chosen=pick(3,4);
+    if(chosen.length>=3){
+      const anchor=chosen[0],rotate=chosen.slice(1);
+      const aInst=_withReps(anchor);
+      const moves=[aInst].concat(rotate.map(_withReps));
+      return ({format:'varyrounds',focus:focus.n,title:`${rotate.length} Rounds — Rotating`,
+        scheme:`${rotate.length} rounds for time · every round: ${_mvLine(aInst)}, then the next movement down the list`,
+        moves,ladder:null,resultType:'time',est:rotate.length*4,
+        stimulus:'Same anchor every round, a different partner each time — pace the anchor, attack the变.'.replace('变','variable')});
+    }
   }
   if(fmt==='deathby'){
     // Death by — ascending reps each minute until you can't complete the round
@@ -1688,7 +1811,7 @@ function _partHTML(p,ctx,label,removable){
       +(ctx&&p.moves.length>1&&i>0?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},-1)" title="Move up">↑</button>`:'')
       +(ctx&&p.moves.length>1&&i<p.moves.length-1?`<button class="wod-swap" onclick="moveWodMove('${ctx}',${i},1)" title="Move down">↓</button>`:'')
       +(ctx&&p.moves.length>1?`<button class="wod-swap" onclick="removeWodMove('${ctx}',${i})" title="Remove movement">✕</button>`:'');
-    h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}</span><span class="mv-right">${right}</span></div>`;
+    h+=`<div class="wod-mv"><span class="mvn">${_mvLine(m)}${m.tag?` <span style="font-size:.62rem;color:var(--tx3);font-style:italic;">— ${m.tag}</span>`:''}</span><span class="mv-right">${right}</span></div>`;
   });
   if(ctx&&p.moves&&p.moves.length&&p.format!=='recovery'&&p.format!=='rest')h+=`<div style="margin-top:8px;"><button class="wod-swap" style="font-size:.72rem;" onclick="addWodMove('${ctx}')">＋ Add movement</button></div>`;
   if(p.pullInjected)h+=`<div style="font-size:.62rem;color:var(--tx3);margin-top:8px;">Pull slot added — no pulling yet this week.</div>`;
