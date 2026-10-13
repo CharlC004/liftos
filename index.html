@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.45e</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.63</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -735,7 +735,7 @@ const WOD_MOVES=[
   {id:'du',       n:'Double-Unders',        unit:'',   equip:'rope',cat:'cardio',pat:'cardio',rep:[25,30,40,50],w:1.2},
   {id:'row',      n:'Row',                  unit:'cal',equip:'row', cat:'cardio',pat:'cardio',rep:[12,15,18,21],w:2},
   {id:'ski',      n:'SkiErg',               unit:'cal',equip:'ski', cat:'cardio',pat:'cardio',rep:[10,12,15,18],w:1.5},
-  {id:'run',      n:'Run',                  unit:'m',  equip:'bw',  cat:'cardio',pat:'cardio',rep:[200,400,600],w:2},
+  {id:'run',      n:'Run',                  unit:'m',  equip:'run', cat:'cardio',pat:'cardio',rep:[200,400,600],w:2},
   {id:'su',       n:'Single-Unders',        unit:'',   equip:'rope',cat:'cardio',pat:'cardio',rep:[50,60,80],nx:true},
   // --- Gymnastics / bodyweight (mod G) — CrossFit staples weighted up ---
   {id:'burpee',   n:'Burpees',              unit:'',   equip:'bw',  cat:'cardio',pat:'full',  rep:[10,12,15],w:3},
@@ -1019,30 +1019,39 @@ function _genBenchmark(){
 // weighted hinge (heavy hinge) — bodyweight hinge stays available.
 const WOD_NAMES=['PAINT IT BLACK','GIMME SHELTER','BEAST OF BURDEN','THUNDERSTRUCK','BACK IN BLACK','KASHMIR','BLACK DOG','IMMIGRANT SONG','WAR PIGS','IRON MAN','PARANOID','HIGHWAY TO HELL','ACE OF SPADES','BARRACUDA','CRAZY TRAIN','LA GRANGE','FORTUNATE SON','BORN TO RUN','WHIPPING POST','FREE BIRD','TOM SAWYER','WHITE ROOM','COMFORTABLY NUMB','ROADHOUSE BLUES'];
 const DAY_PROFILES={
-  1:{label:'Mon · back squat — lighter metcon',plan:'hard',
-     force:'Back Squat',
-     spare:['hinge'],foci:['engine','sprint','gymn'],lightLoad:true,cardioAddon:true,
-     parts:[{obj:'Lighter Metcon',bigBlocks:true,fmtPool:['repamrap','amrap','intervals']}],
+  1:{label:'Mon \u00b7 front squat 5RM + single-leg \u2014 WOD',plan:'hard',
+     force:'Front Squat \u2014 5RM + 3 back-off sets \u00b7 One-Leg Squat',
+     spare:['legs'],allowEasy:true,foci:['engine','sprint','gymn'],lightLoad:true,cardioAddon:true,
+     parts:[{obj:'WOD',bigBlocks:true,fmtPool:['repamrap','amrap','intervals','roundsrest']}],
      extraEx:[]},
-  2:{label:'Tue · incline + pull-ups + arms — add your cardio block',plan:'extras',
-     force:'Incline Bench Press · Pull-ups · DB Press · Triceps · Biceps',
-     spare:[],
+  2:{label:'Tue \u00b7 pull-up strength + arms \u2014 cardio / interval WOD',plan:'hard',
+     force:'Pull-up Strength \u00b7 Biceps \u00b7 Triceps \u00b7 Face Pulls',
+     spare:['pull','push'],allowEasy:true,foci:['engine','sprint'],lightLoad:true,
+     cardioAddon:true,
+     parts:[{obj:'Cardio / Intervals',foci:['engine','sprint'],fmtPool:['intervals','emom','amrap','repamrap']}],
      extraEx:[]},
-  3:{label:'Wed · clean + RDL — heavy metcon',plan:'hard',
-     force:'Clean / Power Clean · RDL',
-     spare:['hinge'],foci:['power','grind'],cardioAddon:true,
-     parts:[{obj:'Heavy Metcon'}],
+  3:{label:'Wed \u00b7 power clean + RDL + GHR \u2014 WOD',plan:'hard',
+     force:'Power Clean \u00b7 Romanian Deadlift \u00b7 Glute-Ham Raises',
+     spare:['hinge'],foci:['power','grind','gymn'],cardioAddon:true,pullGuard:true,
+     parts:[{obj:'WOD'}],
      extraEx:[]},
-  4:{label:'Thu · Zone 2 or off',plan:'recovery',
-     force:null,spare:[],extraEx:[]},
-  5:{label:'Fri · off',plan:'off',force:null,spare:[],extraEx:[]},
-  6:{label:'Sat · jerk / push press + triceps (RPE 7) — hardest metcon',plan:'hard',
-     force:'Jerk / Push Press · Triceps (RPE 7)',
-     spare:['push'],foci:['grind','power','sprint'],
-     pullGuard:true,cardioAddon:true,
-     parts:[{obj:'Hardest Metcon'}],
+  4:{label:'Thu \u00b7 cardio intervals',plan:'hard',
+     force:null,spare:[],
+     parts:[{obj:'Cardio Intervals',kind:'cardioSession'}],
      extraEx:[]},
-  0:{label:'Sun · off',plan:'off',force:null,spare:[],extraEx:[]}
+  5:{label:'Fri \u00b7 back squat 8RM + step-ups \u2014 WOD',plan:'hard',
+     force:'Back Squat \u2014 8RM + 3 back-off sets \u00b7 Step-Ups',
+     spare:['legs'],allowEasy:true,foci:['engine','sprint','gymn'],lightLoad:true,cardioAddon:true,
+     parts:[{obj:'WOD',bigBlocks:true,fmtPool:['amrap','repamrap','intervals','chipper']}],
+     extraEx:[]},
+  6:{label:'Sat \u00b7 strict press + strict HSPU \u2014 WOD (legs in play)',plan:'hard',
+     force:'Strict Press \u00b7 Strict Handstand Push-ups',
+     spare:['push'],allowEasy:true,foci:['grind','sprint','gymn'],
+     legFloor:true,cardioAddon:true,
+     parts:[{obj:'WOD'}],
+     extraEx:[]},
+  0:{label:'Sun \u00b7 Zone 2',plan:'recovery',zone2:true,
+     force:null,spare:[],extraEx:[]}
 };
 function weeksSinceDeload(){
   let last='',first='';
@@ -1063,29 +1072,16 @@ const KNEE_PROFILES={
      extraEx:[]},
   2:{label:'Tue · OH press — interval metcon, high reps, light',plan:'hard',
      force:'Strict Press 4×8 · Triceps Pushdowns · Face Pulls',
-     forceEx:[
-       {id:'ohp',name:'Strict Press (barbell)',_force:true,type:'pri',s:4,r:8,rest:180},
-       {id:'pushdown',name:'Triceps Pushdowns (cable)',_force:true,type:'acc',s:3,r:15,rest:60},
-       {id:'facepull',name:'Face Pulls (cable)',_force:true,type:'acc',s:3,r:15,rest:60}],
      spare:['push'],foci:['engine','sprint'],light:false,highRep:true,
      parts:[{obj:'Intervals',fmt:'intervals'}],
      extraEx:[]},
   3:{label:'Wed · deficit RDL — cardio session',plan:'hard',
      force:'Deficit RDL 4×15-20 (quality reps, 2 min rest) · DB Curls',
-     forceEx:[
-       {id:'rdl',name:'Deficit Romanian Deadlift',_force:true,type:'pri',s:4,r:18,rest:120,note:'quality + pump, not max load'},
-       {id:'dbcurl',name:'DB Biceps Curls',_force:true,type:'acc',s:3,r:12,rest:60}],
      spare:['hinge'],foci:['engine'],
      parts:[{obj:'Cardio',kind:'cardioSession'}],
      extraEx:[]},
   4:{label:'Thu · bodybuilding — no metcon',plan:'extras',
      force:'Incline Bench · Seated DB OH Press · Chest-Supported Rows · Back Extensions · Calves',
-     forceEx:[
-       {id:'incline',name:'Incline Bench Press',_force:true,type:'pri',s:4,r:8,rest:180},
-       {id:'dbohp',name:'Seated DB OH Press',_force:true,type:'sec',s:3,r:12,rest:120},
-       {id:'bsupr',name:'Chest-Supported DB Rows',_force:true,type:'sec',s:3,r:18,rest:90},
-       {id:'ghdback',name:'Back Extensions (GHD)',_force:true,type:'acc',s:3,r:18,rest:75},
-       {id:'calfstand',name:'Calf Raises',_force:true,type:'acc',s:4,r:15,rest:60}],
      spare:[],
      extraEx:[]},
   5:{label:'Fri · off',plan:'off',force:null,spare:[],extraEx:[]},
@@ -1192,6 +1188,24 @@ function _ensureLegVolume(w){
   if(idx<0)idx=w.moves.length-1;
   w.moves[idx]=inst;
 }
+// Softer sibling of _ensureLegVolume: guarantees a leg pattern is present on the
+// one day legs aren't spared, without forcing the heaviest load option.
+function _ensureLegPresence(w){
+  if(!_guardable(w)||!w.moves||!w.moves.length)return;
+  const isLeg=mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.pat==='legs';};
+  if(w.moves.some(isLeg))return;
+  const cand=_wodPoolBiased(_dayProfile()).filter(m=>m.pat==='legs'&&!m.nx);
+  if(!cand.length)return;
+  const pick=_wrp(cand);
+  const inst={n:pick.n,unit:pick.unit,cat:pick.cat,
+    reps:(w.moves[0]&&w.moves[0].reps==null)?null:_rp(pick.rep)};
+  if(pick.wt&&pick.wt.length){inst.wt=_wtPick(pick.wt);inst.hand=pick.hand||'1';}
+  let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio'&&b.pat!=='core';});
+  if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
+  if(idx<0)idx=w.moves.length-1;
+  if(w.format==='interference'&&idx===0&&w.moves.length>1)idx=1; // slot 0 is the named main task
+  w.moves[idx]=inst;w.legInjected=true;
+}
 function _extraExFor(){
   let d=_wodDate?new Date(_wodDate+'T12:00:00'):new Date();if(isNaN(d))d=new Date();
   const dow=d.getDay();
@@ -1229,6 +1243,7 @@ function _ensurePull(w){
   let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='gym'&&b.pat!=='core'&&b.pat!=='pull';});
   if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
   if(idx<0)idx=w.moves.length-1;
+  if(w.format==='interference'&&idx===0&&w.moves.length>1)idx=1; // slot 0 is the named main task
   w.moves[idx]=inst;w.pullInjected=true;
 }
 function _ensureMU(w){
@@ -1242,6 +1257,7 @@ function _ensureMU(w){
   let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='gym'&&b.pat!=='core';});
   if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
   if(idx<0)idx=w.moves.length-1;
+  if(w.format==='interference'&&idx===0&&w.moves.length>1)idx=1; // slot 0 is the named main task
   w.moves[idx]=inst;w.muInjected=true;
 }
 // Formats already used in logged sessions this week — a week shouldn't repeat one.
@@ -1279,6 +1295,7 @@ function _ensureHspu(w){
   let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='gym'&&b.pat!=='core';});
   if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
   if(idx<0)idx=w.moves.length-1;
+  if(w.format==='interference'&&idx===0&&w.moves.length>1)idx=1; // slot 0 is the named main task
   w.moves[idx]=inst;w.hspuInjected=true;
 }
 function _weekHasUni(){return _weekHas('uni');}
@@ -1307,6 +1324,7 @@ function _ensureUniLeg(w,heavy){
   let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='gym'&&b.pat!=='core';});
   if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
   if(idx<0)idx=w.moves.length-1;
+  if(w.format==='interference'&&idx===0&&w.moves.length>1)idx=1; // slot 0 is the named main task
   w.moves[idx]=inst;w.uniInjected=true;
 }
 const OLIFT_IDS=['psnatch','hpsnatch','sqsnatch','pclean','hpclean','sqclean','cj','pjerk','bbthr','ohs'];
@@ -1322,6 +1340,7 @@ function _ensureOlift(w){
   let idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat==='load';});
   if(idx<0)idx=w.moves.findIndex(mv=>{const b=WOD_MOVES.find(x=>x.n===mv.n);return b&&b.cat!=='cardio';});
   if(idx<0)idx=w.moves.length-1;
+  if(w.format==='interference'&&idx===0&&w.moves.length>1)idx=1; // slot 0 is the named main task
   w.moves[idx]=inst;w.olyInjected=true;
 }
 // ── Cardio add-on: short conditioning days get a dedicated interval block ──
@@ -1376,9 +1395,11 @@ function _attachDay(w,allowVest){
   if(!_scaled()&&_wodBias&&_p.pullGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length&&_weekDayCount(PULL_FAM)===0){const t=_target(_p.pullGuardPart);if(t.moves&&t.moves.length)_ensurePull(t);}
   if(!_scaled()&&_wodBias&&_p.muGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.moves&&w.moves.length&&_weekDayCount(MU_FAM)===0){const t=_target(_p.muGuardPart);if(t.moves&&t.moves.length)_ensureMU(t);}
   if(!_scaled()&&!_knee()&&_wodBias&&_p.uniGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length&&(_p.uniAlways||!_weekHasUni())){const t=_target(_p.uniGuardPart);if(t.moves&&t.moves.length)_ensureUniLeg(t,!!_p.uniHeavy);}
+  if(!_scaled()&&_wodBias&&_p.legFloor&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length){const t=_target(_p.legFloorPart);if(t.moves&&t.moves.length)_ensureLegPresence(t);}
   if(!_scaled()&&_wodBias&&_p.hspuGuard&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&w.moves&&w.moves.length&&!_weekHas('hspuFam')){const t=_target(_p.hspuGuardPart);if(t.moves&&t.moves.length)_ensureHspu(t);}
   // guards may have injected a movement already used elsewhere in the session — dedupe once more
   if(Array.isArray(w.parts)&&w.parts.length){const prof=_wodBias?_p:null;w.parts.forEach((p,i)=>_dedupeAgainst(p,[w].concat(w.parts.slice(0,i)),prof));}
+  _resyncNamed(w);(w.parts||[]).forEach(_resyncNamed);
   if(w.autoFinisher!==false&&!w.noTeam&&w.focus!=='Benchmark'&&w.focus!=='Cardio'&&_needsCoreFinisher(w)){
     const f=_genCorePart();f.objective='Core';f.autoCore=true;
     if(!Array.isArray(w.parts))w.parts=[];
@@ -1504,6 +1525,13 @@ function _genCorePart(){
     moves,ladder:null,resultType:'rounds',est:dur,autoFinisher:false,
     stimulus:'Quality over speed — break before the positions go.'};
 }
+const ZONE2_CARDS=[
+  {title:'Zone 2 \u2014 Airdyne',scheme:'Airdyne 45-60 min \u00b7 nasal breathing, conversational \u00b7 hold the same cadence start to finish',est:50},
+  {title:'Zone 2 \u2014 Rower',scheme:'Row 40-50 min steady \u00b7 20-22 s/m, hold the split \u00b7 should feel boring, not hard',est:45},
+  {title:'Zone 2 \u2014 Mixed Machines',scheme:'3\u00d7 15 min easy, rotate Airdyne / Rower / walk \u00b7 no breaks between blocks',est:45},
+  {title:'Zone 2 \u2014 Outdoors',scheme:'60-75 min easy bike or brisk walk/hike (dog counts) \u00b7 nose-breathing pace throughout',est:65},
+  {title:'Zone 2 \u2014 Row + Spin',scheme:'Row 20 min easy \u00b7 Airdyne 20 min easy \u00b7 finish with 10 min long-hold stretching',est:50}
+];
 const RECOVERY_CARDS=[
   {title:'Active Recovery — Easy Spin',scheme:'Airdyne 20-25 min Zone 1-2 · nasal breathing · conversation pace',est:25},
   {title:'Active Recovery — Mobility Flow',scheme:'25-30 min full-body flow: hips, ankles, T-spine, shoulders · long holds, slow breathing',est:30},
@@ -1511,6 +1539,13 @@ const RECOVERY_CARDS=[
   {title:'Active Recovery — Walk + Flow',scheme:'20-30 min brisk walk (dog counts) · finish with 10 min hip openers',est:30}
 ];
 function _genRecovery(){
+  const _p=_wodBias?_dayProfile():null;
+  if(_p&&_p.zone2){
+    const z=_rp(ZONE2_CARDS);
+    return{format:'recovery',focus:'Recovery',title:z.title,scheme:z.scheme,moves:[],ladder:null,
+      resultType:'check',est:z.est,noTeam:true,noTopup:true,
+      stimulus:'Aerobic base. If you can\u0027t hold a conversation, you\u0027re going too hard \u2014 back off.'};
+  }
   const c=_rp(RECOVERY_CARDS);
   return{format:'recovery',focus:'Recovery',title:c.title,scheme:c.scheme,moves:[],ladder:null,
     resultType:'check',est:c.est,noTeam:true,noTopup:true,
@@ -1518,7 +1553,7 @@ function _genRecovery(){
 }
 function _genExtrasOnly(){
   const prof=_dayProfile();
-  const hasWork=(prof&&((prof.forceEx&&prof.forceEx.length)||(_extraExFor().length)));
+  const hasWork=(prof&&(prof.force||(prof.forceEx&&prof.forceEx.length)||(_extraExFor().length)));
   if(!hasWork)return{format:'rest',focus:'Off',title:'Off Day',scheme:'Nothing scheduled. Rest is part of the program.',
     moves:[],ladder:null,resultType:'check',est:0,noTeam:true,noTopup:true,stimulus:null};
   return{format:'rest',focus:'Extras Only',title:prof&&prof.plan==='extras'&&prof.force?'Force + Extras — no metcon':'Extras — In & Out',
@@ -1564,8 +1599,20 @@ function _dedupeAgainst(p,earlier,prof){
     return inst;
   });
   // single-movement formats name their movement in the title/scheme — keep them in sync after a swap
-  if(p.format==='deathby'&&p.moves[0])p.title='Death By — '+p.moves[0].n;
-  if(p.format==='maxrep'&&p.moves[0])p.scheme=p.scheme.replace(/as many .+ as possible/,'as many '+p.moves[0].n+' as possible');
+  _resyncNamed(p);
+}
+// Formats that name their movements in the title/scheme go stale the moment a
+// guard or a dedupe swaps a slot — rebuild the text from the current moves.
+function _resyncNamed(p){
+  if(!p||!p.moves||!p.moves.length)return;
+  if(p.format==='deathby')p.title='Death By — '+p.moves[0].n;
+  if(p.format==='maxrep')p.scheme=p.scheme.replace(/as many .+ as possible/,'as many '+p.moves[0].n+' as possible');
+  if(p.format==='interference'&&p.ifEvery&&p.moves.length>=2){
+    const A=p.moves[0],B=p.moves[1];
+    p.title=`${A.reps} ${A.n} — For Time`;
+    p.scheme=`${A.reps} ${A.n} for time · every ${p.ifEvery} min (starting at 0:00) stop and do ${B.reps} ${B.n}`;
+    p.capped=false; // the target/cap suffix lived on the old scheme text
+  }
 }
 function _genClassic(prof,fociOverride,opts){
   opts=opts||{};
@@ -1594,8 +1641,9 @@ function _genClassic(prof,fociOverride,opts){
   const stim=()=>_rp(focus.stim||WOD_STIM);
   if(fmt==='amrap'){
     const dur=opts.bigBlocks?_rp([16,18,20]):_rpDur(focus.dur||[10,12,15,18,20]);
-    let _sig=Math.random()<0.35?_sigCouplet(pool):null;
-    const moves=(_sig||pick(2,dur<=10?3:4)).map(_withReps);
+    const _long=dur>=16; // a 16-20 min AMRAP with two movements is a grind, not a workout
+    let _sig=(!_long&&Math.random()<0.35)?_sigCouplet(pool):null;
+    const moves=(_sig||pick(_long?3:2,dur<=10?3:4)).map(_withReps);
     return ({format:'amrap',focus:focus.n,title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:stim()});
   }
   if(fmt==='rft'){
@@ -1687,7 +1735,7 @@ function _genClassic(prof,fociOverride,opts){
       const a=_wrp(mainPool),b2=_wrp(intPool.filter(x=>x.n!==a.n).length?intPool.filter(x=>x.n!==a.n):intPool);
       const total=_rp([50,60,75,100]),every=_rp([2,3]),ir=_rp([5,8,10]);
       const A=_inst(a,total),B=_inst(b2,ir);
-      return ({format:'interference',focus:focus.n,title:`${total} ${a.n} — For Time`,
+      return ({format:'interference',focus:focus.n,ifEvery:every,title:`${total} ${a.n} — For Time`,
         scheme:`${total} ${a.n} for time · every ${every} min (starting at 0:00) stop and do ${ir} ${b2.n}`,
         moves:[A,B],ladder:null,resultType:'time',est:Math.round(total/6)+4,
         stimulus:'The interruption sets the pace. Get back on the main movement immediately — the clock does not care.'});
@@ -1778,7 +1826,7 @@ function generateWOD(type){
     if(spec.kind==='easyDensity')return _genEasyDensity(prof);
     if(spec.kind==='core')return _genCorePart();
     if(spec.kind==='cardioSession')return _genCardioSession();
-    const _guards=!!(prof&&(prof.pullGuard||prof.muGuard||prof.uniGuard||prof.hspuGuard||prof.olyGuard));
+    const _guards=!!(prof&&(prof.pullGuard||prof.muGuard||prof.uniGuard||prof.hspuGuard||prof.olyGuard||prof.legFloor));
     const w=_genClassic(prof,spec.foci||null,{maxMoves:spec.maxMoves,fmt:spec.fmt,short:spec.short,bigBlocks:spec.bigBlocks,fmtPool:spec.fmtPool,noSolo:_guards});
     return w;
   };
@@ -2202,7 +2250,7 @@ function showWODModal(date){
     _pendingWOD=generateWOD();
   }
   const e=D.wodEquip||{};
-  const chips=[['bike','Airdyne'],['row','Rower'],['kb','Kettlebell'],['ski','SkiErg'],['rope','Jump Rope'],['crope','Climbing Rope'],['bar','Pull-up Bar'],['rings','Rings'],['para','Parallettes'],['box','Box'],['mb','Med Ball'],['vest','Weight Vest'],['ghd','GHD'],['bench','Bench'],['db','Dumbbells'],['bb','Barbell']];
+  const chips=[['bike','Airdyne'],['row','Rower'],['kb','Kettlebell'],['ski','SkiErg'],['run','Running'],['rope','Jump Rope'],['crope','Climbing Rope'],['bar','Pull-up Bar'],['rings','Rings'],['para','Parallettes'],['box','Box'],['mb','Med Ball'],['vest','Weight Vest'],['ghd','GHD'],['bench','Bench'],['db','Dumbbells'],['bb','Barbell']];
   let h=`<h2>🔥 WOD</h2>`;
   const types=[['classic','🎲 Classic'],['cardio','🫀 Cardio'],['recovery','🧘 Recovery'],['extras','📋 Extras'],['skill','🎯 Technical'],['oly','🏋️ Oly'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher']];
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Session type</div>`;
