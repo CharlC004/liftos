@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.63</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.64</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -899,6 +899,22 @@ function _cleanRep(n){
   for(const c of CLEAN_REPS)if(Math.abs(c-n)<Math.abs(best-n))best=c;
   return best;
 }
+// A big "for time" rep count for ONE movement. The base numbers (20-100) are
+// written for air squats; everything else scales off the top of its own normal
+// WOD rep range, so 100 air squats never becomes 100 strict pull-ups.
+function _bigVol(m,base){
+  if(!m)return base;
+  if(m.unit==='m')return _rp([400,600,800,1000]);
+  if(m.unit==='s')return Math.max(30,Math.round(base*0.6));
+  const top=(m.rep&&m.rep.length)?m.rep[m.rep.length-1]:12;
+  if(m.unit==='cal')return Math.max(10,Math.min(60,Math.round(top*(base/30))));
+  let d=1;
+  if(m.wt&&m.wt.length)d*=0.7;   // loaded: fewer reps, same intent
+  if(m.adv)d*=0.7;               // high-skill work does not belong in triple digits
+  if(d===1&&top<=8)d=0.6;        // hard but unflagged: wall walks, GHR, get-ups
+  const v=top*(base/30)*_rp([0.85,1,1.15])*d;
+  return Math.max(Math.min(top,base),Math.min(200,_cleanRep(Math.round(v))));
+}
 function _inst(m,reps){const o={n:m.n,unit:m.unit,cat:m.cat,reps:(m.unit==='s'||m.unit==='m')?reps:_cleanRep(reps)};if(m.wt&&m.wt.length){o.wt=_wtPick(m.wt);o.hand=m.hand||'1';}return o;}
 function _withReps(m,hi){return _inst(m,_scaled()?m.rep[0]:(hi?m.rep[m.rep.length-1]:_rp(m.rep)));}
 function _mvLine(m){
@@ -1671,15 +1687,7 @@ function _genClassic(prof,fociOverride,opts){
     const ladders=[[100,80,60,40,20],[75,60,45,30,15],[50,40,30,20,10],[60,50,40,30,20],[100,75,50,25]];
     const vol=_rp(ladders);
     const picked=_cfPick(pool.filter(m=>!m.nx&&m.unit!=='s'),_rp(FOCUS_TMPLS.grind),bbBias).slice(0,_scaled()?3:vol.length);
-    const moves=picked.map((m,i)=>{
-      let r=vol[Math.min(i,vol.length-1)];
-      if(m.unit==='cal')r=Math.max(10,Math.round(r*0.4));
-      if(m.unit==='m')r=_rp([200,400,600]);
-      if(m.equip==='bb'||m.equip==='kb')r=Math.max(10,Math.round(r*0.35));
-      if(m.equip==='rope')r=Math.round(r*1.6); // rope reps go fast — scale them up
-      if(m.id==='hspu'||m.id==='pike'||m.id==='defhspu')r=Math.max(10,Math.round(r*0.5));
-      return _inst(m,r);
-    });
+    const moves=picked.map((m,i)=>_inst(m,_bigVol(m,vol[Math.min(i,vol.length-1)])));
     return ({format:'chipper',focus:focus.n,title:'Chipper — For Time',scheme:'One time through, top to bottom, for time',
       moves,ladder:null,resultType:'time',est:moves.length*3,stimulus:stim()});
   }
@@ -1733,11 +1741,13 @@ function _genClassic(prof,fociOverride,opts){
     const intPool=pool.filter(m=>!m.nx&&m.unit===''&&(m.mod==='G'||m.cat==='cardio'));
     if(mainPool.length&&intPool.length){
       const a=_wrp(mainPool),b2=_wrp(intPool.filter(x=>x.n!==a.n).length?intPool.filter(x=>x.n!==a.n):intPool);
-      const total=_rp([50,60,75,100]),every=_rp([2,3]),ir=_rp([5,8,10]);
+      const base=_rp([50,60,75,100]),every=_rp([2,3]);
+      const total=_bigVol(a,base);
+      const ir=Math.min(_rp([5,8,10]),(b2.rep&&b2.rep.length)?b2.rep[b2.rep.length-1]:10);
       const A=_inst(a,total),B=_inst(b2,ir);
       return ({format:'interference',focus:focus.n,ifEvery:every,title:`${total} ${a.n} — For Time`,
         scheme:`${total} ${a.n} for time · every ${every} min (starting at 0:00) stop and do ${ir} ${b2.n}`,
-        moves:[A,B],ladder:null,resultType:'time',est:Math.round(total/6)+4,
+        moves:[A,B],ladder:null,resultType:'time',est:Math.max(6,Math.ceil(total/((a.rep&&a.rep.length)?a.rep[a.rep.length-1]:12)*1.6)+2),
         stimulus:'The interruption sets the pace. Get back on the main movement immediately — the clock does not care.'});
     }
   }
