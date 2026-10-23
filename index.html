@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.66</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.67</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -955,7 +955,7 @@ function _genFinisher(){
   }
   const rounds=3;
   const moves=_samp(pool,Math.min(3,pool.length)).map(_withReps);
-  return{format:'rft',focus:'Core',title:`Core Finisher — ${rounds} Rounds`,scheme:`${rounds} rounds for time`,
+  return{format:'rft',focus:'Core',rounds,title:`Core Finisher — ${rounds} Rounds`,scheme:`${rounds} rounds for time`,
     moves,ladder:null,resultType:'time',est:6,stimulus:'Tack on right after the main session — tight and quick, minimal rest.'};
 }
 const OLY_LIFTS=[
@@ -1080,7 +1080,6 @@ function _teamify(w){
   w.scheme+=' \u00b7 '+TEAM_SCHEMES[w.format];
   if(w.format==='chipper'){
     w.moves.forEach(m=>{if(m.reps&&m.unit!=='s')m.reps=Math.round(m.reps*1.8);});
-    w.est=Math.round(w.est*1.8);
   }
   if(w.format==='rft'||w.format==='ladder')w.est=Math.round(w.est*1.8);
   return w;
@@ -1133,12 +1132,114 @@ function _needsCoreFinisher(w){
 }
 // For-time pieces get a target and a cap. Beating the target consistently is the
 // signal to add load, add reps, or move to the harder movement variant.
-function _capTarget(p){
-  if(!p||p.capped)return;
+// ── Work-time model ───────────────────────────────────────────────────────────
+// Seconds per rep at a sustainable metcon pace (not a fresh sprint). Anything not
+// listed derives from its WOD rep range: a movement whose top set is 10 reps takes
+// ~45 s per set. Calories, metres and seconds have their own rates.
+const MV_SEC={du:.55,su:.35,mtnclimb:.6,airsquat:1.3,situp:1.4,pushup:1.5,stepup:1.6,rlunge:1.4,jlunge:1.2,vup:1.5,hkr:1.5,superman:1.2,ghdsit:2,
+  kbswing:1.8,dbswing:1.8,wallball:2.2,mbslam:2,boxjump:2.2,bjover:2.5,burpee:3.5,bbjo:5,bfb:4.5,burppull:5,burpdb:4.5,inchworm:5,devil:6,
+  ropeclimb:18,ropepull:5,wallwalk:14,ringmu:7,barmu:7,tgu:12,kbcarry:40,carry:40,pistol:3,t2b:2.2,pullup:2.2,c2b:2.5,strpull:3,chinup:3,
+  dip:2,ringdip:2.5,hspu:3.5,defhspu:5,pike:2.5,cj:5,sqsnatch:5,sqclean:4.5,pclean:3.2,hpclean:2.8,psnatch:3.5,hpsnatch:3,pjerk:2.8,bbthr:3.5,
+  ohs:3,bbfsq:3,deadlift:2.8,bbpp:2.5,dbsnatch:2.2,kbcj:2.8,kbsnatch:2.2,dbstepover:4,dbthrust:3,dbclean:2.8,ohlunge:2.5,frlunge:2.2,dbpp:2,
+  goblet:2.2,dbohp:2.2,dbrow:1.8,renegade:4,dbrdl:2,dbfsq:2.5,cossack:2.2,slrdl:2.5,arnold:2.5,dbfloor:2,dbbench:2.2,dbincl:2.2,bsupr:2.5,
+  bss:2.5,hipthr:2,nordiccurl:5,hipext:2,shootthr:3,invrow:2,ringrow:2,leanaway:3,wringdip:3,ringpull:2.5,ringpu:2};
+function _mvSec(mv){ // seconds of work for one movement instance, set breaks included
+  if(!mv)return 0;
+  const b=WOD_MOVES.find(x=>x.n===mv.n);
+  const reps=mv.reps==null?0:+mv.reps||0;
+  if(!reps)return 0;
+  if(mv.unit==='s')return reps;
+  if(mv.unit==='m')return reps*(b&&b.id==='hswalk'?3:0.28);
+  let sec;
+  if(mv.unit==='cal')sec=reps*(b&&b.id==='row'?3.6:4.2);
+  else{
+    let s=b?MV_SEC[b.id]:null;
+    if(s==null){const top=(b&&b.rep&&b.rep.length)?b.rep[b.rep.length-1]:12;s=Math.min(6,Math.max(1.2,45/top));}
+    if(b&&b.wt&&b.wt.length&&mv.wt){const i=b.wt.indexOf(mv.wt);if(i===1)s*=1.15;else if(i>=2)s*=1.3;}
+    sec=reps*s;
+  }
+  if(sec>90)sec*=1.25;else if(sec>40)sec*=1.15; // long sets get broken
+  return sec;
+}
+function _roundSec(moves){return moves.reduce((a,m)=>a+_mvSec(m),0)+8*Math.max(0,moves.length-1);}
+function _roundsOf(p){ // rounds live in the field when generated here, in the scheme text for older sessions
+  if(p.rounds)return p.rounds;
+  const m=/(\d+)\s*rounds/i.exec(p.scheme||'')||/(\d+)\s*rounds/i.exec(p.title||'');
+  return m?parseInt(m[1]):3;
+}
+function _calcEst(p){ // minutes, for the formats whose duration comes from the work rather than the clock
+  if(!p||!Array.isArray(p.moves)||!p.moves.length)return null;
+  const M=p.moves,f=p.format;let sec=null;
+  const fat=(n)=>{let t=0;for(let k=0;k<n;k++)t+=1+0.07*k;return t;}; // each round a little slower
+  if(f==='rft'){sec=(_roundSec(M)+6)*fat(_roundsOf(p));}
+  else if(f==='roundsrest'){const r=_roundsOf(p),rest=p.rest||parseInt((/rest (\d+) min/.exec(p.scheme||'')||[0,1])[1]);sec=_roundSec(M)*fat(r)*0.95+rest*60*(r-1);}
+  else if(f==='varyrounds'){const a=M[0];sec=6;for(let k=1;k<M.length;k++)sec+=(_mvSec(a)+_mvSec(M[k])+8)*(1+0.07*(k-1));}
+  else if(f==='ladder'&&Array.isArray(p.ladder)&&p.ladder.length){
+    sec=0;p.ladder.forEach((r,k)=>{sec+=(M.reduce((a,m)=>a+_mvSec({...m,reps:r}),0)+8*Math.max(0,M.length-1))*(1+0.07*k);});
+  }
+  else if(f==='chipper'){sec=_roundSec(M)*1.1+10;}
+  else if(f==='interference'&&M.length>=2&&p.ifEvery){
+    const work=_mvSec(M[0])*1.15,ev=p.ifEvery*60,ib=_mvSec(M[1])+12; // main task slows every time you leave it
+    const n=Math.ceil(work/Math.max(30,ev-ib)); // interruptions, the first at 0:00
+    sec=work+n*ib;
+  }
+  if(sec==null)return null;
+  if(p.team&&(f==='rft'||f==='ladder'))sec*=1.8;
+  return Math.max(2,Math.round(sec/60*2)/2);
+}
+const EST_WINDOWS={Sprint:[6,12],'Barbell Power':[8,15],'Gymnastics Density':[6,14],Grind:[14,24],Engine:[12,20],Core:[4,8],Cardio:[12,22]};
+const FIT_FMTS=['rft','varyrounds','ladder','chipper','roundsrest','interference'];
+function _scaleReps(p,f){
+  const chg=(mv)=>{
+    if(mv.reps==null)return;
+    const b=WOD_MOVES.find(x=>x.n===mv.n);
+    let r=mv.reps*f;
+    if(mv.unit==='m')r=Math.round(r/50)*50;else if(mv.unit==='s')r=Math.round(r/5)*5;else r=_cleanRep(r);
+    if(b&&b.rep&&b.rep.length){const lo=b.rep[0],hi=Math.round(b.rep[b.rep.length-1]*((p.format==='chipper'||p.format==='interference')?6:2.5));r=Math.max(lo,Math.min(hi,r));}
+    if(p.format==='interference')r=Math.max(r,f>1?mv.reps+5:5);
+    if(r===mv.reps&&f>1)r=_cleanRep(mv.reps+1)>mv.reps?_cleanRep(mv.reps+1):mv.reps;
+    mv.reps=Math.max(1,r);
+  };
+  if(p.format==='ladder'&&Array.isArray(p.ladder)){
+    const nl=p.ladder.map(r=>_cleanRep(r*f));
+    if(new Set(nl).size===nl.length){p.ladder=nl;p.title=`${nl.join('-')} For Time`;p.scheme=p.scheme.replace(/^[\d-]+ reps/,`${nl.join('-')} reps`);}
+    return;
+  }
+  if(p.format==='interference')chg(p.moves[0]);else p.moves.forEach(chg); // the interruption stays fixed; the main task is the dial
+  _resyncNamed(p);
+}
+function _syncRounds(p){
+  const r=p.rounds;if(!r)return;
+  p.title=(p.title||'').replace(/\b\d+ Rounds/,`${r} Rounds`);
+  p.scheme=(p.scheme||'').replace(/\b\d+ rounds/,`${r} rounds`);
+}
+function _fitDuration(p){ // nudge a for-time piece into its focus' duration window before the target/cap is stamped
+  if(!p||!FIT_FMTS.includes(p.format)||!p.moves||!p.moves.length||p.fitted)return;
+  p.fitted=true;
+  let [lo,hi]=p.win||EST_WINDOWS[p.focus]||[8,18];
+  if(_scaled()||_knee()){lo=Math.max(4,Math.round(lo*0.75));hi=Math.round(hi*0.8);}
+  const canRounds=(p.format==='rft'||p.format==='roundsrest');
+  if(canRounds&&!p.rounds)p.rounds=_roundsOf(p);
+  let est=_calcEst(p),g=0;
+  while(est!=null&&est<lo&&g++<8){
+    if(canRounds&&p.rounds<5){p.rounds++;_syncRounds(p);}else _scaleReps(p,1.25);
+    est=_calcEst(p);
+  }
+  g=0;
+  while(est!=null&&est>hi&&g++<8){
+    if(canRounds&&p.rounds>3){p.rounds--;_syncRounds(p);}else _scaleReps(p,0.8);
+    est=_calcEst(p);
+  }
+  if(est!=null)p.est=est;
+}
+function _capTarget(p){ // (re)stamp target & cap from the current movements — safe to call after every edit
+  if(!p)return;
+  p.scheme=(p.scheme||'').replace(/ · target ~[\d.]+ min · cap \d+ min/,'');
   if(p.resultType!=='time')return;
-  const t=Math.max(4,Math.round(p.est||10));
-  p.target=t;p.cap=Math.ceil(t*1.5);p.capped=true;
-  p.scheme=(p.scheme||'')+` · target ~${t} min · cap ${p.cap} min`;
+  const c=_calcEst(p);if(c!=null)p.est=c;
+  const t=Math.max(3,Math.round(p.est||10));
+  p.target=t;p.cap=Math.ceil(t*1.4/2)*2;p.capped=true;
+  p.scheme+=` · target ~${t} min · cap ${p.cap} min`;
 }
 // Intent language — how the reps should be done, not just how many.
 const INTENT={
@@ -1169,8 +1270,9 @@ function _attachDay(w,allowVest){
     w.parts.push(f);
   }
   _addIntent(w);(w.parts||[]).forEach(_addIntent);
-  _capTarget(w);(w.parts||[]).forEach(_capTarget);
+  _fitDuration(w);(w.parts||[]).forEach(_fitDuration);
   _teamify(w);
+  _capTarget(w);(w.parts||[]).forEach(_capTarget);
   if(allowVest===undefined)allowVest=true;
   if(allowVest&&_wodEnabled('vest')&&w.moves&&w.moves.length&&w.moves.every(m=>!m.wt)&&Math.random()<0.2)w.vest=true;
   w.dayName=_rp(WOD_NAMES);
@@ -1210,11 +1312,17 @@ const SIG_COUPLETS=[
   ['pclean','bfb'],['pclean','row'],['psnatch','du'],['hpclean','du'],['dbsnatch','burpdb'],
   ['cj','boxjump'],['kbcj','du'],
   // gymnastic + machine
-  ['t2b','airdyne'],['wallwalk','row'],['strpull','ski'],['burpee','row']
+  ['t2b','airdyne'],['wallwalk','row'],['strpull','ski'],['burpee','row'],
+  // Open / Mayhem triplets — machine or rope, a loaded squat/hinge/press, a gymnastic skill
+  ['row','wallball','pullup'],['du','bbthr','pullup'],['airdyne','dbsnatch','burpdb'],['du','wallball','t2b'],
+  ['row','bbthr','burpee'],['boxjump','kbswing','burpee'],['wallball','du','sqclean'],['dbthrust','du','boxjump'],
+  ['pclean','bfb','du'],['deadlift','hspu','boxjump'],['airdyne','burpee','du'],['ski','pushup','airsquat'],
+  ['row','pclean','t2b'],['du','ohs','ringmu'],['bbjo','dbsnatch','du'],['kbswing','boxjump','pushup'],
+  ['run','pullup','pushup','airsquat'],['du','hpclean','bfb'],['wallball','t2b','row'],['dbthrust','pullup','du']
 ];
-function _sigCouplet(pool){
+function _sigCouplet(pool,maxN){
   const ids=new Set(pool.map(m=>m.id));
-  const elig=SIG_COUPLETS.filter(c=>c.every(id=>ids.has(id)));
+  const elig=SIG_COUPLETS.filter(c=>c.every(id=>ids.has(id))&&(!maxN||c.length<=maxN));
   if(!elig.length)return null;
   return _rp(elig).map(id=>pool.find(m=>m.id===id));
 }
@@ -1247,7 +1355,7 @@ function _genCardio(){
       stimulus:'Pure aerobic stimulus — nothing heavy, nothing grindy. Breathe and cycle.'};
   }
   const rounds=_rpDur([4,5,6]);
-  return{format:'rft',focus:'Cardio',title:`${rounds} Rounds — Steady Engine`,scheme:`${rounds} rounds at an even pace — the clock is a witness, not a whip`,
+  return{format:'rft',focus:'Cardio',rounds,title:`${rounds} Rounds — Steady Engine`,scheme:`${rounds} rounds at an even pace — the clock is a witness, not a whip`,
     moves,ladder:null,resultType:'time',est:Math.round(rounds*3.5),
     stimulus:'Negative-split it: each round the same or slightly faster than the last.'};
 }
@@ -1335,6 +1443,8 @@ function _resyncNamed(p){
     p.capped=false; // the target/cap suffix lived on the old scheme text
   }
 }
+// How often each format shows up — what you'd see on a Mayhem or Open board, not a formats catalogue.
+const FMT_W={amrap:1,rft:1,ladder:.9,chipper:.7,emom:.7,roundsrest:.4,ascladder:.45,intervals:.4,buyin:.3,repamrap:.3,e2mom:.2,varyrounds:.15,interference:.12,deathby:.12,station:.12,tabata:.1,maxrep:.1};
 function _genClassic(prof,fociOverride,opts){
   opts=opts||{};
   const pool=_wodPoolBiased(prof);
@@ -1348,14 +1458,16 @@ function _genClassic(prof,fociOverride,opts){
     opts={...opts,maxMoves:3};
   }
   let _fpool=opts.fmtPool||focus.fmts;
-  if(!opts.fmt){ // avoid repeating a format already used this week
-    const used=_weekFormats();
-    const fresh=_fpool.filter(f=>!used.has(f));
-    if(fresh.length)_fpool=fresh;
-  }
-  if(opts.noSolo)_fpool=_fpool.filter(f=>!SOLO_FMTS.includes(f))||_fpool; // a guard day needs a piece that can absorb an injection
+  if(opts.noSolo)_fpool=_fpool.filter(f=>!SOLO_FMTS.includes(f))||_fpool;
   if(!_fpool||!_fpool.length)_fpool=focus.fmts;
-  const fmt=opts.fmt||_rp(_fpool);
+  let fmt=opts.fmt;
+  if(!fmt){ // staples carry the programming; a format already used this week is halved, never removed
+    const used=_weekFormats();
+    const wts=_fpool.map(f=>(FMT_W[f]==null?0.3:FMT_W[f])*(used.has(f)?0.5:1));
+    const tot=wts.reduce((a,b)=>a+b,0);let r=Math.random()*tot;
+    fmt=_fpool[_fpool.length-1];
+    for(let i=0;i<_fpool.length;i++){r-=wts[i];if(r<=0){fmt=_fpool[i];break;}}
+  }
   const bbBias=focus.id==='power'?.8:.45; // lighter, more gymnastic mix
   const _cap=(n)=>{let x=opts.maxMoves?Math.min(n,opts.maxMoves):n;return _scaled()?Math.min(x,3):x;};
   const pick=(minN,maxN)=>_cfPick(pool,_cfTmpl(focus,minN,_cap(maxN)),bbBias).slice(0,_cap(maxN));
@@ -1363,22 +1475,23 @@ function _genClassic(prof,fociOverride,opts){
   if(fmt==='amrap'){
     const dur=opts.bigBlocks?_rp([16,18,20]):_rpDur(focus.dur||[10,12,15,18,20]);
     const _long=dur>=16; // a 16-20 min AMRAP with two movements is a grind, not a workout
-    let _sig=(!_long&&Math.random()<0.35)?_sigCouplet(pool):null;
+    let _sig=Math.random()<0.5?_sigCouplet(pool,_cap(dur<=10?3:4)):null;
+    if(_sig&&_long&&_sig.length<3)_sig=null; // a 16-20 min AMRAP with two movements is a grind, not a workout
     const moves=(_sig||pick(_long?3:2,dur<=10?3:4)).map(_withReps);
     return ({format:'amrap',focus:focus.n,title:`AMRAP ${dur}`,scheme:`As many rounds + reps as possible in ${dur} min`,moves,ladder:null,resultType:'rounds',est:dur,stimulus:stim()});
   }
   if(fmt==='rft'){
     const rounds=_rp(focus.id==='sprint'?[3,4]:[3,4,5]);
-    let _sig=Math.random()<0.35?_sigCouplet(pool):null;
+    let _sig=Math.random()<0.5?_sigCouplet(pool,_cap(4)):null;
     const moves=(_sig||pick(2,4)).map(_withReps);
-    return ({format:'rft',focus:focus.n,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()});
+    return ({format:'rft',focus:focus.n,rounds,title:`${rounds} Rounds For Time`,scheme:`${rounds} rounds for time`,moves,ladder:null,resultType:'time',est:rounds*3,stimulus:stim()});
   }
   if(fmt==='ladder'){
     const ladder=_rp([[21,15,9],[15,12,9],[21,18,15,12,9],[10,8,6,4,2],[27,21,15,9],
       [50,40,30,20,10],[5,10,15,20],[10,20,30],[3,6,9,12,15],[30,20,10],[9,15,21],[12,9,6,3],[5,10,15,20,25]]);
     // ladder reps apply per movement; eligible = reps or cals (not s)
     const lpool=pool.filter(m=>m.unit===''||m.unit==='cal');
-    let _sig=Math.random()<0.35?_sigCouplet(lpool):null;
+    let _sig=Math.random()<0.5?_sigCouplet(lpool,_cap(3)):null;
     const moves=(_sig||_cfPick(lpool,_cfTmpl(focus,2,opts.maxMoves?Math.min(3,opts.maxMoves):3),bbBias)).map(m=>_inst(m,null));
     return ({format:'ladder',focus:focus.n,title:`${ladder.join('-')} For Time`,scheme:`${ladder.join('-')} reps of each movement, descending, for time`,moves,ladder,resultType:'time',est:Math.ceil(ladder.reduce((a,b)=>a+b,0)/8),stimulus:stim()});
   }
@@ -1442,7 +1555,7 @@ function _genClassic(prof,fociOverride,opts){
   }
   if(fmt==='interference'){
     // A main task for time, interrupted on a clock — the interruption is the workout
-    const mainPool=pool.filter(m=>!m.nx&&m.unit===''&&m.pat!=='core');
+    const mainPool=pool.filter(m=>!m.nx&&m.unit===''&&m.pat!=='core'&&!['carry','kbcarry','tgu'].includes(m.id));
     const intPool=pool.filter(m=>!m.nx&&m.unit===''&&(m.mod==='G'||m.cat==='cardio'));
     if(mainPool.length&&intPool.length){
       let _mp=mainPool;
@@ -1461,7 +1574,7 @@ function _genClassic(prof,fociOverride,opts){
   if(fmt==='roundsrest'){
     const rounds=_rp([3,4,5]),rest=_rp([1,2]);
     const moves=pick(2,3).map(_withReps);
-    return ({format:'roundsrest',focus:focus.n,title:`${rounds} Rounds · Rest ${rest} min`,
+    return ({format:'roundsrest',focus:focus.n,rounds,rest,title:`${rounds} Rounds · Rest ${rest} min`,
       scheme:`${rounds} rounds for time · rest ${rest} min between rounds · score is total working time`,
       moves,ladder:null,resultType:'time',est:rounds*3+rounds*rest,
       stimulus:'The rest is paid for — each round should look the same as the first. If round 3 is slower, you opened too hard.'});
@@ -1475,15 +1588,15 @@ function _genClassic(prof,fociOverride,opts){
       stimulus:'Fight Gone Bad style — no transitions, no pacing breaks. Count everything.'});
   }
   if(fmt==='varyrounds'){
-    const chosen=pick(3,4);
-    if(chosen.length>=3){
+    const chosen=pick(4,5); // anchor + 3-4 partners → 3-4 rounds; two rounds is a warm-up, not a piece
+    if(chosen.length>=4){
       const anchor=chosen[0],rotate=chosen.slice(1);
       const aInst=_withReps(anchor);
       const moves=[aInst].concat(rotate.map(_withReps));
       return ({format:'varyrounds',focus:focus.n,title:`${rotate.length} Rounds — Rotating`,
-        scheme:`${rotate.length} rounds for time · every round: ${_mvLine(aInst)}, then the next movement down the list`,
+        scheme:`${rotate.length} rounds for time · every round: ${_mvLine(aInst)}, then one of the other movements in order (round 1 → 2nd line, round 2 → 3rd line…)`,
         moves,ladder:null,resultType:'time',est:rotate.length*4,
-        stimulus:'Same anchor every round, a different partner each time — pace the anchor, attack the变.'.replace('变','variable')});
+        stimulus:'Same anchor every round, a different partner each time — pace the anchor, attack the variable.'});
     }
   }
   if(fmt==='deathby'){
@@ -1521,8 +1634,9 @@ function _genClassic(prof,fociOverride,opts){
     }
   }
   // intervals
-  const rounds=_rpDur([5,6,8]),work=_knee()?_rp([45,60,75]):_rpDur([30,40,45]),rest=_knee()?_rp([45,60]):_rpDur([15,20,30]);
+  let rounds=_rpDur([5,6,8]);const work=_knee()?_rp([45,60,75]):_rpDur([30,40,45]),rest=_knee()?_rp([45,60]):_rpDur([15,20,30]);
   const moves=pick(3,4).map(m=>prof&&prof.highRep?_withReps(m,true):_inst(m,null));
+  rounds=Math.max(3,Math.min(rounds,Math.floor(20*60/(moves.length*(work+rest))))); // keep the block inside 20 min
   const est=Math.ceil(rounds*moves.length*(work+rest)/60);
   return ({format:'intervals',focus:focus.n,title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'});
 }
@@ -1536,7 +1650,6 @@ function generateWOD(type){
   if(type==='recovery')return _attachDay(_genRecovery(),false);
   if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
   const main=_genClassic(null,null,{});
-  main.objective='WOD';
   main.parts=[];
   return _attachDay(main);
 }
@@ -1576,7 +1689,7 @@ function _wodCardHTML(w,ctx){
   let h=`<div class="cd" style="border-left:3px solid var(--pp);padding-left:15px;margin-bottom:0;">`;
   if(w.dayName)h+=`<div style="font-size:1.15rem;font-weight:800;letter-spacing:1.5px;color:var(--pp);">${w.dayName}</div>`;
   const _wsd=weeksSinceDeload();
-  if(_wsd!=null)h+=`<div style="font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin:-6px 0 10px;">Week ${_wsd+1} since deload</div>`;
+  if(_wsd!=null)h+=`<div style="font-size:.6rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--tx3);margin:2px 0 10px;">Week ${_wsd+1} since deload</div>`;
   const parts=Array.isArray(w.parts)?w.parts:[];
   const multi=parts.length>0;
   h+=_partHTML(w,ctx,multi?'Part A':'Wod',!!ctx);
@@ -1615,6 +1728,8 @@ function _wodCtxObj(ctx){
 }
 function _wodCtxRerender(ctx){
   ctx=ctx.split('#')[0];
+  const root=_wodCtxRoot(ctx);
+  if(root){_capTarget(root);(root.parts||[]).forEach(_capTarget);if(ctx.indexOf('sess:')===0)sv();}
   if(ctx==='pending'){showWODModal(_wodDate);return;}
   if(ctx&&ctx.indexOf('sess:')===0){cM();activeSessKey=ctx.slice(5);rWOD();}
 }
@@ -1635,7 +1750,7 @@ function editMove(ctx,idx){
   const unitLbl=m.unit==='cal'?'Calories':m.unit==='s'?'Seconds':'Reps';
   let h=`<h2>Edit movement</h2>
   <div style="font-size:.78rem;font-weight:700;color:var(--pp);margin-bottom:10px;">${m.n}</div>`;
-  if(m.reps!=null)h+=`<div class="fld"><label>${unitLbl}${w.format==='rft'||w.format==='amrap'?' (per round)':''}</label><input class="inp" id="emReps" type="number" inputmode="numeric" value="${m.reps}"></div>`;
+  if(m.reps!=null)h+=`<div class="fld"><label>${unitLbl}${['rft','amrap','roundsrest','varyrounds','emom','e2mom'].includes(w.format)?' (per round)':''}</label><input class="inp" id="emReps" type="number" inputmode="numeric" value="${m.reps}"></div>`;
   if(m.wt)h+=`<div class="fld"><label>Weight (lb${m.hand==='2'?' · per dumbbell ×2':''})</label><input class="inp" id="emWt" type="number" inputmode="decimal" value="${m.wt}"></div>`;
   h+=`<div style="display:flex;gap:8px;margin-top:6px;">
     <button class="btn bp bs" style="flex:1;" onclick="applyEditMove('${ctx}',${idx})">Save</button>
@@ -1740,7 +1855,8 @@ function addWodPartOf(ctx,kind){
   if(kind==='core'){p=_genCorePart();p.objective='Core';}
   else if(kind==='cardio'){p=_genCardioSession();p.objective='Cardio';}
   else if(kind==='blank'){p={format:'amrap',focus:'',objective:'Custom',title:'Custom Piece',scheme:'Write your own — edit the movements below',moves:[{n:'Movement',unit:'',cat:'gym',reps:10}],ladder:null,resultType:'check',est:10,autoFinisher:false};}
-  else {p=_genClassic(prof,null,{});p.objective='Extra part';_dedupeAgainst(p,[root].concat(root.parts),prof);_teamify(p);}
+  else {p=_genClassic(prof,null,{});p.objective='Extra part';_dedupeAgainst(p,[root].concat(root.parts),prof);_fitDuration(p);_teamify(p);}
+  _capTarget(p);
   root.parts.push(p);
   if(ctx.indexOf('sess:')===0)sv();
   cM();_wodCtxRerender(ctx);
