@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.67</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.68</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -2107,11 +2107,24 @@ function rSess(){
   // Notes
   h+=`<div style="margin-bottom:12px;"><textarea class="inp" rows="2" placeholder="Session notes…" style="resize:vertical;font-size:.82rem;" oninput="D.sessions['${k}'].notes=this.value;sv();">${(s.notes||'').replace(/</g,'&lt;')}</textarea></div>`;
 
+  // Supersets — a link joins an exercise to the one below it; chains become A, B, C…
+  if(!s.links){s.links={};allEntries.forEach(({ex,ek})=>{if(ex.link&&!ex._added)s.links[ek]=true;});}
+  allEntries.forEach(({ex})=>{ex._circ=null;});
+  let gi=0,inGroup=false;
+  allEntries.forEach((e,i)=>{
+    const linked=!!s.links[e.ek]&&i<allEntries.length-1;
+    if(linked||inGroup){
+      if(!inGroup)gi++;
+      e.ex._circ={label:'Superset '+String.fromCharCode(64+gi),isLast:!linked};
+      inGroup=linked;
+    }
+  });
   // Exercises
   let lastType='';
   allEntries.forEach(({ex,ek},ei)=>{
     const label=ex.type==='pri'?'Primary':ex.type==='sec'?'Secondary':ex.type==='acc'?'Accessories':'';
-    if(label&&ex.type!==lastType&&ex.type!=='iso'){h+=`<div class="sec">${label}</div>`;lastType=ex.type;}
+    const midGroup=ex._circ&&!(ei>0&&!allEntries[ei-1].ex._circ)&&ei>0&&allEntries[ei-1].ex._circ&&!allEntries[ei-1].ex._circ.isLast;
+    if(label&&ex.type!==lastType&&ex.type!=='iso'&&!midGroup){h+=`<div class="sec">${label}</div>`;lastType=ex.type;}
     else if(ex.type==='iso'&&lastType!=='iso')lastType='iso';
     h+=mkEx(ex,ek,ei,allEntries.length,wkRpe,isDl,k);
   });
@@ -2182,7 +2195,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const ctrl=completed?'':`<div style="display:flex;gap:4px;padding:2px 14px 6px;align-items:center;">
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',-1)">− set</button>
     <button style="padding:2px 8px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.72rem;font-weight:600;cursor:pointer;" onclick="adjSet('${k}','${ek}',1)">+ set</button>
-    ${upB}${dnB}<div style="flex:1;"></div>
+    ${upB}${dnB}${ei<total-1?`<button style="padding:2px 8px;border:1px solid ${s.links&&s.links[ek]?'var(--ac)':'var(--bdr)'};border-radius:4px;background:${s.links&&s.links[ek]?'var(--acd)':'var(--bg3)'};color:${s.links&&s.links[ek]?'var(--ac)':'var(--tx2)'};font-size:.72rem;font-weight:600;cursor:pointer;" onclick="toggleLink('${k}','${ek}')" title="Superset with the exercise below">⛓ ${s.links&&s.links[ek]?'linked ↓':'link ↓'}</button>`:''}<div style="flex:1;"></div>
     <button style="padding:2px 8px;border:1px solid var(--rd);border-radius:4px;background:var(--rdd);color:var(--rd);font-size:.66rem;font-weight:600;cursor:pointer;" onclick="removeEx('${k}','${ek}')">Remove</button></div>`;
 
   // Header display
@@ -2268,6 +2281,7 @@ function getExHist(exId,curKey){
 function uSL(k,ek,si,f,v){const n=parseFloat(v);const s=D.sessions[k];if(s?.ex[ek]){s.ex[ek][si][f]=isNaN(n)?'':n;const st=s.ex[ek][si];const el=document.getElementById('e1_'+ek+'_'+si);if(el)el.textContent=(st.w>0&&st.r>0&&st.p>0)?cE1(st.w,st.r,st.p):'';sv();}}
 function tglSet(k,ek,si,restSec,btn){const s=D.sessions[k];if(s?.ex[ek]){const was=s.ex[ek][si].d;s.ex[ek][si].d=!was;btn.classList.toggle('chk');sv();if(!was){if(restSec>0)startTimer(restSec);startSessTimer();}}}
 function rerenderSess(){const s=D.sessions[activeSessKey];if(s&&s.isWOD)rWOD();else rSess();}
+function toggleLink(k,ek){const s=D.sessions[k];if(!s.links)s.links={};if(s.links[ek])delete s.links[ek];else s.links[ek]=true;sv();rerenderSess();}
 function adjSet(k,ek,d){const s=D.sessions[k];if(!s.setAdj)s.setAdj={};s.setAdj[ek]=(s.setAdj[ek]||0)+d;sv();rerenderSess();}
 function removeEx(k,ek){
   const s=D.sessions[k];
@@ -2339,12 +2353,13 @@ function showAddExModal(k){
   h+=ADD_EX.map(e=>`<div class="rmrow" style="cursor:pointer;" onclick="addQEx('${k}','${e.id}',\`${e.name}\`,${e.r},${e.rest})"><span style="flex:1;font-weight:500;font-size:.88rem;">${e.name}</span><span style="font-size:.72rem;color:var(--tx3);">3×${e.r}</span></div>`).join('');
   oM(h);
 }
-function addQEx(k,id,name,r,rest){const s=D.sessions[k];if(!s.added)s.added=[];s.added.push({id,name,s:3,r,rest,_addIdx:Date.now()});sv();cM();rSess();}
+function _addIdxNew(s){let i=Date.now();while((s.added||[]).some(a=>a._addIdx===i))i++;return i;}
+function addQEx(k,id,name,r,rest){const s=D.sessions[k];if(!s.added)s.added=[];s.added.push({id,name,s:3,r,rest,_addIdx:_addIdxNew(s)});sv();cM();rSess();}
 function addCustEx(k){
   const name=document.getElementById('cExN').value.trim();if(!name){toast('Enter a name');return;}
   const sets=parseInt(document.getElementById('cExS').value)||3;const r=parseInt(document.getElementById('cExR').value)||12;
   const id=name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,20);
-  const s=D.sessions[k];if(!s.added)s.added=[];s.added.push({id,name,s:sets,r,rest:75,_addIdx:Date.now()});sv();cM();rSess();
+  const s=D.sessions[k];if(!s.added)s.added=[];s.added.push({id,name,s:sets,r,rest:75,_addIdx:_addIdxNew(s)});sv();cM();rSess();
 }
 
 // ===== TIMERS =====
@@ -2473,6 +2488,7 @@ function editTemplate(tid){
     return`<div style="padding:10px 0;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;">
       <div style="flex:1;">
         <input class="inp" style="font-weight:600;font-size:.85rem;padding:6px 8px;" value="${ex.name}" onchange="updTmplEx('${tid}',${i},'name',this.value)">
+        ${ex.link&&i<exList.length-1?`<div style="font-size:.6rem;color:var(--ac);font-weight:700;letter-spacing:1px;margin-top:4px;">⛓ SUPERSET → ${exList[i+1].name} · no rest between</div>`:''}
         <div style="display:flex;gap:6px;margin-top:6px;">
           <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:.6rem;color:var(--tx3);">Sets</span><input class="si" style="width:40px;" type="number" value="${ex.s}" onchange="updTmplEx('${tid}',${i},'s',+this.value)"></div>
           <div style="display:flex;align-items:center;gap:4px;"><span style="font-size:.6rem;color:var(--tx3);">Reps</span><input class="si" style="width:40px;" type="number" value="${ex.r}" onchange="updTmplEx('${tid}',${i},'r',+this.value)"></div>
@@ -2480,6 +2496,7 @@ function editTemplate(tid){
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;">
+        ${i<exList.length-1?`<button style="padding:2px 6px;border:1px solid ${ex.link?'var(--ac)':'var(--bdr)'};border-radius:4px;background:${ex.link?'var(--acd)':'var(--bg3)'};color:${ex.link?'var(--ac)':'var(--tx2)'};font-size:.7rem;cursor:pointer;" title="Superset with the exercise below" onclick="updTmplEx('${tid}',${i},'link',${ex.link?'false':'true'});editTemplate('${tid}')">⛓</button>`:''}
         ${i>0?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.7rem;cursor:pointer;" onclick="moveTmplEx('${tid}',${i},-1)">▲</button>`:''}
         ${i<exList.length-1?`<button style="padding:2px 6px;border:1px solid var(--bdr);border-radius:4px;background:var(--bg3);color:var(--tx2);font-size:.7rem;cursor:pointer;" onclick="moveTmplEx('${tid}',${i},1)">▼</button>`:''}
       </div>
@@ -2497,12 +2514,15 @@ function editTemplate(tid){
 
 function updTmplEx(tid,i,field,val){
   if(!D.customTemplates?.[tid])return;
-  D.customTemplates[tid][i][field]=val;sv();
+  if(field==='link'&&!val)delete D.customTemplates[tid][i].link;else D.customTemplates[tid][i][field]=val;
+  sv();
 }
 function moveTmplEx(tid,i,dir){
   const ex=D.customTemplates[tid];if(!ex)return;
   const ni=i+dir;if(ni<0||ni>=ex.length)return;
-  const tmp=ex[i];ex[i]=ex[ni];ex[ni]=tmp;sv();editTemplate(tid);
+  const tmp=ex[i];ex[i]=ex[ni];ex[ni]=tmp;
+  if(ex[ex.length-1].link)delete ex[ex.length-1].link;
+  sv();editTemplate(tid);
 }
 function rmTmplEx(tid,i){
   D.customTemplates[tid].splice(i,1);sv();editTemplate(tid);
