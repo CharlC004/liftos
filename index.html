@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.68</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.69</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -854,15 +854,15 @@ const WOD_STIM=['Steady circuit pace — keep moving, short breaths between move
 // Session focus — suggests the day's intent, biases format + movement mix.
 // wf = target weighted fraction of movements. need = required equipment toggle.
 const WOD_FOCI=[
-  {id:'engine',n:'Engine',      fmts:['amrap','intervals','e2mom','buyin','tabata','roundsrest','station'],wf:.33,dur:[15,18,20],
+  {id:'engine',n:'Engine',      fmts:['amrap','repamrap','intervals','e2mom','buyin','tabata','roundsrest','station'],wf:.33,dur:[15,18,20],
    stim:['Sustainable pace from minute one — this is an aerobic session, not a sprint.','Nose-breathing pace early; the last third is where you push.']},
   {id:'sprint',n:'Sprint',      fmts:['rft','ladder','repamrap','deathby','tabata','roundsrest','varyrounds'],     wf:.5,
    stim:['Short and hot — go out fast and hold on.','Redline effort; rest as little as your form allows.']},
-  {id:'grind', n:'Grind',       fmts:['chipper','amrap','buyin','ascladder','interference','station','varyrounds'],  wf:.5,dur:[18,20],
+  {id:'grind', n:'Grind',       fmts:['chipper','amrap','repamrap','buyin','ascladder','interference','station','varyrounds'],  wf:.5,dur:[18,20],
    stim:['One gear, no stopping — chip away at a pace you can hold to the end.','Long and steady; the win is never putting your hands on your knees.']},
   {id:'power', n:'Barbell Power',fmts:['emom','rft','repamrap','e2mom','deathby','maxrep','roundsrest','interference'],      wf:.8,need:'bb',
    stim:['Loads should feel crisp, not grindy — this is barbell conditioning, not a max-out.','Every rep with intent; drop the bar before the technique drops.']},
-  {id:'gymn',  n:'Gymnastics Density',fmts:['emom','amrap','ascladder','e2mom','maxrep','tabata','interference','varyrounds'],wf:.2,dur:[10,12,16],
+  {id:'gymn',  n:'Gymnastics Density',fmts:['emom','amrap','repamrap','ascladder','e2mom','maxrep','tabata','interference','varyrounds'],wf:.2,dur:[10,12,16],
    stim:['Quality positions under fatigue — break sets before failure.','Accumulate clean reps; sloppy reps do not count today.']}
 ];
 
@@ -1348,7 +1348,15 @@ const CARDIO_WOD_IDS=['airdyne','du','wallball','burpee','airsquat','pushup'];
 function _genCardio(){
   const pool=WOD_MOVES.filter(m=>CARDIO_WOD_IDS.includes(m.id)&&_wodEnabled(m.equip));
   const moves=_samp(pool,Math.min(_rpDur([3,4]),pool.length)).map(_withReps);
-  if(Math.random()<0.55){
+  const r=Math.random();
+  if(r<0.35){ // interval AMRAP — repeat the same piece on a clock, rest between
+    const sets=_rpDur([3,4,5]),win=_rpDur([3,4,5]),rst=Math.min(2,Math.max(1,Math.round(win/2)));
+    return{format:'repamrap',focus:'Cardio',title:`${sets} × ${win} min AMRAP`,
+      scheme:`${sets} sets · ${win} min AMRAP each · rest ${rst} min between · pick up each set where the last one ended`,
+      moves,ladder:null,resultType:'rounds',est:sets*(win+rst)-rst,
+      stimulus:'Same pace every set — if set 4 is slower than set 1, you went out too hot.'};
+  }
+  if(r<0.7){
     const dur=_rpDur([15,18,20]);
     return{format:'amrap',focus:'Cardio',title:`AMRAP ${dur}`,scheme:`As many rounds as possible in ${dur} min — smooth, cyclical engine pace`,
       moves,ladder:null,resultType:'rounds',est:dur,
@@ -1444,7 +1452,7 @@ function _resyncNamed(p){
   }
 }
 // How often each format shows up — what you'd see on a Mayhem or Open board, not a formats catalogue.
-const FMT_W={amrap:1,rft:1,ladder:.9,chipper:.7,emom:.7,roundsrest:.4,ascladder:.45,intervals:.4,buyin:.3,repamrap:.3,e2mom:.2,varyrounds:.15,interference:.12,deathby:.12,station:.12,tabata:.1,maxrep:.1};
+const FMT_W={amrap:1,rft:1,ladder:.9,chipper:.7,emom:.7,roundsrest:.4,repamrap:.35,ascladder:.45,intervals:.4,buyin:.3,e2mom:.2,varyrounds:.15,interference:.12,deathby:.12,station:.12,tabata:.1,maxrep:.1};
 function _genClassic(prof,fociOverride,opts){
   opts=opts||{};
   const pool=_wodPoolBiased(prof);
@@ -1641,11 +1649,61 @@ function _genClassic(prof,fociOverride,opts){
   return ({format:'intervals',focus:focus.n,title:'Intervals',scheme:`${rounds} rounds · ${work}s work / ${rest}s rest per movement · max reps`,moves,ladder:null,resultType:'check',est,stimulus:'Count total reps if you want a score to beat next time.'});
 }
 
+// ── Build from scratch ────────────────────────────────────────────────────────
+const BUILD_FMTS=[
+  ['amrap','AMRAP',['dur']],['repamrap','Interval AMRAP',['sets','win','rest']],['rft','Rounds for time',['rounds']],
+  ['chipper','For time (once through)',[]],['ladder','Ladder for time',['ladder']],['roundsrest','Rounds · rest between',['rounds','rest']],
+  ['emom','EMOM',['total','every']],['intervals','Intervals (work / rest)',['rounds','work','rest']],['tabata','Tabata',['tsets']],
+  ['deathby','Death by',[]],['maxrep','Max reps in time',['dur']]
+];
+const BUILD_LBL={dur:'Minutes',sets:'Sets',win:'Min per set',rest:'Rest (min)',rounds:'Rounds',ladder:'Reps (e.g. 21-15-9)',total:'Total min',every:'Every N min',work:'Work (s)',tsets:'Tabatas (8 × 20/10 each)'};
+function _genBuild(){
+  return _buildApply({format:'amrap',focus:'',title:'',moves:[],ladder:null,noTeam:true,autoFinisher:false,
+    build:{fmt:'amrap',dur:12,sets:4,win:3,rest:1,rounds:3,ladder:'21-15-9',total:12,every:1,work:40,tsets:1,name:''}});
+}
+function _buildApply(w){
+  const b=w.build;const f=b.fmt;const n=w.moves.length;
+  const base={format:f,ladder:null,resultType:'rounds',capped:false,fitted:true};
+  Object.assign(w,base);delete w.rounds;delete w.rest;delete w.target;delete w.cap;
+  if(f==='amrap'){w.title=`AMRAP ${b.dur}`;w.scheme=`As many rounds + reps as possible in ${b.dur} min`;w.est=b.dur;}
+  else if(f==='repamrap'){w.title=`${b.sets} × ${b.win} min AMRAP`;w.scheme=`${b.sets} sets · ${b.win} min AMRAP each · rest ${b.rest} min between`;w.est=b.sets*(b.win+b.rest)-b.rest;}
+  else if(f==='rft'){w.rounds=b.rounds;w.title=`${b.rounds} Rounds For Time`;w.scheme=`${b.rounds} rounds for time`;w.resultType='time';}
+  else if(f==='chipper'){w.title='For Time';w.scheme='One time through, top to bottom, for time';w.resultType='time';}
+  else if(f==='ladder'){const l=String(b.ladder).split(/[^\d]+/).map(x=>parseInt(x)).filter(x=>x>0);w.ladder=l.length?l:[21,15,9];w.title=`${w.ladder.join('-')} For Time`;w.scheme=`${w.ladder.join('-')} reps of each movement, for time`;w.resultType='time';}
+  else if(f==='roundsrest'){w.rounds=b.rounds;w.rest=b.rest;w.title=`${b.rounds} Rounds · Rest ${b.rest} min`;w.scheme=`${b.rounds} rounds for time · rest ${b.rest} min between rounds · score is total working time`;w.resultType='time';}
+  else if(f==='emom'){const ev=Math.max(1,b.every);w.title=ev>1?`E${ev}MOM ${b.total}`:`EMOM ${b.total}`;w.scheme=ev>1?`Every ${ev} min for ${b.total} min: complete all movements`:`Every minute on the minute for ${b.total} min, rotating through ${Math.max(1,n)} movements`;w.est=b.total;w.resultType='check';}
+  else if(f==='intervals'){w.title='Intervals';w.scheme=`${b.rounds} rounds · ${b.work}s work / ${Math.round(b.rest*60)}s rest per movement · max reps`;w.est=Math.ceil(b.rounds*Math.max(1,n)*(b.work+b.rest*60)/60);w.resultType='check';}
+  else if(f==='tabata'){w.title=b.tsets>1?`${b.tsets} × Tabata`:'Tabata';w.scheme=`8 rounds of 20s work / 10s rest${n>1?' per movement, alternating':''}${b.tsets>1?' · '+b.tsets+' tabatas, 1 min between':''} · score is the lowest round`;w.est=b.tsets*4+(b.tsets-1);w.resultType='check';}
+  else if(f==='deathby'){w.title='Death By — '+(w.moves[0]?w.moves[0].n:'…');w.scheme='Minute 1: 1 rep · minute 2: 2 reps · add one rep every minute until you cannot complete the round';w.est=14;}
+  else if(f==='maxrep'){w.title=`${b.dur} min — Max Reps`;w.scheme=`${b.dur} minutes to accumulate as many ${w.moves[0]?w.moves[0].n:'reps'} as possible`;w.est=b.dur;}
+  if(b.name)w.title=b.name;
+  if(['ladder','intervals','tabata','deathby','maxrep'].includes(f))w.moves.forEach(m=>{m.reps=null;});
+  else w.moves.forEach(m=>{if(m.reps==null){const bm=WOD_MOVES.find(x=>x.n===m.n);m.reps=bm?_rp(bm.rep):10;}});
+  _capTarget(w);
+  return w;
+}
+function _buildFormHTML(w){
+  const b=w.build||{};
+  let h=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin:14px 0 6px;">Format</div><div class="wod-chips" style="margin-bottom:8px;">`;
+  h+=BUILD_FMTS.map(([id,lbl])=>`<div class="wod-chip ${b.fmt===id?'on':''}" onclick="setBuild('fmt','${id}')">${lbl}</div>`).join('')+`</div>`;
+  const fields=(BUILD_FMTS.find(x=>x[0]===b.fmt)||[0,0,[]])[2];
+  h+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">`;
+  fields.forEach(k=>{h+=`<div class="fld" style="flex:1;min-width:90px;"><label>${BUILD_LBL[k]}</label><input class="inp" ${k==='ladder'?'':'type="number" inputmode="decimal"'} value="${b[k]==null?'':b[k]}" onchange="setBuild('${k}',this.value)"></div>`;});
+  h+=`<div class="fld" style="flex:2;min-width:140px;"><label>Name (optional)</label><input class="inp" value="${(b.name||'').replace(/"/g,'&quot;')}" placeholder="auto" onchange="setBuild('name',this.value)"></div></div>`;
+  h+=`<div style="font-size:.66rem;color:var(--tx3);margin-bottom:4px;">Use <strong>＋ Add movement</strong> on the card to add movements · ✎ to set reps and load · ⇄ to swap.</div>`;
+  return h;
+}
+function setBuild(k,v){
+  const w=_pendingWOD;if(!w||!w.build)return;
+  if(k==='fmt'||k==='name'||k==='ladder')w.build[k]=v;else{const n=parseFloat(v);if(!isNaN(n)&&n>0)w.build[k]=n;}
+  _buildApply(w);showWODModal(_wodDate);
+}
 function generateWOD(type){
   type=type||_wodType||'classic';
   if(type==='skill'){const f=_genSkill();f.noTeam=true;return _attachDay(f,false);}
   if(type==='core'){const f=_genFinisher();f.noTopup=true;f.noTeam=true;return _attachDay(f,false);}
   if(type==='oly'){const f=_genOly();f.noTeam=true;return _attachDay(f,false);}
+  if(type==='build')return _genBuild();
   if(type==='cardio')return _attachDay(_genCardio(),true);
   if(type==='recovery')return _attachDay(_genRecovery(),false);
   if(type==='bench'){const b=_genBenchmark();if(b)return _attachDay(b);} // no eligible benchmark → fall through to classic
@@ -1729,6 +1787,7 @@ function _wodCtxObj(ctx){
 function _wodCtxRerender(ctx){
   ctx=ctx.split('#')[0];
   const root=_wodCtxRoot(ctx);
+  if(root&&root.build)_buildApply(root);
   if(root){_capTarget(root);(root.parts||[]).forEach(_capTarget);if(ctx.indexOf('sess:')===0)sv();}
   if(ctx==='pending'){showWODModal(_wodDate);return;}
   if(ctx&&ctx.indexOf('sess:')===0){cM();activeSessKey=ctx.slice(5);rWOD();}
@@ -1925,7 +1984,7 @@ function showWODModal(date){
   const e=D.wodEquip||{};
   const chips=[['bike','Airdyne'],['row','Rower'],['kb','Kettlebell'],['ski','SkiErg'],['run','Running'],['rope','Jump Rope'],['crope','Climbing Rope'],['bar','Pull-up Bar'],['rings','Rings'],['para','Parallettes'],['box','Box'],['mb','Med Ball'],['vest','Weight Vest'],['ghd','GHD'],['bench','Bench'],['db','Dumbbells'],['bb','Barbell']];
   let h=`<h2>🔥 WOD</h2>`;
-  const types=[['classic','🎲 Classic'],['cardio','🫀 Cardio'],['recovery','🧘 Recovery'],['skill','🎯 Technical'],['oly','🏋️ Oly'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher']];
+  const types=[['classic','🎲 Classic'],['cardio','🫀 Cardio'],['recovery','🧘 Recovery'],['skill','🎯 Technical'],['oly','🏋️ Oly'],['bench','🏆 Benchmark'],['core','⚡ Core Finisher'],['build','✏️ Build']];
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Session type</div>`;
   h+=`<div class="wod-chips" style="margin-bottom:10px;">`+types.map(([id,lbl])=>`<div class="wod-chip ${_wodType===id?'on':''}" onclick="setWodType('${id}')">${lbl}</div>`).join('')+`</div>`;
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:6px;">Modes</div>`;
@@ -1939,8 +1998,9 @@ function showWODModal(date){
 
   h+=`<div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--tx3);margin-bottom:8px;">Equipment on hand · bodyweight always in · sub Airdyne for row/ski/run on the day as needed</div>`;
   h+=`<div class="wod-chips">`+chips.map(([id,lbl])=>`<div class="wod-chip ${e[id]?'on':''}" onclick="toggleWodEquip('${id}')">${lbl}</div>`).join('')+`</div>`;
+  if(_wodType==='build')h+=_buildFormHTML(_pendingWOD);
   h+=_wodCardHTML(_pendingWOD,'pending');
-  h+=`<button class="btn bo bf" style="margin-top:14px;" onclick="rerollWOD()">🎲 Re-roll</button>`;
+  h+=_wodType==='build'?`<button class="btn bo bf" style="margin-top:14px;" onclick="rerollWOD()">🧹 Clear</button>`:`<button class="btn bo bf" style="margin-top:14px;" onclick="rerollWOD()">🎲 Re-roll</button>`;
   h+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
     <button class="btn bo bf" style="border-color:var(--pp);color:var(--pp);" onclick="addWODToDay('${date}')">+ Add to Day</button>
     <button class="btn bp bf" style="background:var(--pp);box-shadow:0 2px 10px var(--ppg);" onclick="startWOD('${date}')">▶ Start WOD</button></div>`;
