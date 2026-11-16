@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.70</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.71</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -192,10 +192,76 @@ const IN_SEASON=[
   ]}
 ];
 
-// 6-week CrossFit on-ramp prep. Squat-led, no-drop barbell (hang/push variants),
-// quad-biased for long femurs. Strict pull-up + dip + overhead frequency = the
-// gymnastics base (HSPU, ring dips, pull-ups) the box converts later.
-// Fixed set/rep; weekly intensity comes from CF_RPE_WAVE (auto-scales weight).
+// ===== EVERYDAY ATHLETE =====
+// 4-day upper/lower built around 3 cardio days. Hinge-led lower body, upper chest +
+// shoulders + calves for aesthetics, plyo at the start of lower days, hip ABD/ADD
+// work for the knee, rope-climb skill on Upper B.
+// Top sets ride RPE_WAVE; back-offs use powerlifting percentages (EA_PCT), Block 1
+// and Block 2 alternate each 6-week cycle.
+const EVERYDAY_ATHLETE=[
+  {id:'ea_la',name:'Lower A · Hinge + Jumps',exercises:[
+    {id:'boxjump',name:'Box Jump',s:4,r:3,type:'iso',rest:60,link:true,note:'Step down. Max intent, quiet landing.'},
+    {id:'skaterbound',name:'Lateral Skater Bound',s:3,r:4,type:'iso',rest:90,note:'Per side. Stick each landing 2 s, knee over toes.'},
+    {id:'deadlift',name:'Deadlift',s:3,r:5,type:'pri',rest:300,topSet:{s:1,r:5},scheme:'dl',note:'Top set on the wave, back-offs on %'},
+    {id:'slrdl',name:'Single-Leg RDL',s:3,r:8,type:'acc',rest:90,note:'Per leg. DB or KB.'},
+    {id:'copenhagen',name:'Copenhagen Plank',s:3,r:25,type:'iso',rest:0,link:true,note:'Seconds per side. Short lever (knee on bench) for the first 2–3 weeks.'},
+    {id:'hipabd',name:'Banded Hip Abduction',s:3,r:12,type:'iso',rest:60,note:'Per side'},
+    {id:'slcalf',name:'Single-Leg Calf Raise',s:3,r:12,type:'acc',rest:0,link:true,note:'Per leg, 2 s pause at the bottom'},
+    {id:'abwheel',name:'Ab Wheel Rollout',s:3,r:10,type:'iso',rest:60}
+  ]},
+  {id:'ea_ua',name:'Upper A · Upper Chest + Press',exercises:[
+    {id:'incline_bench',name:'Incline Bench Press',s:2,r:8,type:'pri',rest:240,topSet:{s:1,r:8},scheme:'bp',note:'30°. Top set on the wave, back-offs on %'},
+    {id:'ohp',name:'Strict Press',s:4,r:5,type:'sec',rest:180},
+    {id:'dbfly',name:'Low-Incline DB Fly',s:3,r:12,type:'acc',rest:0,link:true,note:'15–20° bench, or ring fly'},
+    {id:'laterals',name:'Lateral Raise',s:3,r:15,type:'iso',rest:60},
+    {id:'ringrow',name:'Ring Row',s:3,r:10,type:'acc',rest:90},
+    {id:'skulls',name:'Skull Crushers',s:4,r:10,type:'acc',rest:75},
+    {id:'stohlrot',name:'Stohl Rotations',s:3,r:10,type:'iso',rest:60,note:'Per side'}
+  ]},
+  {id:'ea_lb',name:'Lower B · Squat + Single Leg',exercises:[
+    {id:'broadjump',name:'Broad Jump',s:4,r:3,type:'iso',rest:0,link:true,note:'Stick the landing, reset each rep'},
+    {id:'pogo',name:'Pogo Hops',s:3,r:15,type:'iso',rest:60,note:'Stiff ankles, quick contacts'},
+    {id:'squat',name:'Back Squat',s:2,r:8,type:'pri',rest:240,topSet:{s:1,r:8},scheme:'sq',maxRpe:8.5,note:'Top set on the wave (cap RPE 8.5), back-offs on %'},
+    {id:'bss',name:'Bulgarian Split Squat',s:3,r:8,type:'acc',rest:120,note:'Per leg'},
+    {id:'cossack',name:'Cossack Squat',s:3,r:6,type:'acc',rest:0,link:true,note:'Per side. Adductor strength through full range.'},
+    {id:'backext',name:'Back Extension',s:3,r:12,type:'acc',rest:75,note:'Or GHD hip extension'},
+    {id:'bkcalf',name:'Bent-Knee Calf Raise',s:3,r:15,type:'acc',rest:0,link:true,note:'Soleus'},
+    {id:'hlr',name:'Hanging Leg Raise',s:3,r:10,type:'iso',rest:60}
+  ]},
+  {id:'ea_ub',name:'Upper B · Rope + Pull + Shoulders',exercises:[
+    {id:'ropeclimb',name:'Rope Climb Practice',s:6,r:1,type:'iso',rest:60,note:'EMOM. Wk 1–2: seated stand-ups ×5 + 3×20–30 s hangs · Wk 3–4: lock-stand-reach-relock 2–3 cycles · Wk 5+: full climbs, foot lock on the way down'},
+    {id:'pullup',name:'Weighted Pull-ups',s:1,r:5,type:'pri',rest:180,topSet:{s:1,r:5},backoffRpe:7,note:'Strict. Top set on the wave, 1 back-off @7'},
+    {id:'dbincline',name:'DB Incline Press',s:3,r:10,type:'acc',rest:120},
+    {id:'hspu',name:'Strict HSPU',s:3,r:6,type:'sec',rest:150,note:'Or seated DB press'},
+    {id:'dbcurl',name:'DB Curl',s:4,r:10,type:'acc',rest:75},
+    {id:'laterals',name:'Lateral Raise',s:3,r:15,type:'iso',rest:0,link:true},
+    {id:'facepull',name:'Ring Face Pull',s:3,r:15,type:'iso',rest:0,link:true},
+    {id:'calfraise',name:'Standing Calf Raise',s:3,r:12,type:'acc',rest:60}
+  ]}
+];
+
+// Back-off percentages (of 1RM) from the powerlifting sheet. [Block][scheme] → sets×reps + 6 weekly %.
+// Week index follows RPE_WAVE position (7 / 8 / 9 / 7.5 / 8.5 / 9.5). Deload uses Week 1 %.
+const EA_PCT={
+  1:{sq:{s:2,r:8,top:8,p:[63,66,65,66,70,62.5]},bp:{s:2,r:8,top:8,p:[63,66,65,66,70,62.5]},dl:{s:3,r:5,top:5,p:[70,73,72,72,77,70.5]}},
+  2:{sq:{s:2,r:7,top:7,p:[66,70.5,68,68,72,64.5]},bp:{s:2,r:7,top:7,p:[66,70.5,68,68,72,64.5]},dl:{s:3,r:4,top:4,p:[74,77,76,76,79,72.5]}}
+};
+// Block in force for a new EA session: alternates 1 → 2 → 1 each time a deload week is completed.
+function eaBlockNow(){
+  const ss=Object.values(D.sessions).filter(s=>s.completed&&(s.templateId||'').startsWith('ea_')).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  let deloads=0,inDl=false;
+  ss.forEach(s=>{const dl=(s.rpe||7)<=5;if(dl&&!inDl)deloads++;inDl=dl;});
+  return deloads%2===0?1:2;
+}
+// Resolve the block-dependent sets/reps/% for an exercise inside a session.
+function applyScheme(ex,s){
+  if(!ex.scheme||!s)return ex;
+  const blk=s.eaBlock||1;const sc=EA_PCT[blk]&&EA_PCT[blk][ex.scheme];if(!sc)return ex;
+  let wi=RPE_WAVE.indexOf(s.rpe||7);if(wi<0)wi=0;
+  return{...ex,s:sc.s,r:sc.r,topSet:{s:1,r:sc.top},backoffPct:sc.p[wi],_blk:blk,_wk:wi+1};
+}
+
+// Legacy CrossFit prep templates — kept only so old sessions still resolve in history.
 const CROSSFIT_PREP=[
   {id:'cf_a',name:'A · Squat + Strict Press',exercises:[
     {id:'squat',name:'Back Squat (high-bar)',s:4,r:5,type:'pri',rest:240,note:'Heels elevated, full depth. Knee travels forward — quad bias for long femurs.'},
@@ -220,7 +286,7 @@ const CROSSFIT_PREP=[
 const CF_RPE_WAVE=[7,7,8,8,8.75,6.5];
 
 function getTemplates(){
-  const base=D.mode==='cf'?CROSSFIT_PREP:(D.mode==='in'?IN_SEASON:OFF_SEASON);
+  const base=D.mode==='ea'?EVERYDAY_ATHLETE:(D.mode==='in'?IN_SEASON:OFF_SEASON);
   const archived=D.archivedTemplates||[];
   const active=base.filter(t=>!archived.includes(t.id));
   const user=(D.userTemplates||[]).filter(t=>!archived.includes(t.id));
@@ -229,7 +295,7 @@ function getTemplates(){
 function getAllTemplates(){
   // All templates including archived, for history lookups
   const user=D.userTemplates||[];
-  return[...IN_SEASON,...OFF_SEASON,...CROSSFIT_PREP,...user];
+  return[...IN_SEASON,...OFF_SEASON,...EVERYDAY_ATHLETE,...CROSSFIT_PREP,...user];
 }
 function findTemplate(tid){
   // Check user templates first (they may override defaults)
@@ -238,13 +304,13 @@ function findTemplate(tid){
     if(D.customTemplates?.[tid])return{...user,exercises:D.customTemplates[tid]};
     return user;
   }
-  const base=IN_SEASON.concat(OFF_SEASON).concat(CROSSFIT_PREP).find(t=>t.id===tid);
+  const base=IN_SEASON.concat(OFF_SEASON).concat(EVERYDAY_ATHLETE).concat(CROSSFIT_PREP).find(t=>t.id===tid);
   if(!base)return null;
   if(D.customTemplates?.[tid]){return{...base,exercises:D.customTemplates[tid]};}
   return base;
 }
 
-const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',speed_dead:'deadlift',goodmorning:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',incline_bench:'bench',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup',pushpress:'ohp',tempo_squat:'squat'};
+const RM_KEYS={squat:'squat',bench:'bench',ohp:'ohp',frontsquat:'frontsquat',deadlift:'deadlift',speed_dead:'deadlift',goodmorning:'deadlift',cgbench:'bench',pause_bench:'bench',larsen:'bench',incline_bench:'incline',dbincline:'incline',rdl:'deadlift',sldl:'deadlift',dbflat:'bench',pullup:'pullup',csrow:'pullup',latpull:'pullup',cablerow:'pullup',pushpress:'ohp',tempo_squat:'squat'};
 const RPE_WAVE=[7,8,9,7.5,8.5,9.5];
 
 // ===== FIREBASE =====
@@ -269,15 +335,15 @@ auth.onAuthStateChanged(user=>{
 
 // ===== STATE =====
 const SK='liftos7';
-function defs(){return{rm:{squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0},unit:'lbs',round:5,mode:'off',sessions:{},completed:[],exNotes:{},mobility:{},wodEquip:{bike:true,row:true,kb:true,ski:true,rope:true,crope:true,bar:true,rings:true,para:true,box:true,mb:true,vest:true,ghd:true,db:true,bench:true,bb:true}};}
+function defs(){return{rm:{squat:0,bench:0,incline:0,deadlift:0,ohp:0,frontsquat:0,pullup:0},unit:'lbs',round:5,mode:'off',sessions:{},completed:[],exNotes:{},mobility:{},wodEquip:{bike:true,row:true,kb:true,ski:true,rope:true,crope:true,bar:true,rings:true,para:true,box:true,mb:true,vest:true,ghd:true,db:true,bench:true,bb:true}};}
 let D=ld();ensureD();
 function ld(){try{const s=JSON.parse(localStorage.getItem(SK));if(s&&s.rm)return s;}catch{}return defs();}
 function ensureD(){
   if(!D.sessions)D.sessions={};if(!D.completed)D.completed=[];if(!D.exNotes)D.exNotes={};
   if(!D.mobility)D.mobility={};
   if(!D.rm)D.rm={squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0};
-  if(D.rm.pullup===undefined)D.rm.pullup=0;if(D.rm.frontsquat===undefined)D.rm.frontsquat=0;
-  if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;if(!D.mode)D.mode='off';
+  if(D.rm.pullup===undefined)D.rm.pullup=0;if(D.rm.incline===undefined)D.rm.incline=0;if(D.rm.frontsquat===undefined)D.rm.frontsquat=0;
+  if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;if(!D.mode)D.mode='off';if(D.mode==='cf')D.mode='ea'; // CF Prep retired → Everyday Athlete
   if(!D.customTemplates)D.customTemplates={};
   if(!D.userTemplates)D.userTemplates=[];
   if(!D.archivedTemplates)D.archivedTemplates=[];
@@ -306,10 +372,10 @@ function refreshView(){const c=document.querySelector('.vw.a');if(c){const id=c.
 // ===== RPE SUGGESTION =====
 function suggestRpe(templateId){
   // Count completed strength sessions (non-cardio) since last deload to determine wave position
-  const isCf=D.mode==='cf';
+  const isEa=D.mode==='ea';
   let allStrength=Object.values(D.sessions).filter(s=>s.completed&&!s.isCardio);
-  // In CF prep, track only the prep block itself so the 6-week wave is self-contained
-  if(isCf)allStrength=allStrength.filter(s=>(s.templateId||'').startsWith('cf_'));
+  // Everyday Athlete tracks only its own sessions so the 6-week wave is self-contained
+  if(isEa)allStrength=allStrength.filter(s=>(s.templateId||'').startsWith('ea_'));
   allStrength.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   // Find sessions since last deload
   let sinceDeload=0;
@@ -317,11 +383,16 @@ function suggestRpe(templateId){
     if(allStrength[i].rpe<=5){break;}
     sinceDeload++;
   }
-  // Determine which week we're in (CF = 3 sessions/wk, otherwise 4)
-  const perWeek=isCf?3:4;
-  const wave=isCf?CF_RPE_WAVE:RPE_WAVE;
+  // Determine which week we're in (4 strength sessions/wk)
+  const perWeek=4;
+  const wave=RPE_WAVE;
+  if(isEa&&sinceDeload===0){
+    // Mid-deload: keep the whole week at 5 (4 sessions), then restart the wave
+    let dlRun=0;for(let i=allStrength.length-1;i>=0&&allStrength[i].rpe<=5;i--)dlRun++;
+    if(dlRun>0&&dlRun<perWeek)return 5;
+  }
   const weekNum=Math.floor(sinceDeload/perWeek);
-  if(weekNum>=wave.length)return isCf?6.5:7;// past block end
+  if(weekNum>=wave.length)return isEa?5:7;// EA: wave done → deload week
   return wave[weekNum];
 }
 
@@ -366,7 +437,7 @@ function rMobility(){
 // ===== CALENDAR =====
 function rTrain(){
   const today=todayStr();
-  document.getElementById('hb').textContent=D.mode==='cf'?'CF-PREP':(D.mode==='in'?'IN-SZN':'OFF-SZN');
+  document.getElementById('hb').textContent=D.mode==='ea'?'ATHLETE':(D.mode==='in'?'IN-SZN':'OFF-SZN');
 
   // Calendar
   const mn=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -383,7 +454,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_dead:'var(--bl)',is_bench:'var(--ac)',is_fsq:'var(--yl)',is_fba:'var(--rd)',is_fbb:'var(--rd)',is_fbc:'var(--rd)',cf_a:'var(--bl)',cf_b:'var(--pp)',cf_c:'var(--yl)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)',cardio_vo2:'var(--rd)',cardio_thr:'var(--yl)',wod:'var(--pp)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_dead:'var(--bl)',is_bench:'var(--ac)',is_fsq:'var(--yl)',is_fba:'var(--rd)',is_fbb:'var(--rd)',is_fbc:'var(--rd)',cf_a:'var(--bl)',cf_b:'var(--pp)',cf_c:'var(--yl)',ea_la:'var(--bl)',ea_ua:'var(--ac)',ea_lb:'var(--yl)',ea_ub:'var(--pp)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)',cardio_vo2:'var(--rd)',cardio_thr:'var(--yl)',wod:'var(--pp)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
@@ -442,6 +513,7 @@ function startSess(date,tid,sugRpe){
   if(D.sessions[k]){openSess(k);return;}
   const tmpl=findTemplate(tid);
   D.sessions[k]={templateId:tid,name:tmpl.name,date,rpe:sugRpe,completed:false,ex:{},added:[],removed:[],setAdj:{},exOrder:[],sleep:'',nutrition:'',notes:''};
+  if((tid||'').startsWith('ea_'))D.sessions[k].eaBlock=eaBlockNow();
   sv();openSess(k);
 }
 
@@ -507,7 +579,13 @@ const CARDIO_PRESETS=[
 
   // ---- Hill sprints ----
   {id:'hill_short',name:'Hill Sprints (Short)',cat:'short',duration:15,work:12,rest_int:60,rounds:10,intensity:'all-out',desc:'10-15 sec sprint × 10 · Walk down'},
-  {id:'hill_long',name:'Hill Sprints (Long)',cat:'mid',duration:18,work:30,rest_int:90,rounds:6,intensity:'hard',desc:'30 sec sprint × 6 · Walk down'}
+  {id:'hill_long',name:'Hill Sprints (Long)',cat:'mid',duration:18,work:30,rest_int:90,rounds:6,intensity:'hard',desc:'30 sec sprint × 6 · Walk down'},
+
+  // ---- VO2 Max Kickstart (Rossner) — 2-week jolt: 3 hard days/wk, easy days between, then fold 1–2/wk into the routine.
+  // Warm-up 10–15 min easy + 3–4 strides · cool-down 10 min very easy. Run, Airdyne or rower.
+  {id:'kick_a',name:'Kickstart A · VO2 Intervals',cat:'vo2',duration:42,work:140,rest_int:165,rounds:6,intensity:'RPE 8–9 · 3K–5K race effort, just repeatable',desc:'5–6 × 140 s hard / 165 s easy · + 15 min warm-up, 10 min cool-down'},
+  {id:'kick_b',name:'Kickstart B · Short Sprint Intervals',cat:'mid',duration:40,work:30,rest_int:97,rounds:10,intensity:'RPE 9 · mile–1500 m effort',desc:'8–10 × 30 s fast / up to 97 s easy · + warm-up and cool-down'},
+  {id:'kick_c',name:'Kickstart C · Repeated Sprints',cat:'short',duration:35,work:10,rest_int:50,rounds:21,intensity:'RPE 10 · all-out',desc:'2–3 sets of 6–8 × 10 s all-out · <60 s between reps, 3–4 min between sets'}
 ];
 
 function _cardioDayDiff(a,b){ // |a-b| in days, both 'YYYY-MM-DD'
@@ -584,13 +662,17 @@ function showCardioModal(date){
   let h=`<h2>🫀 Cardio Session</h2>`;
   h+=`<div onclick="startCardio('${date}','${sug.id}')" style="padding:10px 12px;background:var(--bld);border:1px solid var(--bl);border-radius:var(--rs);margin-bottom:14px;font-size:.76rem;color:var(--bl);cursor:pointer;">Suggested: <strong>${sug.name}</strong> — ${sug.desc}<div style="font-size:.66rem;color:var(--tx3);margin-top:4px;">${sug._reason||''}</div><div style="font-size:.62rem;color:var(--bl);margin-top:4px;opacity:.8;">▸ Tap to start this session</div></div>`;
 
-  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-bottom:8px;">LSD (Steady State)</div>`;
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--rd);margin-bottom:4px;">VO₂ Max Kickstart</div><div style="font-size:.64rem;color:var(--tx3);margin-bottom:8px;">2 weeks · 3 hard days/wk (A / B / C or repeat your favourite) · easy days between · then keep 1–2/wk</div>`;
+  CARDIO_PRESETS.filter(p=>p.id.startsWith('kick_')).forEach(p=>{
+    h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc} · ${p.intensity}</div></span></div>`;
+  });
+  h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">LSD (Steady State)</div>`;
   CARDIO_PRESETS.filter(p=>p.cat==='lsd').forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
   h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--rd);margin-top:12px;margin-bottom:8px;">VO₂max · Long Aerobic</div>`;
-  CARDIO_PRESETS.filter(p=>p.cat==='vo2'&&!p.id.startsWith('run_')).forEach(p=>{
+  CARDIO_PRESETS.filter(p=>p.cat==='vo2'&&!p.id.startsWith('run_')&&!p.id.startsWith('kick_')).forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
@@ -605,12 +687,12 @@ function showCardioModal(date){
   });
 
   h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Mid Intervals (30-40s)</div>`;
-  CARDIO_PRESETS.filter(p=>p.cat==='mid'&&!p.id.startsWith('run_')&&!p.id.startsWith('hill_')).forEach(p=>{
+  CARDIO_PRESETS.filter(p=>p.cat==='mid'&&!p.id.startsWith('run_')&&!p.id.startsWith('hill_')&&!p.id.startsWith('kick_')).forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
   h+=`<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--tx3);margin-top:12px;margin-bottom:8px;">Short Intervals & Sprints</div>`;
-  CARDIO_PRESETS.filter(p=>p.cat==='short'&&!p.id.startsWith('run_')&&!p.id.startsWith('hill_')).forEach(p=>{
+  CARDIO_PRESETS.filter(p=>p.cat==='short'&&!p.id.startsWith('run_')&&!p.id.startsWith('hill_')&&!p.id.startsWith('kick_')).forEach(p=>{
     h+=`<div class="rmrow" style="cursor:pointer;" onclick="startCardio('${date}','${p.id}')"><span style="flex:1;"><strong>${p.name}</strong><div style="font-size:.68rem;color:var(--tx3);">${p.desc}</div></span></div>`;
   });
 
@@ -2129,7 +2211,7 @@ function rSess(){
   // Build exercise list
   const baseEx=tmpl?tmpl.exercises:[];
   const allEntries=[];
-  baseEx.forEach((ex,oi)=>{if(!(s.removed||[]).includes(oi))allEntries.push({ex,ek:ex.id+'_t'+oi});});
+  baseEx.forEach((ex,oi)=>{if(!(s.removed||[]).includes(oi))allEntries.push({ex:applyScheme(ex,s),ek:ex.id+'_t'+oi});});
   (s.added||[]).forEach(a=>{allEntries.push({ex:{id:a.id,name:a.name,s:a.s||3,r:a.r||12,type:'acc',rest:a.rest||75,_added:true,_addIdx:a._addIdx},ek:'add_'+a._addIdx});});
   if(s.exOrder?.length){const om={};s.exOrder.forEach((x,i)=>{om[x]=i;});allEntries.sort((a,b)=>(om[a.ek]??9999)-(om[b.ek]??9999));}
 
@@ -2138,11 +2220,12 @@ function rSess(){
     const hasTopSet=!!ex.topSet;
     const adj=(s.setAdj||{})[ek]||0;
     const totalSets=hasTopSet?Math.max(1,(ex.topSet.s||1)+(ex.s||3)+adj):Math.max(1,(ex.s||3)+adj);
-    const eRpe=ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type));
+    let eRpe=ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type));
+    if(ex.maxRpe&&eRpe>ex.maxRpe)eRpe=ex.maxRpe;
     const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
     const topR=hasTopSet?ex.topSet.r:ex.r;
     const sw=rm>0&&eRpe>0&&topR>0?cWt(rm,topR,eRpe,D.round):0;
-    const boSw=hasTopSet&&rm>0&&ex.r>0?cWt(rm,ex.r,ex.backoffRpe||7,D.round):0;
+    const boSw=hasTopSet&&rm>0&&ex.r>0?(ex.backoffPct?Math.round(rm*ex.backoffPct/100/D.round)*D.round:cWt(rm,ex.r,ex.backoffRpe||7,D.round)):0;
     if(!s.ex[ek]){
       const rows=[];
       if(hasTopSet){
@@ -2215,7 +2298,9 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   if(!ex.name)ex.name=ex.id||'Exercise';
   if(ex.s==null)ex.s=3;if(ex.r==null)ex.r=10;if(ex.rest==null)ex.rest=90;
   const s=D.sessions[k];
-  const eRpe=isDl?5:(ex._force?0:(ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type))));
+  let eRpe=isDl?5:(ex._force?0:(ex.fixedRpe||(ex._added?Math.max(5,wkRpe-1):exRpeFor(wkRpe,ex.type))));
+  if(ex.maxRpe&&eRpe>ex.maxRpe)eRpe=ex.maxRpe;
+  const boPct=ex.backoffPct||0;
   const hasTopSet=!!ex.topSet;
   const topSetReps=hasTopSet?ex.topSet.r:0;
   const topSetCount=hasTopSet?ex.topSet.s:0;
@@ -2230,7 +2315,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   // Weight suggestions
   const topSw=rm>0&&eRpe>0&&topSetReps>0?cWt(rm,topSetReps,eRpe,D.round):null;
   const boRpe=ex.backoffRpe||7;// back-offs RPE 7 unless overridden
-  const boSw=rm>0&&boReps>0?cWt(rm,boReps,boRpe,D.round):null;
+  const boSw=rm>0&&boReps>0?(boPct?Math.round(rm*boPct/100/D.round)*D.round:cWt(rm,boReps,boRpe,D.round)):null;
   const sw=hasTopSet?topSw:(rm>0&&eRpe>0&&reps>0?cWt(rm,reps,eRpe,D.round):null);
   const rc=eRpe>=9?'rmx':eRpe>=8?'rhi':eRpe>=7?'rmd':'rlo';
   const saved=s.ex[ek]||[];
@@ -2259,7 +2344,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
     <button style="padding:2px 8px;border:1px solid var(--rd);border-radius:4px;background:var(--rdd);color:var(--rd);font-size:.66rem;font-weight:600;cursor:pointer;" onclick="removeEx('${k}','${ek}')">Remove</button></div>`;
 
   // Header display
-  const repDisp=isOpen?(ex.repRange||'AMRAP'):hasTopSet?`1×${topSetReps} + ${boSets}×${boReps}`:''+reps;
+  const repDisp=(isOpen?(ex.repRange||'AMRAP'):hasTopSet?`1×${topSetReps} + ${boSets}×${boReps}`:''+reps)+(ex._blk?` · B${ex._blk} W${isDl?'DL':ex._wk}`:'');
   const headerRpe=hasTopSet?eRpe:eRpe;
 
   let setRows='';
@@ -2281,10 +2366,10 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
       const si=topSetCount+bi;
       const st=saved[si]||{w:'',r:'',p:'',d:false};
       const le=st.w>0&&st.r>0&&st.p>0?cE1(st.w,st.r,st.p):'';
-      setRows+=`<div class="sr"><div class="sn">${bi+1}</div><div class="stg">${boReps}${ex._force?'':'@'+boRpe} <span style="font-size:.58rem;">BO</span></div>
+      setRows+=`<div class="sr"><div class="sn">${bi+1}</div><div class="stg">${boReps}${ex._force?'':(boPct?'@'+boPct+'%':'@'+boRpe)} <span style="font-size:.58rem;">BO</span></div>
       <input class="si" type="number" inputmode="decimal" value="${st.w}" placeholder="${boSw||'—'}" oninput="uSL('${k}','${ek}',${si},'w',this.value)">
       <input class="si" type="number" inputmode="numeric" value="${st.r}" placeholder="${boReps}" oninput="uSL('${k}','${ek}',${si},'r',this.value)">
-      <input class="si" type="number" inputmode="decimal" step="0.5" value="${st.p}" placeholder="${boRpe}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
+      <input class="si" type="number" inputmode="decimal" step="0.5" value="${st.p}" placeholder="${boPct?'':boRpe}" oninput="uSL('${k}','${ek}',${si},'p',this.value)">
       <div class="e1c" id="e1_${ek}_${si}">${le}</div>
       <button class="sok ${st.d?'chk':''}" onclick="tglSet('${k}','${ek}',${si},${restSec},this)">✓</button></div>`;
     }
@@ -2487,14 +2572,14 @@ function rPRs(){
 // ===== SETUP =====
 function rSetup(){
   document.getElementById('uSel').value=D.unit;document.getElementById('rSel').value=D.round;
-  const mains=[{id:'squat',n:'Back Squat'},{id:'bench',n:'Bench Press'},{id:'deadlift',n:'Deadlift'},{id:'ohp',n:'OHP'},{id:'frontsquat',n:'Front Squat'},{id:'pullup',n:'Pull-ups'}];
+  const mains=[{id:'squat',n:'Back Squat'},{id:'bench',n:'Bench Press'},{id:'incline',n:'Incline Bench'},{id:'deadlift',n:'Deadlift'},{id:'ohp',n:'OHP'},{id:'frontsquat',n:'Front Squat'},{id:'pullup',n:'Pull-ups'}];
   document.getElementById('rmIn').innerHTML=mains.map(m=>`<div class="rmrow"><span style="flex:1;font-weight:600;font-size:.9rem;">${m.n}</span><input class="si" style="width:80px" type="number" value="${D.rm[m.id]||''}" placeholder="0" onchange="D.rm['${m.id}']=+this.value;sv();"><span style="font-size:.72rem;color:var(--tx3);">${D.unit}</span></div>`).join('');
-  document.getElementById('modeToggle').innerHTML=`<button class="${D.mode==='off'?'act':''}" onclick="D.mode='off';sv();rSetup();rTrain();">Off-Season</button><button class="${D.mode==='in'?'act':''}" onclick="D.mode='in';sv();rSetup();rTrain();">In-Season</button><button class="${D.mode==='cf'?'act':''}" onclick="D.mode='cf';sv();rSetup();rTrain();">CF Prep</button>`;
-  document.getElementById('modeDesc').textContent=D.mode==='cf'?'6-week CrossFit on-ramp — 3-day squat-led prep. Accumulate → peak wk5 → taper wk6 into your first box week. Run/airdyne on off days.':(D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy');
+  document.getElementById('modeToggle').innerHTML=`<button class="${D.mode==='off'?'act':''}" onclick="D.mode='off';sv();rSetup();rTrain();">Off-Season</button><button class="${D.mode==='in'?'act':''}" onclick="D.mode='in';sv();rSetup();rTrain();">In-Season</button><button class="${D.mode==='ea'?'act':''}" onclick="D.mode='ea';sv();rSetup();rTrain();">Everyday Athlete</button>`;
+  document.getElementById('modeDesc').textContent=D.mode==='ea'?'4-day upper/lower around 3 cardio days — hinge-led strength, upper chest, shoulders and calves, plyo + hip stability, rope climb skill. Top sets ride the RPE wave (7/8/9/7.5/8.5/9.5 → deload); back-offs use powerlifting % and Block 1 / Block 2 alternate each cycle.':(D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy');
   // Template list
   const tmpls=getTemplates();
   const archived=D.archivedTemplates||[];
-  const archivedTmpls=IN_SEASON.concat(OFF_SEASON).concat(CROSSFIT_PREP).concat(D.userTemplates||[]).filter(t=>archived.includes(t.id));
+  const archivedTmpls=IN_SEASON.concat(OFF_SEASON).concat(EVERYDAY_ATHLETE).concat(D.userTemplates||[]).filter(t=>archived.includes(t.id));
 
   let tmplHtml=`<button class="btn bp bf" style="margin-bottom:14px;" onclick="createTemplateModal()">+ New Template</button>`;
 
