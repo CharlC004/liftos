@@ -96,7 +96,7 @@ select.inp{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns
   <button class="auth-btn" onclick="doSignIn()"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>Sign in with Google</button>
 </div>
 <div class="app" id="mainApp" style="display:none;">
-  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.71</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
+  <div class="hdr"><h1>LiftOS <span style="font-size:.55rem;font-weight:600;color:var(--tx3);vertical-align:super;">v4.73</span></h1><div style="display:flex;align-items:center;gap:8px;"><span id="syncSt"><span class="sync-dot on"></span></span><div class="bdg" id="hb" onclick="showUserMenu()">—</div></div></div>
   <div id="trainV" class="vw a"><div id="calArea"></div><div id="mobArea"></div><div id="sessArea"></div></div>
   <div id="histV" class="vw"><div class="cd"><h3>Training Log</h3><div id="histList"></div></div></div>
   <div id="prsV" class="vw"><div class="cd"><h3>Estimated 1RMs</h3><div id="e1l"></div></div><div class="cd"><h3>Recent Sessions</h3><div id="sH"></div></div></div>
@@ -202,7 +202,7 @@ const EVERYDAY_ATHLETE=[
   {id:'ea_la',name:'Lower A · Hinge + Jumps',exercises:[
     {id:'boxjump',name:'Box Jump',s:4,r:3,type:'iso',rest:60,link:true,note:'Step down. Max intent, quiet landing.'},
     {id:'skaterbound',name:'Lateral Skater Bound',s:3,r:4,type:'iso',rest:90,note:'Per side. Stick each landing 2 s, knee over toes.'},
-    {id:'deadlift',name:'Deadlift',s:3,r:5,type:'pri',rest:300,topSet:{s:1,r:5},scheme:'dl',note:'Top set on the wave, back-offs on %'},
+    {id:'deadlift',name:'Deadlift',s:2,r:8,type:'pri',rest:300,topSet:{s:1,r:8},scheme:'dl',note:'Top set on the wave, back-offs on %'},
     {id:'slrdl',name:'Single-Leg RDL',s:3,r:8,type:'acc',rest:90,note:'Per leg. DB or KB.'},
     {id:'copenhagen',name:'Copenhagen Plank',s:3,r:25,type:'iso',rest:0,link:true,note:'Seconds per side. Short lever (knee on bench) for the first 2–3 weeks.'},
     {id:'hipabd',name:'Banded Hip Abduction',s:3,r:12,type:'iso',rest:60,note:'Per side'},
@@ -221,7 +221,7 @@ const EVERYDAY_ATHLETE=[
   {id:'ea_lb',name:'Lower B · Squat + Single Leg',exercises:[
     {id:'broadjump',name:'Broad Jump',s:4,r:3,type:'iso',rest:0,link:true,note:'Stick the landing, reset each rep'},
     {id:'pogo',name:'Pogo Hops',s:3,r:15,type:'iso',rest:60,note:'Stiff ankles, quick contacts'},
-    {id:'squat',name:'Back Squat',s:2,r:8,type:'pri',rest:240,topSet:{s:1,r:8},scheme:'sq',maxRpe:8.5,note:'Top set on the wave (cap RPE 8.5), back-offs on %'},
+    {id:'squat',name:'Back Squat',s:2,r:8,type:'pri',rest:240,topSet:{s:1,r:8},scheme:'sq',maxRpe:8.5,note:'Top set on the wave (cap RPE 8.5), 3 back-offs on %'},
     {id:'bss',name:'Bulgarian Split Squat',s:3,r:8,type:'acc',rest:120,note:'Per leg'},
     {id:'cossack',name:'Cossack Squat',s:3,r:6,type:'acc',rest:0,link:true,note:'Per side. Adductor strength through full range.'},
     {id:'backext',name:'Back Extension',s:3,r:12,type:'acc',rest:75,note:'Or GHD hip extension'},
@@ -240,15 +240,62 @@ const EVERYDAY_ATHLETE=[
   ]}
 ];
 
+// ===== EVERYDAY ATHLETE · 3 DAYS =====
+// Rotation (not fixed weekdays): Day 1 → 2 → 3. A missed day just waits; the wave advances per completed session.
+const EVERYDAY_ATHLETE_3=[
+  {id:'ea3_a',name:'Day 1 · Squat + Posterior Chain',exercises:[
+    {id:'broadjump',name:'Broad Jump',s:4,r:3,type:'iso',rest:0,link:true,note:'Stick the landing, reset each rep'},
+    {id:'pogo',name:'Pogo Hops',s:3,r:15,type:'iso',rest:60,note:'Stiff ankles, quick contacts'},
+    {id:'squat',name:'Back Squat',s:3,r:8,type:'pri',rest:240,topSet:{s:1,r:8},scheme:'sq',maxRpe:8.5,note:'Top set on the wave (cap RPE 8.5), 3 back-offs on %'},
+    {id:'rdl',name:'Romanian Deadlift',s:3,r:8,type:'sec',rest:150,fixedRpe:7.5,pctRm:60,note:'Heavy hinge of the week. ~60% of deadlift 1RM, adjust to RPE 7–8'},
+    {id:'ghr',name:'Glute-Ham Raise',s:3,r:7,type:'acc',rest:0,link:true,note:'GHD. Slow eccentric.'},
+    {id:'copenhagen',name:'Copenhagen Plank',s:3,r:25,type:'iso',rest:60,note:'Seconds per side'},
+    {id:'slrdl',name:'Single-Leg RDL',s:2,r:10,type:'acc',rest:0,link:true,note:'Per leg'},
+    {id:'bkcalf',name:'Bent-Knee Calf Raise',s:3,r:15,type:'acc',rest:60,note:'Soleus'},
+    {id:'hlr',name:'Hanging Leg Raise',s:3,r:10,type:'iso',rest:60}
+  ]},
+  {id:'ea3_b',name:'Day 2 · Upper',exercises:[
+    {id:'incline_bench',name:'Incline Bench Press',s:2,r:8,type:'pri',rest:240,topSet:{s:1,r:8},scheme:'bp',note:'30°. Top set on the wave, back-offs on %'},
+    {id:'ohp',name:'Strict Press',s:4,r:5,type:'sec',rest:180},
+    {id:'pullup',name:'Weighted Pull-ups',s:1,r:5,type:'pri',rest:180,topSet:{s:1,r:5},backoffRpe:7,note:'Strict. Top set on the wave, 1 back-off @7'},
+    {id:'dbfly',name:'Low-Incline DB Fly',s:3,r:12,type:'acc',rest:0,link:true,note:'15–20° bench, or ring fly'},
+    {id:'laterals',name:'Lateral Raise',s:3,r:15,type:'iso',rest:60},
+    {id:'skulls',name:'Skull Crushers',s:4,r:10,type:'acc',rest:0,link:true},
+    {id:'dbcurl',name:'DB Curl',s:4,r:10,type:'acc',rest:75},
+    {id:'stohlrot',name:'Stohl Rotations',s:3,r:10,type:'iso',rest:60,note:'Per side'}
+  ]},
+  {id:'ea3_c',name:'Day 3 · Full Body + Single Leg',exercises:[
+    {id:'boxjump',name:'Box Jump',s:4,r:3,type:'iso',rest:0,link:true,note:'Step down. Max intent, quiet landing.'},
+    {id:'skaterbound',name:'Lateral Skater Bound',s:3,r:4,type:'iso',rest:90,note:'Per side. Stick each landing 2 s.'},
+    {id:'ropeclimb',name:'Rope Climb Practice',s:6,r:1,type:'iso',rest:60,note:'EMOM. Wk 1–2: seated stand-ups ×5 + 3×20–30 s hangs · Wk 3–4: lock-stand-reach-relock 2–3 cycles · Wk 5+: full climbs'},
+    {id:'bss',name:'Bulgarian Split Squat',s:3,r:8,type:'sec',rest:120,fixedRpe:8,note:'Per leg. Main lower lift of the day.'},
+    {id:'dbincline',name:'DB Incline Press',s:3,r:10,type:'acc',rest:0,link:true},
+    {id:'ringrow',name:'Ring Row',s:3,r:10,type:'acc',rest:90},
+    {id:'cossack',name:'Cossack Squat',s:3,r:6,type:'acc',rest:0,link:true,note:'Per side'},
+    {id:'backext',name:'Back Extension',s:3,r:12,type:'acc',rest:75},
+    {id:'facepull',name:'Ring Face Pull',s:3,r:15,type:'iso',rest:0,link:true},
+    {id:'calfraise',name:'Standing Calf Raise',s:3,r:12,type:'acc',rest:0,link:true},
+    {id:'abwheel',name:'Ab Wheel Rollout',s:3,r:10,type:'iso',rest:60}
+  ]}
+];
+const isEaTid=tid=>/^ea3?_/.test(tid||'');
+// Next session in the EA rotation, based on the last completed EA session of the current frequency.
+function eaNextTid(){
+  const list=D.eaFreq===4?EVERYDAY_ATHLETE:EVERYDAY_ATHLETE_3;const ids=list.map(t=>t.id);
+  const last=Object.values(D.sessions).filter(s=>s.completed&&ids.includes(s.templateId)).sort((a,b)=>(a.date||'').localeCompare(b.date||'')).pop();
+  if(!last)return ids[0];
+  return ids[(ids.indexOf(last.templateId)+1)%ids.length];
+}
+
 // Back-off percentages (of 1RM) from the powerlifting sheet. [Block][scheme] → sets×reps + 6 weekly %.
 // Week index follows RPE_WAVE position (7 / 8 / 9 / 7.5 / 8.5 / 9.5). Deload uses Week 1 %.
 const EA_PCT={
-  1:{sq:{s:2,r:8,top:8,p:[63,66,65,66,70,62.5]},bp:{s:2,r:8,top:8,p:[63,66,65,66,70,62.5]},dl:{s:3,r:5,top:5,p:[70,73,72,72,77,70.5]}},
-  2:{sq:{s:2,r:7,top:7,p:[66,70.5,68,68,72,64.5]},bp:{s:2,r:7,top:7,p:[66,70.5,68,68,72,64.5]},dl:{s:3,r:4,top:4,p:[74,77,76,76,79,72.5]}}
+  1:{sq:{s:3,r:8,top:8,p:[63,66,65,66,70,62.5]},bp:{s:2,r:8,top:8,p:[63,66,65,66,70,62.5]},dl:{s:2,r:8,top:8,p:[63,66,65,66,70,62.5]}},
+  2:{sq:{s:3,r:7,top:7,p:[66,70.5,68,68,72,64.5]},bp:{s:2,r:7,top:7,p:[66,70.5,68,68,72,64.5]},dl:{s:2,r:7,top:7,p:[66,70.5,68,68,72,64.5]}}
 };
 // Block in force for a new EA session: alternates 1 → 2 → 1 each time a deload week is completed.
 function eaBlockNow(){
-  const ss=Object.values(D.sessions).filter(s=>s.completed&&(s.templateId||'').startsWith('ea_')).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  const ss=Object.values(D.sessions).filter(s=>s.completed&&isEaTid(s.templateId)).sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   let deloads=0,inDl=false;
   ss.forEach(s=>{const dl=(s.rpe||7)<=5;if(dl&&!inDl)deloads++;inDl=dl;});
   return deloads%2===0?1:2;
@@ -286,7 +333,7 @@ const CROSSFIT_PREP=[
 const CF_RPE_WAVE=[7,7,8,8,8.75,6.5];
 
 function getTemplates(){
-  const base=D.mode==='ea'?EVERYDAY_ATHLETE:(D.mode==='in'?IN_SEASON:OFF_SEASON);
+  const base=D.mode==='ea'?(D.eaFreq===4?EVERYDAY_ATHLETE:EVERYDAY_ATHLETE_3):(D.mode==='in'?IN_SEASON:OFF_SEASON);
   const archived=D.archivedTemplates||[];
   const active=base.filter(t=>!archived.includes(t.id));
   const user=(D.userTemplates||[]).filter(t=>!archived.includes(t.id));
@@ -295,7 +342,7 @@ function getTemplates(){
 function getAllTemplates(){
   // All templates including archived, for history lookups
   const user=D.userTemplates||[];
-  return[...IN_SEASON,...OFF_SEASON,...EVERYDAY_ATHLETE,...CROSSFIT_PREP,...user];
+  return[...IN_SEASON,...OFF_SEASON,...EVERYDAY_ATHLETE,...EVERYDAY_ATHLETE_3,...CROSSFIT_PREP,...user];
 }
 function findTemplate(tid){
   // Check user templates first (they may override defaults)
@@ -304,7 +351,7 @@ function findTemplate(tid){
     if(D.customTemplates?.[tid])return{...user,exercises:D.customTemplates[tid]};
     return user;
   }
-  const base=IN_SEASON.concat(OFF_SEASON).concat(EVERYDAY_ATHLETE).concat(CROSSFIT_PREP).find(t=>t.id===tid);
+  const base=IN_SEASON.concat(OFF_SEASON).concat(EVERYDAY_ATHLETE).concat(EVERYDAY_ATHLETE_3).concat(CROSSFIT_PREP).find(t=>t.id===tid);
   if(!base)return null;
   if(D.customTemplates?.[tid]){return{...base,exercises:D.customTemplates[tid]};}
   return base;
@@ -343,7 +390,7 @@ function ensureD(){
   if(!D.mobility)D.mobility={};
   if(!D.rm)D.rm={squat:0,bench:0,deadlift:0,ohp:0,frontsquat:0,pullup:0};
   if(D.rm.pullup===undefined)D.rm.pullup=0;if(D.rm.incline===undefined)D.rm.incline=0;if(D.rm.frontsquat===undefined)D.rm.frontsquat=0;
-  if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;if(!D.mode)D.mode='off';if(D.mode==='cf')D.mode='ea'; // CF Prep retired → Everyday Athlete
+  if(!D.unit)D.unit='lbs';if(!D.round)D.round=5;if(!D.mode)D.mode='off';if(D.mode==='cf')D.mode='ea';if(D.eaFreq!==4)D.eaFreq=3; // CF Prep retired → Everyday Athlete
   if(!D.customTemplates)D.customTemplates={};
   if(!D.userTemplates)D.userTemplates=[];
   if(!D.archivedTemplates)D.archivedTemplates=[];
@@ -375,7 +422,7 @@ function suggestRpe(templateId){
   const isEa=D.mode==='ea';
   let allStrength=Object.values(D.sessions).filter(s=>s.completed&&!s.isCardio);
   // Everyday Athlete tracks only its own sessions so the 6-week wave is self-contained
-  if(isEa)allStrength=allStrength.filter(s=>(s.templateId||'').startsWith('ea_'));
+  if(isEa)allStrength=allStrength.filter(s=>isEaTid(s.templateId));
   allStrength.sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   // Find sessions since last deload
   let sinceDeload=0;
@@ -384,7 +431,7 @@ function suggestRpe(templateId){
     sinceDeload++;
   }
   // Determine which week we're in (4 strength sessions/wk)
-  const perWeek=4;
+  const perWeek=isEa?(D.eaFreq||3):4;
   const wave=RPE_WAVE;
   if(isEa&&sinceDeload===0){
     // Mid-deload: keep the whole week at 5 (4 sessions), then restart the wave
@@ -454,7 +501,7 @@ function rTrain(){
     const daySess=Object.keys(D.sessions).filter(k=>k.startsWith(ds+'_'));
     let dots='';
     if(daySess.length){
-      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_dead:'var(--bl)',is_bench:'var(--ac)',is_fsq:'var(--yl)',is_fba:'var(--rd)',is_fbb:'var(--rd)',is_fbc:'var(--rd)',cf_a:'var(--bl)',cf_b:'var(--pp)',cf_c:'var(--yl)',ea_la:'var(--bl)',ea_ua:'var(--ac)',ea_lb:'var(--yl)',ea_ub:'var(--pp)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)',cardio_vo2:'var(--rd)',cardio_thr:'var(--yl)',wod:'var(--pp)'};
+      const TC={squat:'var(--bl)',bench:'var(--ac)',fsq:'var(--yl)',pbench:'var(--rd)',is_dead:'var(--bl)',is_bench:'var(--ac)',is_fsq:'var(--yl)',is_fba:'var(--rd)',is_fbb:'var(--rd)',is_fbc:'var(--rd)',cf_a:'var(--bl)',cf_b:'var(--pp)',cf_c:'var(--yl)',ea_la:'var(--bl)',ea_ua:'var(--ac)',ea_lb:'var(--yl)',ea_ub:'var(--pp)',ea3_a:'var(--bl)',ea3_b:'var(--ac)',ea3_c:'var(--yl)',cardio_lsd:'var(--gn)',cardio_short:'var(--gn)',cardio_mid:'var(--gn)',cardio_long:'var(--gn)',cardio_vo2:'var(--rd)',cardio_thr:'var(--yl)',wod:'var(--pp)'};
       dots=`<div class="cal-dots">${daySess.map(k=>{
         const s=D.sessions[k];const done=s.completed;const tid=s.templateId||'';
         const col=done?(TC[tid]||'var(--gn)'):'var(--tx3)';
@@ -490,9 +537,10 @@ function rTrain(){
 
   // Template buttons
   sh+=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">`;
+  const nextTid=D.mode==='ea'?eaNextTid():null;
   getTemplates().forEach(t=>{
-    const sug=suggestRpe(t.id);
-    sh+=`<div class="tmpl-btn" onclick="startSess('${selDate}','${t.id}',${sug})">${t.name}<div style="font-size:.64rem;color:var(--tx3);margin-top:2px;">RPE ${sug}</div></div>`;
+    const sug=suggestRpe(t.id);const isNext=t.id===nextTid;
+    sh+=`<div class="tmpl-btn" style="${isNext?'border-color:var(--ac);box-shadow:0 0 0 1px var(--ac);':''}" onclick="startSess('${selDate}','${t.id}',${sug})">${isNext?'<div style="font-size:.56rem;font-weight:800;letter-spacing:1.5px;color:var(--ac);">NEXT UP</div>':''}${t.name}<div style="font-size:.64rem;color:var(--tx3);margin-top:2px;">RPE ${sug}</div></div>`;
   });
   sh+=`<div class="tmpl-btn" onclick="startCustom('${selDate}')">+ Custom<div style="font-size:.64rem;color:var(--tx3);margin-top:2px;">Freeform</div></div>`;
   sh+=`<div class="tmpl-btn" style="border-color:var(--bl);color:var(--bl);" onclick="showCardioModal('${selDate}')">🫀 Cardio<div style="font-size:.64rem;color:var(--bl);margin-top:2px;opacity:.7;">Airdyne</div></div>`;
@@ -513,7 +561,7 @@ function startSess(date,tid,sugRpe){
   if(D.sessions[k]){openSess(k);return;}
   const tmpl=findTemplate(tid);
   D.sessions[k]={templateId:tid,name:tmpl.name,date,rpe:sugRpe,completed:false,ex:{},added:[],removed:[],setAdj:{},exOrder:[],sleep:'',nutrition:'',notes:''};
-  if((tid||'').startsWith('ea_'))D.sessions[k].eaBlock=eaBlockNow();
+  if(isEaTid(tid))D.sessions[k].eaBlock=eaBlockNow();
   sv();openSess(k);
 }
 
@@ -2224,7 +2272,7 @@ function rSess(){
     if(ex.maxRpe&&eRpe>ex.maxRpe)eRpe=ex.maxRpe;
     const rmKey=RM_KEYS[ex.id];const rm=rmKey?D.rm[rmKey]||0:0;
     const topR=hasTopSet?ex.topSet.r:ex.r;
-    const sw=rm>0&&eRpe>0&&topR>0?cWt(rm,topR,eRpe,D.round):0;
+    const sw=ex.pctRm&&rm>0?Math.round(rm*ex.pctRm/100/D.round)*D.round:(rm>0&&eRpe>0&&topR>0?cWt(rm,topR,eRpe,D.round):0);
     const boSw=hasTopSet&&rm>0&&ex.r>0?(ex.backoffPct?Math.round(rm*ex.backoffPct/100/D.round)*D.round:cWt(rm,ex.r,ex.backoffRpe||7,D.round)):0;
     if(!s.ex[ek]){
       const rows=[];
@@ -2316,7 +2364,7 @@ function mkEx(ex,ek,ei,total,wkRpe,isDl,k){
   const topSw=rm>0&&eRpe>0&&topSetReps>0?cWt(rm,topSetReps,eRpe,D.round):null;
   const boRpe=ex.backoffRpe||7;// back-offs RPE 7 unless overridden
   const boSw=rm>0&&boReps>0?(boPct?Math.round(rm*boPct/100/D.round)*D.round:cWt(rm,boReps,boRpe,D.round)):null;
-  const sw=hasTopSet?topSw:(rm>0&&eRpe>0&&reps>0?cWt(rm,reps,eRpe,D.round):null);
+  const sw=hasTopSet?topSw:(ex.pctRm&&rm>0?Math.round(rm*ex.pctRm/100/D.round)*D.round:(rm>0&&eRpe>0&&reps>0?cWt(rm,reps,eRpe,D.round):null));
   const rc=eRpe>=9?'rmx':eRpe>=8?'rhi':eRpe>=7?'rmd':'rlo';
   const saved=s.ex[ek]||[];
 
@@ -2575,11 +2623,12 @@ function rSetup(){
   const mains=[{id:'squat',n:'Back Squat'},{id:'bench',n:'Bench Press'},{id:'incline',n:'Incline Bench'},{id:'deadlift',n:'Deadlift'},{id:'ohp',n:'OHP'},{id:'frontsquat',n:'Front Squat'},{id:'pullup',n:'Pull-ups'}];
   document.getElementById('rmIn').innerHTML=mains.map(m=>`<div class="rmrow"><span style="flex:1;font-weight:600;font-size:.9rem;">${m.n}</span><input class="si" style="width:80px" type="number" value="${D.rm[m.id]||''}" placeholder="0" onchange="D.rm['${m.id}']=+this.value;sv();"><span style="font-size:.72rem;color:var(--tx3);">${D.unit}</span></div>`).join('');
   document.getElementById('modeToggle').innerHTML=`<button class="${D.mode==='off'?'act':''}" onclick="D.mode='off';sv();rSetup();rTrain();">Off-Season</button><button class="${D.mode==='in'?'act':''}" onclick="D.mode='in';sv();rSetup();rTrain();">In-Season</button><button class="${D.mode==='ea'?'act':''}" onclick="D.mode='ea';sv();rSetup();rTrain();">Everyday Athlete</button>`;
-  document.getElementById('modeDesc').textContent=D.mode==='ea'?'4-day upper/lower around 3 cardio days — hinge-led strength, upper chest, shoulders and calves, plyo + hip stability, rope climb skill. Top sets ride the RPE wave (7/8/9/7.5/8.5/9.5 → deload); back-offs use powerlifting % and Block 1 / Block 2 alternate each cycle.':(D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy');
+  const _tog=D.mode==='ea'?`<div style="display:flex;gap:8px;align-items:center;margin:10px 0;"><span style="font-size:.7rem;font-weight:700;color:var(--tx2);">Sessions / week</span><span class="mode-toggle" style="display:inline-flex;width:auto;"><button class="${D.eaFreq!==4?'act':''}" onclick="D.eaFreq=3;sv();rSetup();rTrain();">3×</button><button class="${D.eaFreq===4?'act':''}" onclick="D.eaFreq=4;sv();rSetup();rTrain();">4×</button></span></div>`:'';
+  document.getElementById('modeDesc').innerHTML=_tog+(D.mode==='ea'?((D.eaFreq===4?'4-day upper/lower — hinge-led strength':'3-day rotation — squat + posterior chain / upper / full body single-leg')+'. Upper chest, shoulders, calves, plyo + hip stability, rope climb. Sessions rotate in order (NEXT UP), a missed day just waits. Top sets ride the RPE wave (7/8/9/7.5/8.5/9.5 → deload); back-offs use powerlifting %, Block 1 / Block 2 alternate each cycle.'):(D.mode==='in'?'3-day full body — more time for golf':'4-day split — maximum strength and hypertrophy'));
   // Template list
   const tmpls=getTemplates();
   const archived=D.archivedTemplates||[];
-  const archivedTmpls=IN_SEASON.concat(OFF_SEASON).concat(EVERYDAY_ATHLETE).concat(D.userTemplates||[]).filter(t=>archived.includes(t.id));
+  const archivedTmpls=IN_SEASON.concat(OFF_SEASON).concat(EVERYDAY_ATHLETE).concat(EVERYDAY_ATHLETE_3).concat(D.userTemplates||[]).filter(t=>archived.includes(t.id));
 
   let tmplHtml=`<button class="btn bp bf" style="margin-bottom:14px;" onclick="createTemplateModal()">+ New Template</button>`;
 
